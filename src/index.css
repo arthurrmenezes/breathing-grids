@@ -28,8 +28,8 @@
     --muted: 220 14% 96%;
     --muted-foreground: 220 9% 46%;
     
-    /* Accent - Nubank Purple */
-    --accent: 262 72% 62%;
+    /* Accent - Emerald Green */
+    --accent: 160 84% 39%;
     --accent-foreground: 0 0% 100%;
     
     /* Functional Colors */
@@ -42,37 +42,37 @@
     /* Borders & Inputs */
     --border: 220 13% 91%;
     --input: 220 13% 91%;
-    --ring: 262 72% 62%;
+    --ring: 160 84% 39%;
     
     --radius: 0.75rem;
     
     /* Sidebar */
     --sidebar-background: 40 10% 97%;
     --sidebar-foreground: 220 9% 46%;
-    --sidebar-primary: 262 72% 62%;
+    --sidebar-primary: 160 84% 39%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 270 100% 97%;
-    --sidebar-accent-foreground: 262 72% 45%;
+    --sidebar-accent: 160 60% 95%;
+    --sidebar-accent-foreground: 160 84% 30%;
     --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 262 72% 62%;
+    --sidebar-ring: 160 84% 39%;
     
     /* Custom Design Tokens */
     --canvas: 40 10% 98%;
     --surface: 0 0% 100%;
     --text-primary: 220 40% 10%;
     --text-secondary: 220 9% 46%;
-    --purple-glow: 262 72% 62%;
-    --purple-soft: 270 100% 97%;
+    --green-glow: 160 84% 39%;
+    --green-soft: 160 60% 95%;
     
     /* Shadows */
     --shadow-card: 0px 1px 3px rgba(0, 0, 0, 0.04);
     --shadow-hover: 0px 4px 24px rgba(0, 0, 0, 0.06);
-    --shadow-focus: 0px 0px 0px 3px rgba(130, 87, 229, 0.2);
+    --shadow-focus: 0px 0px 0px 3px rgba(16, 185, 129, 0.2);
     
     /* Gradients */
-    --gradient-hero: radial-gradient(ellipse 80% 60% at 50% 0%, hsl(270 100% 97%) 0%, hsl(40 10% 98%) 100%);
-    --gradient-purple: linear-gradient(135deg, hsl(262 72% 62%) 0%, hsl(280 72% 55%) 100%);
-    --gradient-card: linear-gradient(180deg, hsl(262 72% 62%) 0%, hsl(280 82% 45%) 100%);
+    --gradient-hero: radial-gradient(ellipse 80% 60% at 50% 0%, hsl(160 60% 95%) 0%, hsl(40 10% 98%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(160 84% 39%) 0%, hsl(170 84% 35%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(160 84% 39%) 0%, hsl(170 84% 30%) 100%);
   }
 
   .dark {
@@ -94,7 +94,7 @@
     --muted: 220 20% 16%;
     --muted-foreground: 220 9% 60%;
     
-    --accent: 262 72% 62%;
+    --accent: 160 84% 39%;
     --accent-foreground: 0 0% 100%;
     
     --success: 160 84% 39%;
@@ -105,16 +105,16 @@
     
     --border: 220 20% 18%;
     --input: 220 20% 18%;
-    --ring: 262 72% 62%;
+    --ring: 160 84% 39%;
     
     --sidebar-background: 220 40% 6%;
     --sidebar-foreground: 220 9% 60%;
-    --sidebar-primary: 262 72% 62%;
+    --sidebar-primary: 160 84% 39%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 262 50% 15%;
-    --sidebar-accent-foreground: 262 72% 70%;
+    --sidebar-accent: 160 50% 15%;
+    --sidebar-accent-foreground: 160 84% 50%;
     --sidebar-border: 220 20% 18%;
-    --sidebar-ring: 262 72% 62%;
+    --sidebar-ring: 160 84% 39%;
   }
 }
 
@@ -179,14 +179,14 @@
   }
   
   /* Pulse glow */
-  .glow-purple {
-    box-shadow: 0 0 40px hsl(262 72% 62% / 0.3);
+  .glow-green {
+    box-shadow: 0 0 40px hsl(160 84% 39% / 0.3);
   }
   
   /* Text gradient */
   .text-gradient {
     @apply bg-clip-text text-transparent;
-    background-image: var(--gradient-purple);
+    background-image: var(--gradient-accent);
   }
 }
 

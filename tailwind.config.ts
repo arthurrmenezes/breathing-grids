@@ -77,10 +77,10 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
-        purple: {
-          soft: "hsl(270 100% 97%)",
-          DEFAULT: "hsl(262 72% 62%)",
-          dark: "hsl(262 72% 45%)",
+        green: {
+          soft: "hsl(160 60% 95%)",
+          DEFAULT: "hsl(160 84% 39%)",
+          dark: "hsl(160 84% 30%)",
         },
       },
       borderRadius: {
@@ -94,8 +94,8 @@ export default {
       boxShadow: {
         'card': '0px 1px 3px rgba(0, 0, 0, 0.04)',
         'card-hover': '0px 4px 24px rgba(0, 0, 0, 0.06)',
-        'focus-ring': '0px 0px 0px 3px rgba(130, 87, 229, 0.2)',
-        'purple-glow': '0 0 40px rgba(130, 87, 229, 0.3)',
+        'focus-ring': '0px 0px 0px 3px rgba(16, 185, 129, 0.2)',
+        'green-glow': '0 0 40px rgba(16, 185, 129, 0.3)',
         'button': '0 1px 2px rgba(0, 0, 0, 0.05)',
         'button-hover': '0 4px 12px rgba(0, 0, 0, 0.1)',
       },
@@ -154,9 +154,9 @@ export default {
         "marquee": "marquee 30s linear infinite",
       },
       backgroundImage: {
-        'hero-gradient': 'radial-gradient(ellipse 80% 60% at 50% 0%, hsl(270 100% 97%) 0%, hsl(40 10% 98%) 100%)',
-        'purple-gradient': 'linear-gradient(135deg, hsl(262 72% 62%) 0%, hsl(280 72% 55%) 100%)',
-        'card-gradient': 'linear-gradient(180deg, hsl(262 72% 62%) 0%, hsl(280 82% 45%) 100%)',
+        'hero-gradient': 'radial-gradient(ellipse 80% 60% at 50% 0%, hsl(160 60% 95%) 0%, hsl(40 10% 98%) 100%)',
+        'accent-gradient': 'linear-gradient(135deg, hsl(160 84% 39%) 0%, hsl(170 84% 35%) 100%)',
+        'card-gradient': 'linear-gradient(180deg, hsl(160 84% 39%) 0%, hsl(170 84% 30%) 100%)',
         'shimmer': 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)',
       },
       spacing: {

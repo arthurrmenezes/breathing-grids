@@ -17,15 +17,15 @@ export const BentoGrid = () => {
         {/* Section Header */}
         <div className="text-center max-w-2xl mx-auto mb-16">
           <span className="text-micro uppercase tracking-widest text-accent mb-4 block">
-            Features
+            Funcionalidades
           </span>
           <h2 className="text-h1 mb-4">
-            Everything you need,{' '}
-            <span className="text-gradient">nothing you don't</span>
+            Tudo que você precisa,{' '}
+            <span className="text-gradient">nada além</span>
           </h2>
           <p className="text-body-lg text-muted-foreground">
-            Powerful tools designed to give you complete visibility and control 
-            over your financial life.
+            Ferramentas poderosas projetadas para dar visibilidade e controle total 
+            sobre sua vida financeira.
           </p>
         </div>
 
@@ -40,16 +40,16 @@ export const BentoGrid = () => {
                     <TrendingUp className="w-5 h-5 text-accent" />
                   </div>
                   <span className="text-micro uppercase tracking-widest text-muted-foreground">
-                    Cash Flow
+                    Fluxo de Caixa
                   </span>
                 </div>
                 
                 <h3 className="text-h2 mb-3">
-                  Visualize your money in motion
+                  Visualize seu dinheiro em movimento
                 </h3>
                 <p className="text-muted-foreground mb-8">
-                  Real-time charts that breathe with your finances. See patterns, 
-                  predict trends, and make informed decisions.
+                  Gráficos em tempo real que respiram com suas finanças. Veja padrões, 
+                  preveja tendências e tome decisões informadas.
                 </p>
                 
                 {/* Chart Animation */}
@@ -68,19 +68,19 @@ export const BentoGrid = () => {
                   <Sparkles className="w-5 h-5 text-success" />
                 </div>
                 <span className="text-micro uppercase tracking-widest text-muted-foreground">
-                  Smart AI
+                  IA Inteligente
                 </span>
               </div>
               
-              <h3 className="text-h3 mb-2">Auto-categorization</h3>
+              <h3 className="text-h3 mb-2">Categorização automática</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                AI learns your spending patterns and categorizes automatically.
+                A IA aprende seus padrões de gastos e categoriza automaticamente.
               </p>
               
               <div className="space-y-2">
-                <TransactionRow icon="🍕" name="Pizza Hut" category="Food" />
-                <TransactionRow icon="🚗" name="Uber" category="Transport" />
-                <TransactionRow icon="🎬" name="Netflix" category="Entertainment" />
+                <TransactionRow icon="🍕" name="Pizza Hut" category="Alimentação" />
+                <TransactionRow icon="🚗" name="Uber" category="Transporte" />
+                <TransactionRow icon="🎬" name="Netflix" category="Entretenimento" />
               </div>
             </BentoCard>
           </div>
@@ -93,13 +93,13 @@ export const BentoGrid = () => {
                   <Calendar className="w-5 h-5 text-accent" />
                 </div>
                 <span className="text-micro uppercase tracking-widest text-muted-foreground">
-                  Recurring
+                  Recorrentes
                 </span>
               </div>
               
-              <h3 className="text-h3 mb-2">Predict your bills</h3>
+              <h3 className="text-h3 mb-2">Preveja suas contas</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Never be surprised by a recurring payment again.
+                Nunca mais seja surpreendido por um pagamento recorrente.
               </p>
               
               <CalendarMockup />
@@ -112,18 +112,18 @@ export const BentoGrid = () => {
               <div className="flex flex-col lg:flex-row lg:items-center gap-6">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="p-2 rounded-xl bg-purple-soft">
+                    <div className="p-2 rounded-xl bg-green-soft">
                       <CreditCard className="w-5 h-5 text-accent" />
                     </div>
                     <span className="text-micro uppercase tracking-widest text-muted-foreground">
-                      Cards
+                      Cartões
                     </span>
                   </div>
                   
-                  <h3 className="text-h3 mb-2">Manage all your cards</h3>
+                  <h3 className="text-h3 mb-2">Gerencie todos os seus cartões</h3>
                   <p className="text-sm text-muted-foreground">
-                    Track limits, closing dates, and find the best day to buy. 
-                    Freeze cards instantly when needed.
+                    Acompanhe limites, datas de fechamento e encontre o melhor dia para comprar. 
+                    Bloqueie cartões instantaneamente quando precisar.
                   </p>
                 </div>
                 
@@ -142,18 +142,18 @@ export const BentoGrid = () => {
                   <Target className="w-5 h-5 text-success" />
                 </div>
                 <span className="text-micro uppercase tracking-widest text-muted-foreground">
-                  Goals
+                  Metas
                 </span>
               </div>
               
-              <h3 className="text-h3 mb-2">Save with purpose</h3>
+              <h3 className="text-h3 mb-2">Economize com propósito</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Set goals and watch your progress grow.
+                Defina metas e acompanhe seu progresso crescer.
               </p>
               
               <div className="space-y-3">
-                <GoalProgress label="Emergency Fund" progress={72} />
-                <GoalProgress label="Vacation" progress={45} />
+                <GoalProgress label="Reserva de Emergência" progress={72} />
+                <GoalProgress label="Férias" progress={45} />
               </div>
             </BentoCard>
           </div>
@@ -209,8 +209,8 @@ const AnimatedChart = () => (
     <svg className="w-full h-3/4" viewBox="0 0 400 150" preserveAspectRatio="none">
       <defs>
         <linearGradient id="bentoChartGradient" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="hsl(262 72% 62%)" stopOpacity="0.4" />
-          <stop offset="100%" stopColor="hsl(262 72% 62%)" stopOpacity="0" />
+          <stop offset="0%" stopColor="hsl(160 84% 39%)" stopOpacity="0.4" />
+          <stop offset="100%" stopColor="hsl(160 84% 39%)" stopOpacity="0" />
         </linearGradient>
       </defs>
       <path
@@ -220,21 +220,21 @@ const AnimatedChart = () => (
       />
       <path
         d="M0 120 Q40 100 80 110 T160 80 T240 90 T320 60 T400 70"
-        stroke="hsl(262 72% 62%)"
+        stroke="hsl(160 84% 39%)"
         strokeWidth="3"
         fill="none"
         strokeLinecap="round"
       />
       {/* Data points */}
-      <circle cx="80" cy="110" r="4" fill="hsl(262 72% 62%)" />
-      <circle cx="160" cy="80" r="4" fill="hsl(262 72% 62%)" />
-      <circle cx="240" cy="90" r="4" fill="hsl(262 72% 62%)" />
-      <circle cx="320" cy="60" r="4" fill="hsl(262 72% 62%)" />
+      <circle cx="80" cy="110" r="4" fill="hsl(160 84% 39%)" />
+      <circle cx="160" cy="80" r="4" fill="hsl(160 84% 39%)" />
+      <circle cx="240" cy="90" r="4" fill="hsl(160 84% 39%)" />
+      <circle cx="320" cy="60" r="4" fill="hsl(160 84% 39%)" />
     </svg>
     
     {/* Floating tooltip */}
     <div className="absolute top-8 right-12 bg-foreground text-primary-foreground text-xs px-3 py-1.5 rounded-lg shadow-lg">
-      R$ 4,250
+      R$ 4.250
       <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-foreground rotate-45" />
     </div>
   </div>
@@ -263,7 +263,7 @@ const CalendarMockup = () => (
 );
 
 const CreditCardMockup = () => (
-  <div className="relative w-56 h-36 rounded-xl bg-card-gradient p-5 text-primary-foreground transform transition-transform duration-500 hover:rotate-3 shadow-purple-glow">
+  <div className="relative w-56 h-36 rounded-xl bg-card-gradient p-5 text-primary-foreground transform transition-transform duration-500 hover:rotate-3 shadow-green-glow">
     <div className="flex justify-between items-start mb-8">
       <div className="w-10 h-7 bg-gradient-to-br from-yellow-300 to-yellow-500 rounded-md" />
       <span className="text-xs opacity-80">tMoney</span>
@@ -271,8 +271,8 @@ const CreditCardMockup = () => (
     <div className="text-sm tracking-widest mb-2 opacity-90">•••• •••• •••• 4829</div>
     <div className="flex justify-between items-end">
       <div>
-        <span className="text-[10px] uppercase opacity-60 block">Limit Available</span>
-        <span className="text-sm font-medium">R$ 8,500</span>
+        <span className="text-[10px] uppercase opacity-60 block">Limite Disponível</span>
+        <span className="text-sm font-medium">R$ 8.500</span>
       </div>
       <div className="flex items-center gap-1">
         <div className="w-6 h-6 rounded-full bg-destructive/80" />

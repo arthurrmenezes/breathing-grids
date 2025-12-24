@@ -1,27 +1,28 @@
 import { Github, Twitter, Linkedin, Instagram } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const footerLinks = {
   product: [
-    { label: 'Features', href: '#features' },
-    { label: 'Pricing', href: '#pricing' },
-    { label: 'Security', href: '#security' },
+    { label: 'Funcionalidades', href: '#features' },
+    { label: 'Preços', href: '#pricing' },
+    { label: 'Segurança', href: '#security' },
     { label: 'Roadmap', href: '#roadmap' },
   ],
   company: [
-    { label: 'About', href: '#about' },
+    { label: 'Sobre', href: '#about' },
     { label: 'Blog', href: '#blog' },
-    { label: 'Careers', href: '#careers' },
-    { label: 'Press', href: '#press' },
+    { label: 'Carreiras', href: '#careers' },
+    { label: 'Imprensa', href: '#press' },
   ],
   resources: [
-    { label: 'Help Center', href: '#help' },
-    { label: 'API Docs', href: '#api' },
-    { label: 'Community', href: '#community' },
+    { label: 'Central de Ajuda', href: '#help' },
+    { label: 'Documentação API', href: '#api' },
+    { label: 'Comunidade', href: '#community' },
     { label: 'Status', href: '#status' },
   ],
   legal: [
-    { label: 'Privacy', href: '#privacy' },
-    { label: 'Terms', href: '#terms' },
+    { label: 'Privacidade', href: '#privacy' },
+    { label: 'Termos', href: '#terms' },
     { label: 'Cookies', href: '#cookies' },
   ],
 };
@@ -40,15 +41,15 @@ export const Footer = () => {
         <div className="grid grid-cols-2 md:grid-cols-6 gap-8 lg:gap-12">
           {/* Logo & Description */}
           <div className="col-span-2">
-            <a href="/" className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                <span className="text-primary-foreground font-semibold text-sm">t</span>
+            <Link to="/" className="flex items-center gap-2 mb-4">
+              <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center">
+                <span className="text-accent-foreground font-semibold text-sm">t</span>
               </div>
               <span className="font-semibold text-lg tracking-tight">tMoney</span>
-            </a>
+            </Link>
             <p className="text-sm text-muted-foreground mb-6 max-w-xs">
-              Financial clarity for everyone. Take control of your money with 
-              intelligent tools designed for the modern age.
+              Clareza financeira para todos. Tome controle do seu dinheiro com 
+              ferramentas inteligentes projetadas para a era moderna.
             </p>
             <div className="flex items-center gap-3">
               {socialLinks.map((social) => (
@@ -66,7 +67,7 @@ export const Footer = () => {
 
           {/* Product */}
           <div>
-            <h4 className="text-sm font-medium mb-4">Product</h4>
+            <h4 className="text-sm font-medium mb-4">Produto</h4>
             <ul className="space-y-3">
               {footerLinks.product.map((link) => (
                 <li key={link.label}>
@@ -83,7 +84,7 @@ export const Footer = () => {
 
           {/* Company */}
           <div>
-            <h4 className="text-sm font-medium mb-4">Company</h4>
+            <h4 className="text-sm font-medium mb-4">Empresa</h4>
             <ul className="space-y-3">
               {footerLinks.company.map((link) => (
                 <li key={link.label}>
@@ -100,7 +101,7 @@ export const Footer = () => {
 
           {/* Resources */}
           <div>
-            <h4 className="text-sm font-medium mb-4">Resources</h4>
+            <h4 className="text-sm font-medium mb-4">Recursos</h4>
             <ul className="space-y-3">
               {footerLinks.resources.map((link) => (
                 <li key={link.label}>
@@ -136,10 +137,10 @@ export const Footer = () => {
         {/* Bottom Bar */}
         <div className="mt-16 pt-8 border-t border-border flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">
-            © 2025 tMoney. All rights reserved.
+            © 2025 tMoney. Todos os direitos reservados.
           </p>
           <p className="text-sm text-muted-foreground">
-            Made with focus in São Paulo 🇧🇷
+            Feito com foco em São Paulo 🇧🇷
           </p>
         </div>
       </div>

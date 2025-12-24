@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Menu, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const navLinks = [
-  { label: 'Features', href: '#features' },
-  { label: 'Methodology', href: '#methodology' },
-  { label: 'Pricing', href: '#pricing' },
-  { label: 'Resources', href: '#resources' },
+  { label: 'Funcionalidades', href: '#features' },
+  { label: 'Como Funciona', href: '#methodology' },
+  { label: 'Preços', href: '#pricing' },
+  { label: 'Recursos', href: '#resources' },
 ];
 
 export const Navbar = () => {
@@ -32,12 +33,12 @@ export const Navbar = () => {
       <div className="container mx-auto px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 lg:h-20">
           {/* Logo */}
-          <a href="/" className="flex items-center gap-2 group">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center transition-transform duration-500 group-hover:rotate-180">
-              <span className="text-primary-foreground font-semibold text-sm">t</span>
+          <Link to="/" className="flex items-center gap-2 group">
+            <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center transition-transform duration-500 group-hover:rotate-180">
+              <span className="text-accent-foreground font-semibold text-sm">t</span>
             </div>
             <span className="font-semibold text-lg tracking-tight">tMoney</span>
-          </a>
+          </Link>
 
           {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center gap-1">
@@ -54,15 +55,17 @@ export const Navbar = () => {
 
           {/* Desktop CTA */}
           <div className="hidden lg:flex items-center gap-4">
-            <a
-              href="#login"
+            <Link
+              to="/login"
               className="text-sm font-medium text-foreground hover:text-accent transition-colors"
             >
-              Log in
-            </a>
-            <Button variant="default" size="default">
-              Start for free
-            </Button>
+              Entrar
+            </Link>
+            <Link to="/cadastro">
+              <Button variant="default" size="default">
+                Começar grátis
+              </Button>
+            </Link>
           </div>
 
           {/* Mobile Menu Button */}
@@ -89,15 +92,17 @@ export const Navbar = () => {
                 </a>
               ))}
               <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-border">
-                <a
-                  href="#login"
+                <Link
+                  to="/login"
                   className="px-4 py-3 text-sm font-medium text-foreground"
                 >
-                  Log in
-                </a>
-                <Button variant="default" className="mx-4">
-                  Start for free
-                </Button>
+                  Entrar
+                </Link>
+                <Link to="/cadastro" className="mx-4">
+                  <Button variant="default" className="w-full">
+                    Começar grátis
+                  </Button>
+                </Link>
               </div>
             </div>
           </div>
