@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export const Hero = () => {
   const [email, setEmail] = useState('');
@@ -20,11 +21,11 @@ export const Hero = () => {
         <div className="max-w-4xl mx-auto text-center">
           {/* Badge */}
           <div 
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-soft text-accent text-sm font-medium mb-8 animate-fade-up"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-soft text-accent text-sm font-medium mb-8 animate-fade-up"
             style={{ animationDelay: '0ms' }}
           >
             <span className="w-2 h-2 rounded-full bg-accent animate-pulse-soft" />
-            Now in public beta
+            Agora em beta público
           </div>
 
           {/* Main Headline */}
@@ -32,9 +33,9 @@ export const Hero = () => {
             className="text-display text-foreground mb-6 animate-fade-up"
             style={{ animationDelay: '100ms' }}
           >
-            Financial clarity,{' '}
+            Clareza financeira,{' '}
             <span className="relative">
-              finally
+              finalmente
               <svg
                 className="absolute -bottom-2 left-0 w-full"
                 viewBox="0 0 200 12"
@@ -43,7 +44,7 @@ export const Hero = () => {
               >
                 <path
                   d="M2 10C50 4 150 4 198 10"
-                  stroke="hsl(262 72% 62%)"
+                  stroke="hsl(160 84% 39%)"
                   strokeWidth="3"
                   strokeLinecap="round"
                   className="animate-draw-line"
@@ -59,8 +60,8 @@ export const Hero = () => {
             className="text-body-lg text-muted-foreground max-w-2xl mx-auto mb-12 animate-fade-up"
             style={{ animationDelay: '200ms' }}
           >
-            The personal finance platform that bridges the gap between daily cash flow 
-            and long-term wealth. No spreadsheets, just control.
+            A plataforma de finanças pessoais que conecta seu fluxo de caixa diário 
+            com sua riqueza de longo prazo. Sem planilhas, apenas controle.
           </p>
 
           {/* Email Input + CTA */}
@@ -71,18 +72,20 @@ export const Hero = () => {
             <div className="relative w-full sm:w-auto sm:flex-1">
               <input
                 type="email"
-                placeholder="Enter your email"
+                placeholder="Digite seu email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full h-14 pl-5 pr-36 rounded-full border border-border bg-surface text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all"
               />
-              <Button 
-                variant="hero" 
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 h-11 px-6"
-              >
-                Get Started
-                <ArrowRight className="w-4 h-4" />
-              </Button>
+              <Link to="/cadastro">
+                <Button 
+                  variant="hero" 
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 h-11 px-6"
+                >
+                  Começar
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              </Link>
             </div>
           </div>
 
@@ -106,7 +109,7 @@ export const Hero = () => {
                   </div>
                   <div className="flex-1 flex justify-center">
                     <div className="px-4 py-1 rounded-full bg-secondary text-xs text-muted-foreground">
-                      app.tmoney.co
+                      app.tmoney.com.br
                     </div>
                   </div>
                 </div>
@@ -117,30 +120,30 @@ export const Hero = () => {
                     {/* Summary Cards Row */}
                     <div className="col-span-12 grid grid-cols-3 gap-4">
                       <SummaryCard 
-                        label="Total Balance" 
-                        value="R$ 47,892.54" 
-                        trend="+12.5%"
+                        label="Saldo Total" 
+                        value="R$ 47.892,54" 
+                        trend="+12,5%"
                         positive 
                       />
                       <SummaryCard 
-                        label="Monthly Inflow" 
-                        value="R$ 8,450.00" 
-                        trend="+3.2%"
+                        label="Entrada Mensal" 
+                        value="R$ 8.450,00" 
+                        trend="+3,2%"
                         positive 
                       />
                       <SummaryCard 
-                        label="Free to Spend" 
-                        value="R$ 2,341.20" 
-                        trend="-8.1%"
+                        label="Livre para Gastar" 
+                        value="R$ 2.341,20" 
+                        trend="-8,1%"
                       />
                     </div>
                     
                     {/* Chart Area */}
                     <div className="col-span-12 lg:col-span-8 bg-secondary/30 rounded-xl p-4 h-48">
                       <div className="flex items-center justify-between mb-4">
-                        <span className="text-sm font-medium">Cash Flow</span>
+                        <span className="text-sm font-medium">Fluxo de Caixa</span>
                         <div className="flex gap-2">
-                          <span className="text-xs px-2 py-1 rounded-full bg-secondary">6 months</span>
+                          <span className="text-xs px-2 py-1 rounded-full bg-secondary">6 meses</span>
                         </div>
                       </div>
                       <ChartMockup />
@@ -149,13 +152,13 @@ export const Hero = () => {
                     {/* Quick Actions */}
                     <div className="col-span-12 lg:col-span-4 space-y-3">
                       <div className="bg-accent text-accent-foreground rounded-xl p-4 text-center">
-                        <span className="text-sm font-medium">+ Add Transaction</span>
+                        <span className="text-sm font-medium">+ Adicionar Transação</span>
                       </div>
                       <div className="bg-secondary/50 rounded-xl p-4">
-                        <span className="text-xs text-muted-foreground uppercase tracking-wider">Upcoming</span>
+                        <span className="text-xs text-muted-foreground uppercase tracking-wider">Próximos</span>
                         <div className="mt-2 space-y-2">
-                          <UpcomingItem name="Netflix" date="Tomorrow" amount="R$ 55.90" />
-                          <UpcomingItem name="Spotify" date="Dec 28" amount="R$ 21.90" />
+                          <UpcomingItem name="Netflix" date="Amanhã" amount="R$ 55,90" />
+                          <UpcomingItem name="Spotify" date="28 Dez" amount="R$ 21,90" />
                         </div>
                       </div>
                     </div>
@@ -194,8 +197,8 @@ const ChartMockup = () => (
   <svg className="w-full h-24" viewBox="0 0 400 100" fill="none">
     <defs>
       <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stopColor="hsl(262 72% 62%)" stopOpacity="0.3" />
-        <stop offset="100%" stopColor="hsl(262 72% 62%)" stopOpacity="0" />
+        <stop offset="0%" stopColor="hsl(160 84% 39%)" stopOpacity="0.3" />
+        <stop offset="100%" stopColor="hsl(160 84% 39%)" stopOpacity="0" />
       </linearGradient>
     </defs>
     <path
@@ -204,7 +207,7 @@ const ChartMockup = () => (
     />
     <path
       d="M0 80 Q50 70 100 60 T200 40 T300 50 T400 30"
-      stroke="hsl(262 72% 62%)"
+      stroke="hsl(160 84% 39%)"
       strokeWidth="2"
       fill="none"
       strokeLinecap="round"

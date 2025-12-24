@@ -1,38 +1,38 @@
 const testimonials = [
   {
-    quote: "tMoney finally gave me the clarity I needed. I went from constantly stressing about money to actually enjoying managing my finances.",
+    quote: "O tMoney finalmente me deu a clareza que eu precisava. Saí de estressar constantemente com dinheiro para realmente gostar de gerenciar minhas finanças.",
     author: "Marina Silva",
-    role: "Product Designer",
+    role: "Designer de Produto",
     avatar: "MS",
   },
   {
-    quote: "The recurring payment detection is a game-changer. I discovered R$400 in subscriptions I'd forgotten about.",
+    quote: "A detecção de pagamentos recorrentes é revolucionária. Descobri R$ 400 em assinaturas que tinha esquecido.",
     author: "Ricardo Oliveira",
-    role: "Software Engineer",
+    role: "Engenheiro de Software",
     avatar: "RO",
   },
   {
-    quote: "As a freelancer with variable income, tMoney helps me plan ahead and always know where I stand financially.",
+    quote: "Como freelancer com renda variável, o tMoney me ajuda a planejar com antecedência e sempre saber onde estou financeiramente.",
     author: "Juliana Costa",
-    role: "Freelance Writer",
+    role: "Redatora Freelancer",
     avatar: "JC",
   },
   {
-    quote: "The family plan transformed how we handle household finances. Everyone's on the same page now.",
+    quote: "O plano família transformou como lidamos com as finanças do lar. Agora todos estão na mesma página.",
     author: "Carlos & Ana Santos",
-    role: "Parents of 2",
+    role: "Pais de 2 filhos",
     avatar: "CS",
   },
   {
-    quote: "Beautiful interface, powerful features. It's rare to find both in a financial app.",
+    quote: "Interface linda, funcionalidades poderosas. É raro encontrar ambos em um app de finanças.",
     author: "Pedro Almeida",
-    role: "Startup Founder",
+    role: "Fundador de Startup",
     avatar: "PA",
   },
   {
-    quote: "I've tried dozens of finance apps. tMoney is the first one that actually stuck.",
+    quote: "Já tentei dezenas de apps de finanças. O tMoney é o primeiro que realmente usei de verdade.",
     author: "Fernanda Lima",
-    role: "Teacher",
+    role: "Professora",
     avatar: "FL",
   },
 ];
@@ -43,13 +43,13 @@ export const Testimonials = () => {
       <div className="container mx-auto px-6 lg:px-8 mb-12">
         <div className="text-center max-w-2xl mx-auto">
           <span className="text-micro uppercase tracking-widest text-accent mb-4 block">
-            Testimonials
+            Depoimentos
           </span>
           <h2 className="text-h1 mb-4">
-            Loved by thousands
+            Amado por milhares
           </h2>
           <p className="text-body-lg text-muted-foreground">
-            Join the community of people who've taken control of their finances.
+            Junte-se à comunidade de pessoas que tomaram controle de suas finanças.
           </p>
         </div>
       </div>

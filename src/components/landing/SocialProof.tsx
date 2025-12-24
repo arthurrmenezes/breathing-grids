@@ -1,10 +1,10 @@
 import { Shield, Lock, Award, CheckCircle2 } from 'lucide-react';
 
 const badges = [
-  { icon: Shield, label: 'Bank-level Security' },
-  { icon: Lock, label: 'AES-256 Encryption' },
-  { icon: Award, label: 'ISO 27001 Certified' },
-  { icon: CheckCircle2, label: 'GDPR Compliant' },
+  { icon: Shield, label: 'Segurança Bancária' },
+  { icon: Lock, label: 'Criptografia AES-256' },
+  { icon: Award, label: 'Certificado ISO 27001' },
+  { icon: CheckCircle2, label: 'Compatível com LGPD' },
 ];
 
 export const SocialProof = () => {
@@ -12,7 +12,7 @@ export const SocialProof = () => {
     <section className="py-16 border-y border-border bg-secondary/30">
       <div className="container mx-auto px-6 lg:px-8">
         <p className="text-center text-sm text-muted-foreground uppercase tracking-widest mb-8">
-          Enterprise-grade security you can trust
+          Segurança de nível empresarial em que você pode confiar
         </p>
         <div className="flex flex-wrap items-center justify-center gap-8 lg:gap-16">
           {badges.map((badge) => (
