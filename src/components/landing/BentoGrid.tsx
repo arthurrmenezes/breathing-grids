@@ -1,29 +1,20 @@
-import { 
-  TrendingUp, 
-  Layers, 
-  Calendar, 
-  CreditCard,
-  Bell
-} from 'lucide-react';
+import { TrendingUp, Layers, Calendar, CreditCard, Bell } from "lucide-react";
 
 export const BentoGrid = () => {
   return (
     <section id="features" className="py-24 lg:py-32 relative bg-background">
       {/* Subtle grid background */}
       <div className="absolute inset-0 grid-pattern opacity-20 dark:opacity-10" />
-      
+
       <div className="container relative mx-auto px-6 lg:px-8">
         {/* Section Header */}
         <div className="text-center max-w-2xl mx-auto mb-16">
-          <span className="text-micro uppercase tracking-widest text-accent mb-4 block">
-            Funcionalidades
-          </span>
+          <span className="text-micro uppercase tracking-widest text-accent mb-4 block">Funcionalidades</span>
           <h2 className="text-h1 mb-4">
             Tudo o que você <span className="text-gradient">precisa</span>
           </h2>
           <p className="text-body-lg text-muted-foreground">
-            Ferramentas poderosas projetadas para dar visibilidade e controle total 
-            sobre sua vida financeira.
+            Ferramentas poderosas projetadas para dar visibilidade e controle total sobre sua vida financeira.
           </p>
         </div>
 
@@ -36,19 +27,15 @@ export const BentoGrid = () => {
                 <div className="p-2 rounded-xl bg-accent/10">
                   <TrendingUp className="w-5 h-5 text-accent" />
                 </div>
-                <span className="text-micro uppercase tracking-widest text-muted-foreground">
-                  Fluxo de Caixa
-                </span>
+                <span className="text-micro uppercase tracking-widest text-muted-foreground">Fluxo de Caixa</span>
               </div>
-              
-              <h3 className="text-h2 mb-3">
-                Visualize seu dinheiro em movimento
-              </h3>
+
+              <h3 className="text-h2 mb-3">Visualize seu dinheiro em movimento</h3>
               <p className="text-muted-foreground mb-6">
-                Gráficos em tempo real que respiram com suas finanças. Veja padrões, 
-                preveja tendências e tome decisões informadas.
+                Gráficos em tempo real que respiram com suas finanças. Veja padrões, preveja tendências e tome decisões
+                informadas.
               </p>
-              
+
               {/* Chart Animation */}
               <div className="flex-1 relative rounded-xl bg-secondary/50 overflow-hidden min-h-[180px]">
                 <AnimatedChart />
@@ -63,16 +50,14 @@ export const BentoGrid = () => {
                 <div className="p-2 rounded-xl bg-success/10">
                   <Layers className="w-5 h-5 text-success" />
                 </div>
-                <span className="text-micro uppercase tracking-widest text-muted-foreground">
-                  Organização
-                </span>
+                <span className="text-micro uppercase tracking-widest text-muted-foreground">Organização</span>
               </div>
-              
+
               <h3 className="text-h3 mb-2">Categorias Personalizadas</h3>
               <p className="text-sm text-muted-foreground mb-4">
                 Organize seus gastos por categorias que fazem sentido para você.
               </p>
-              
+
               <div className="space-y-2">
                 <TransactionRow icon="🍕" name="Pizza Hut" category="Alimentação" />
                 <TransactionRow icon="🚗" name="Uber" category="Transporte" />
@@ -88,16 +73,14 @@ export const BentoGrid = () => {
                 <div className="p-2 rounded-xl bg-accent/10">
                   <Calendar className="w-5 h-5 text-accent" />
                 </div>
-                <span className="text-micro uppercase tracking-widest text-muted-foreground">
-                  Recorrentes
-                </span>
+                <span className="text-micro uppercase tracking-widest text-muted-foreground">Recorrentes</span>
               </div>
-              
+
               <h3 className="text-h3 mb-2">Preveja suas contas</h3>
               <p className="text-sm text-muted-foreground mb-4">
                 Nunca mais seja surpreendido por um pagamento recorrente.
               </p>
-              
+
               <CalendarMockup />
             </BentoCard>
           </div>
@@ -111,18 +94,16 @@ export const BentoGrid = () => {
                     <div className="p-2 rounded-xl bg-accent/10 dark:bg-accent/20">
                       <CreditCard className="w-5 h-5 text-accent" />
                     </div>
-                    <span className="text-micro uppercase tracking-widest text-muted-foreground">
-                      Cartões
-                    </span>
+                    <span className="text-micro uppercase tracking-widest text-muted-foreground">Cartões</span>
                   </div>
-                  
+
                   <h3 className="text-h3 mb-2">Gerencie os seus cartões</h3>
                   <p className="text-sm text-muted-foreground">
-                    Acompanhe limites, datas de fechamento e encontre o melhor dia para comprar. 
-                    Pare de perder o prazo do pagamento da fatura.
+                    Acompanhe limites, datas de fechamento e encontre o melhor dia para comprar. Pare de perder o prazo
+                    do pagamento da fatura.
                   </p>
                 </div>
-                
+
                 <div className="flex-shrink-0">
                   <CreditCardMockup />
                 </div>
@@ -137,20 +118,18 @@ export const BentoGrid = () => {
                 <div className="p-2 rounded-xl bg-success/10">
                   <Bell className="w-5 h-5 text-success" />
                 </div>
-                <span className="text-micro uppercase tracking-widest text-muted-foreground">
-                  Lembretes de Contas
-                </span>
+                <span className="text-micro uppercase tracking-widest text-muted-foreground">Lembretes de Contas</span>
               </div>
-              
+
               <h3 className="text-h3 mb-2">Nunca mais esqueça</h3>
               <p className="text-sm text-muted-foreground mb-4">
                 Nunca mais pague juros por esquecer a data de vencimento.
               </p>
-              
+
               <div className="space-y-2">
-                <ReminderItem name="Aluguel" dueDate="05/01" status="upcoming" />
+                <ReminderItem name="Aluguel" dueDate="15/01" status="upcoming" />
                 <ReminderItem name="Internet" dueDate="10/01" status="soon" />
-                <ReminderItem name="Luz" dueDate="15/01" status="paid" />
+                <ReminderItem name="Luz" dueDate="05/01" status="paid" />
               </div>
             </BentoCard>
           </div>
@@ -160,14 +139,8 @@ export const BentoGrid = () => {
   );
 };
 
-const BentoCard = ({ 
-  children, 
-  className = '' 
-}: { 
-  children: React.ReactNode; 
-  className?: string;
-}) => (
-  <div 
+const BentoCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+  <div
     className={`
       relative bg-card rounded-2xl border border-border 
       shadow-card hover:shadow-card-hover 
@@ -183,21 +156,11 @@ const BentoCard = ({
   </div>
 );
 
-const TransactionRow = ({ 
-  icon, 
-  name, 
-  category 
-}: { 
-  icon: string; 
-  name: string; 
-  category: string;
-}) => (
+const TransactionRow = ({ icon, name, category }: { icon: string; name: string; category: string }) => (
   <div className="flex items-center gap-3 p-2 rounded-lg bg-secondary/50">
     <span className="text-lg">{icon}</span>
     <span className="text-sm font-medium flex-1">{name}</span>
-    <span className="text-xs px-2 py-1 rounded-full bg-accent/10 text-accent">
-      {category}
-    </span>
+    <span className="text-xs px-2 py-1 rounded-full bg-accent/10 text-accent">{category}</span>
   </div>
 );
 
@@ -228,7 +191,7 @@ const AnimatedChart = () => (
       <circle cx="240" cy="90" r="4" fill="hsl(160 84% 39%)" />
       <circle cx="320" cy="60" r="4" fill="hsl(160 84% 39%)" />
     </svg>
-    
+
     {/* Floating tooltip */}
     <div className="absolute top-8 right-12 bg-foreground text-background text-xs px-3 py-1.5 rounded-lg shadow-lg">
       R$ 4.250
@@ -246,10 +209,7 @@ const CalendarMockup = () => (
           key={i}
           className={`
             aspect-square rounded-md flex items-center justify-center text-xs
-            ${isHighlighted 
-              ? 'bg-accent text-accent-foreground font-medium' 
-              : 'bg-secondary/50 text-muted-foreground'
-            }
+            ${isHighlighted ? "bg-accent text-accent-foreground font-medium" : "bg-secondary/50 text-muted-foreground"}
           `}
         >
           {i + 1}
@@ -279,25 +239,25 @@ const CreditCardMockup = () => (
   </div>
 );
 
-const ReminderItem = ({ 
-  name, 
-  dueDate, 
-  status 
-}: { 
-  name: string; 
-  dueDate: string; 
-  status: 'upcoming' | 'soon' | 'paid';
+const ReminderItem = ({
+  name,
+  dueDate,
+  status,
+}: {
+  name: string;
+  dueDate: string;
+  status: "upcoming" | "soon" | "paid";
 }) => {
   const statusStyles = {
-    upcoming: 'bg-accent/10 text-accent',
-    soon: 'bg-yellow-500/10 text-yellow-600',
-    paid: 'bg-success/10 text-success',
+    upcoming: "bg-accent/10 text-accent",
+    soon: "bg-yellow-500/10 text-yellow-600",
+    paid: "bg-success/10 text-success",
   };
-  
+
   const statusLabels = {
-    upcoming: 'Em breve',
-    soon: 'Próximo',
-    paid: 'Pago',
+    upcoming: "Em breve",
+    soon: "Próximo",
+    paid: "Pago",
   };
 
   return (
@@ -308,9 +268,7 @@ const ReminderItem = ({
       </div>
       <div className="flex items-center gap-2">
         <span className="text-xs text-muted-foreground">{dueDate}</span>
-        <span className={`text-xs px-2 py-0.5 rounded-full ${statusStyles[status]}`}>
-          {statusLabels[status]}
-        </span>
+        <span className={`text-xs px-2 py-0.5 rounded-full ${statusStyles[status]}`}>{statusLabels[status]}</span>
       </div>
     </div>
   );

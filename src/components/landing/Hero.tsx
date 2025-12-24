@@ -1,36 +1,33 @@
-import { Button } from '@/components/ui/button';
-import { ArrowRight } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Button } from "@/components/ui/button";
+import { ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export const Hero = () => {
   return (
     <section className="relative min-h-screen pt-32 pb-20 overflow-hidden">
       {/* Background Gradient */}
       <div className="absolute inset-0 bg-[var(--gradient-hero)]" />
-      
+
       {/* Dotted Grid Pattern */}
       <div className="absolute inset-0 grid-pattern opacity-40 dark:opacity-20" />
-      
+
       {/* Noise Texture */}
       <div className="absolute inset-0 noise-texture" />
 
       <div className="container relative mx-auto px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center">
           {/* Badge */}
-          <div 
+          <div
             className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-soft dark:bg-accent/20 text-accent text-sm font-medium mb-8 animate-fade-up"
-            style={{ animationDelay: '0ms' }}
+            style={{ animationDelay: "0ms" }}
           >
             <span className="w-2 h-2 rounded-full bg-accent animate-pulse-soft" />
-            Agora em beta público
+            Em beta público
           </div>
 
           {/* Main Headline */}
-          <h1 
-            className="text-display text-foreground mb-6 animate-fade-up"
-            style={{ animationDelay: '100ms' }}
-          >
-            Controle suas finanças{' '}
+          <h1 className="text-display text-foreground mb-6 animate-fade-up" style={{ animationDelay: "100ms" }}>
+            Controle suas finanças{" "}
             <span className="relative">
               em um único lugar
               <svg
@@ -53,18 +50,15 @@ export const Hero = () => {
           </h1>
 
           {/* Sub-headline */}
-          <p 
+          <p
             className="text-body-lg text-muted-foreground max-w-2xl mx-auto mb-12 animate-fade-up"
-            style={{ animationDelay: '200ms' }}
+            style={{ animationDelay: "200ms" }}
           >
             O tMoney ajuda você a entender para onde vai o seu dinheiro.
           </p>
 
           {/* CTA Button */}
-          <div 
-            className="flex justify-center mb-16 animate-fade-up"
-            style={{ animationDelay: '300ms' }}
-          >
+          <div className="flex justify-center mb-16 animate-fade-up" style={{ animationDelay: "300ms" }}>
             <Link to="/cadastro">
               <Button variant="hero" size="lg" className="h-14 px-8 text-base">
                 Começar agora
@@ -74,14 +68,11 @@ export const Hero = () => {
           </div>
 
           {/* Dashboard Preview */}
-          <div 
-            className="relative max-w-5xl mx-auto animate-fade-up"
-            style={{ animationDelay: '400ms' }}
-          >
+          <div className="relative max-w-5xl mx-auto animate-fade-up" style={{ animationDelay: "400ms" }}>
             <div className="relative animate-float">
               {/* Glow Effect */}
               <div className="absolute -inset-4 bg-accent/20 rounded-3xl blur-3xl opacity-50" />
-              
+
               {/* Dashboard Card */}
               <div className="relative bg-card rounded-2xl lg:rounded-3xl border border-border shadow-card-hover overflow-hidden">
                 {/* Mock Header Bar */}
@@ -97,31 +88,17 @@ export const Hero = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 {/* Dashboard Content */}
                 <div className="p-6 lg:p-8">
                   <div className="grid grid-cols-12 gap-4 lg:gap-6">
                     {/* Summary Cards Row */}
                     <div className="col-span-12 grid grid-cols-3 gap-4">
-                      <SummaryCard 
-                        label="Saldo Total" 
-                        value="R$ 47.892,54" 
-                        trend="+12,5%"
-                        positive 
-                      />
-                      <SummaryCard 
-                        label="Entrada Mensal" 
-                        value="R$ 8.450,00" 
-                        trend="+3,2%"
-                        positive 
-                      />
-                      <SummaryCard 
-                        label="Livre para Gastar" 
-                        value="R$ 2.341,20" 
-                        trend="-8,1%"
-                      />
+                      <SummaryCard label="Saldo Total" value="R$ 47.892,54" trend="+12,5%" positive />
+                      <SummaryCard label="Entrada Mensal" value="R$ 8.450,00" trend="+3,2%" positive />
+                      <SummaryCard label="Livre para Gastar" value="R$ 2.341,20" trend="-8,1%" />
                     </div>
-                    
+
                     {/* Chart Area */}
                     <div className="col-span-12 lg:col-span-8 bg-secondary/30 rounded-xl p-4 h-48">
                       <div className="flex items-center justify-between mb-4">
@@ -132,7 +109,7 @@ export const Hero = () => {
                       </div>
                       <ChartMockup />
                     </div>
-                    
+
                     {/* Quick Actions */}
                     <div className="col-span-12 lg:col-span-4 space-y-3">
                       <div className="bg-accent text-accent-foreground rounded-xl p-4 text-center">
@@ -157,23 +134,21 @@ export const Hero = () => {
   );
 };
 
-const SummaryCard = ({ 
-  label, 
-  value, 
-  trend, 
-  positive = false 
-}: { 
-  label: string; 
-  value: string; 
+const SummaryCard = ({
+  label,
+  value,
+  trend,
+  positive = false,
+}: {
+  label: string;
+  value: string;
   trend: string;
   positive?: boolean;
 }) => (
   <div className="bg-card rounded-xl p-4 border border-border">
     <span className="text-xs text-muted-foreground uppercase tracking-wider">{label}</span>
     <div className="mt-1 text-xl font-semibold tabular-nums">{value}</div>
-    <span className={`text-xs font-medium ${positive ? 'text-success' : 'text-destructive'}`}>
-      {trend}
-    </span>
+    <span className={`text-xs font-medium ${positive ? "text-success" : "text-destructive"}`}>{trend}</span>
   </div>
 );
 
@@ -185,10 +160,7 @@ const ChartMockup = () => (
         <stop offset="100%" stopColor="hsl(160 84% 39%)" stopOpacity="0" />
       </linearGradient>
     </defs>
-    <path
-      d="M0 80 Q50 70 100 60 T200 40 T300 50 T400 30 L400 100 L0 100 Z"
-      fill="url(#chartGradient)"
-    />
+    <path d="M0 80 Q50 70 100 60 T200 40 T300 50 T400 30 L400 100 L0 100 Z" fill="url(#chartGradient)" />
     <path
       d="M0 80 Q50 70 100 60 T200 40 T300 50 T400 30"
       stroke="hsl(160 84% 39%)"
@@ -199,15 +171,7 @@ const ChartMockup = () => (
   </svg>
 );
 
-const UpcomingItem = ({ 
-  name, 
-  date, 
-  amount 
-}: { 
-  name: string; 
-  date: string; 
-  amount: string;
-}) => (
+const UpcomingItem = ({ name, date, amount }: { name: string; date: string; amount: string }) => (
   <div className="flex items-center justify-between py-2">
     <div>
       <span className="text-sm font-medium">{name}</span>

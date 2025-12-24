@@ -1,37 +1,30 @@
-import { Github, Twitter, Linkedin, Instagram } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Github, Twitter, Linkedin, Instagram } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const footerLinks = {
   product: [
-    { label: 'Funcionalidades', href: '#features' },
-    { label: 'Preços', href: '#pricing' },
-    { label: 'Segurança', href: '#security' },
-    { label: 'Roadmap', href: '#roadmap' },
+    { label: "Funcionalidades", href: "#features" },
+    { label: "Preços", href: "#pricing" },
+    { label: "Segurança", href: "#security" },
+    { label: "Roadmap", href: "#roadmap" },
   ],
   company: [
-    { label: 'Sobre', href: '#about' },
-    { label: 'Blog', href: '#blog' },
-    { label: 'Carreiras', href: '#careers' },
-    { label: 'Imprensa', href: '#press' },
+    { label: "Sobre", href: "#about" },
+    { label: "Blog", href: "#blog" },
+    { label: "Carreiras", href: "#careers" },
+    { label: "Imprensa", href: "#press" },
   ],
   resources: [
-    { label: 'Central de Ajuda', href: '#help' },
-    { label: 'Documentação API', href: '#api' },
-    { label: 'Comunidade', href: '#community' },
-    { label: 'Status', href: '#status' },
-  ],
-  legal: [
-    { label: 'Privacidade', href: '#privacy' },
-    { label: 'Termos', href: '#terms' },
-    { label: 'Cookies', href: '#cookies' },
+    { label: "Central de Ajuda", href: "#help" },
+    { label: "Comunidade", href: "#community" },
   ],
 };
 
 const socialLinks = [
-  { icon: Twitter, href: '#twitter', label: 'Twitter' },
-  { icon: Github, href: '#github', label: 'GitHub' },
-  { icon: Linkedin, href: '#linkedin', label: 'LinkedIn' },
-  { icon: Instagram, href: '#instagram', label: 'Instagram' },
+  { icon: Twitter, href: "#twitter", label: "Twitter" },
+  { icon: Github, href: "#github", label: "GitHub" },
+  { icon: Linkedin, href: "#linkedin", label: "LinkedIn" },
+  { icon: Instagram, href: "#instagram", label: "Instagram" },
 ];
 
 export const Footer = () => {
@@ -48,8 +41,8 @@ export const Footer = () => {
               <span className="font-semibold text-lg tracking-tight">tMoney</span>
             </Link>
             <p className="text-sm text-muted-foreground mb-6 max-w-xs">
-              Clareza financeira para todos. Tome controle do seu dinheiro com 
-              ferramentas inteligentes projetadas para a era moderna.
+              Clareza financeira para todos. Tome controle do seu dinheiro com ferramentas inteligentes projetadas para
+              a era moderna.
             </p>
             <div className="flex items-center gap-3">
               {socialLinks.map((social) => (
@@ -71,10 +64,7 @@ export const Footer = () => {
             <ul className="space-y-3">
               {footerLinks.product.map((link) => (
                 <li key={link.label}>
-                  <a
-                    href={link.href}
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  >
+                  <a href={link.href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                     {link.label}
                   </a>
                 </li>
@@ -88,10 +78,7 @@ export const Footer = () => {
             <ul className="space-y-3">
               {footerLinks.company.map((link) => (
                 <li key={link.label}>
-                  <a
-                    href={link.href}
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  >
+                  <a href={link.href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                     {link.label}
                   </a>
                 </li>
@@ -105,10 +92,7 @@ export const Footer = () => {
             <ul className="space-y-3">
               {footerLinks.resources.map((link) => (
                 <li key={link.label}>
-                  <a
-                    href={link.href}
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  >
+                  <a href={link.href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                     {link.label}
                   </a>
                 </li>
@@ -122,10 +106,7 @@ export const Footer = () => {
             <ul className="space-y-3">
               {footerLinks.legal.map((link) => (
                 <li key={link.label}>
-                  <a
-                    href={link.href}
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  >
+                  <a href={link.href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                     {link.label}
                   </a>
                 </li>
@@ -136,12 +117,7 @@ export const Footer = () => {
 
         {/* Bottom Bar */}
         <div className="mt-16 pt-8 border-t border-border flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-muted-foreground">
-            © 2025 tMoney. Todos os direitos reservados.
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Feito com foco em São Paulo 🇧🇷
-          </p>
+          <p className="text-sm text-muted-foreground">© 2025 tMoney. Todos os direitos reservados.</p>
         </div>
       </div>
     </footer>
