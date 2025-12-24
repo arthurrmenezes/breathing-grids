@@ -1,11 +1,8 @@
-import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const Hero = () => {
-  const [email, setEmail] = useState('');
-
   return (
     <section className="relative min-h-screen pt-32 pb-20 overflow-hidden">
       {/* Background Gradient */}
@@ -33,17 +30,17 @@ export const Hero = () => {
             className="text-display text-foreground mb-6 animate-fade-up"
             style={{ animationDelay: '100ms' }}
           >
-            Clareza financeira,{' '}
+            Controle suas finanças{' '}
             <span className="relative">
-              finalmente
+              em um único lugar
               <svg
                 className="absolute -bottom-2 left-0 w-full"
-                viewBox="0 0 200 12"
+                viewBox="0 0 300 12"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
               >
                 <path
-                  d="M2 10C50 4 150 4 198 10"
+                  d="M2 10C75 4 225 4 298 10"
                   stroke="hsl(160 84% 39%)"
                   strokeWidth="3"
                   strokeLinecap="round"
@@ -60,33 +57,20 @@ export const Hero = () => {
             className="text-body-lg text-muted-foreground max-w-2xl mx-auto mb-12 animate-fade-up"
             style={{ animationDelay: '200ms' }}
           >
-            A plataforma de finanças pessoais que conecta seu fluxo de caixa diário 
-            com sua riqueza de longo prazo. Sem planilhas, apenas controle.
+            O tMoney ajuda você a entender para onde vai o seu dinheiro.
           </p>
 
-          {/* Email Input + CTA */}
+          {/* CTA Button */}
           <div 
-            className="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-md mx-auto mb-16 animate-fade-up"
+            className="flex justify-center mb-16 animate-fade-up"
             style={{ animationDelay: '300ms' }}
           >
-            <div className="relative w-full sm:w-auto sm:flex-1">
-              <input
-                type="email"
-                placeholder="Digite seu email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full h-14 pl-5 pr-36 rounded-full border border-border bg-surface text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all"
-              />
-              <Link to="/cadastro">
-                <Button 
-                  variant="hero" 
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 h-11 px-6"
-                >
-                  Começar
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-              </Link>
-            </div>
+            <Link to="/cadastro">
+              <Button variant="hero" size="lg" className="h-14 px-8 text-base">
+                Começar agora
+                <ArrowRight className="w-5 h-5" />
+              </Button>
+            </Link>
           </div>
 
           {/* Dashboard Preview */}

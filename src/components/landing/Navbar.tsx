@@ -5,9 +5,7 @@ import { Link } from 'react-router-dom';
 
 const navLinks = [
   { label: 'Funcionalidades', href: '#features' },
-  { label: 'Como Funciona', href: '#methodology' },
-  { label: 'Preços', href: '#pricing' },
-  { label: 'Recursos', href: '#resources' },
+  { label: 'FAQ', href: '#faq' },
 ];
 
 export const Navbar = () => {
