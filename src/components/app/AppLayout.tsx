@@ -15,6 +15,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -178,6 +179,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
           </div>
 
           <div className="flex items-center gap-3">
+            <ThemeToggle />
             <Button variant="outline" size="sm">
               <Bell className="w-4 h-4" />
             </Button>
