@@ -4,19 +4,19 @@ import { Link } from "react-router-dom";
 const footerLinks = {
   product: [
     { label: "Funcionalidades", href: "#features" },
-    { label: "Preços", href: "#pricing" },
-    { label: "Segurança", href: "#security" },
-    { label: "Roadmap", href: "#roadmap" },
+    { label: "FAQ", href: "#faq" },
   ],
   company: [
     { label: "Sobre", href: "#about" },
     { label: "Blog", href: "#blog" },
-    { label: "Carreiras", href: "#careers" },
-    { label: "Imprensa", href: "#press" },
   ],
   resources: [
     { label: "Central de Ajuda", href: "#help" },
     { label: "Comunidade", href: "#community" },
+  ],
+  legal: [
+    { label: "Privacidade", href: "#privacy" },
+    { label: "Termos de Uso", href: "#terms" },
   ],
 };
 
