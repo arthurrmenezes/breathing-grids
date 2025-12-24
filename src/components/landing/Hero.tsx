@@ -6,10 +6,10 @@ export const Hero = () => {
   return (
     <section className="relative min-h-screen pt-32 pb-20 overflow-hidden">
       {/* Background Gradient */}
-      <div className="absolute inset-0 bg-hero-gradient" />
+      <div className="absolute inset-0 bg-[var(--gradient-hero)]" />
       
       {/* Dotted Grid Pattern */}
-      <div className="absolute inset-0 grid-pattern opacity-40" />
+      <div className="absolute inset-0 grid-pattern opacity-40 dark:opacity-20" />
       
       {/* Noise Texture */}
       <div className="absolute inset-0 noise-texture" />
@@ -18,7 +18,7 @@ export const Hero = () => {
         <div className="max-w-4xl mx-auto text-center">
           {/* Badge */}
           <div 
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-soft text-accent text-sm font-medium mb-8 animate-fade-up"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-soft dark:bg-accent/20 text-accent text-sm font-medium mb-8 animate-fade-up"
             style={{ animationDelay: '0ms' }}
           >
             <span className="w-2 h-2 rounded-full bg-accent animate-pulse-soft" />
@@ -83,7 +83,7 @@ export const Hero = () => {
               <div className="absolute -inset-4 bg-accent/20 rounded-3xl blur-3xl opacity-50" />
               
               {/* Dashboard Card */}
-              <div className="relative bg-surface rounded-2xl lg:rounded-3xl border border-border shadow-card-hover overflow-hidden">
+              <div className="relative bg-card rounded-2xl lg:rounded-3xl border border-border shadow-card-hover overflow-hidden">
                 {/* Mock Header Bar */}
                 <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-secondary/50">
                   <div className="flex gap-1.5">
@@ -168,7 +168,7 @@ const SummaryCard = ({
   trend: string;
   positive?: boolean;
 }) => (
-  <div className="bg-surface rounded-xl p-4 border border-border">
+  <div className="bg-card rounded-xl p-4 border border-border">
     <span className="text-xs text-muted-foreground uppercase tracking-wider">{label}</span>
     <div className="mt-1 text-xl font-semibold tabular-nums">{value}</div>
     <span className={`text-xs font-medium ${positive ? 'text-success' : 'text-destructive'}`}>
