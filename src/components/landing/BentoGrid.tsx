@@ -8,9 +8,9 @@ import {
 
 export const BentoGrid = () => {
   return (
-    <section id="features" className="py-24 lg:py-32 relative">
+    <section id="features" className="py-24 lg:py-32 relative bg-background">
       {/* Subtle grid background */}
-      <div className="absolute inset-0 grid-pattern opacity-20" />
+      <div className="absolute inset-0 grid-pattern opacity-20 dark:opacity-10" />
       
       <div className="container relative mx-auto px-6 lg:px-8">
         {/* Section Header */}
@@ -108,7 +108,7 @@ export const BentoGrid = () => {
               <div className="flex flex-col lg:flex-row lg:items-center gap-6">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="p-2 rounded-xl bg-green-soft">
+                    <div className="p-2 rounded-xl bg-accent/10 dark:bg-accent/20">
                       <CreditCard className="w-5 h-5 text-accent" />
                     </div>
                     <span className="text-micro uppercase tracking-widest text-muted-foreground">
@@ -169,7 +169,7 @@ const BentoCard = ({
 }) => (
   <div 
     className={`
-      relative bg-surface rounded-2xl border border-border 
+      relative bg-card rounded-2xl border border-border 
       shadow-card hover:shadow-card-hover 
       transition-all duration-300 
       group-hover:border-accent/20
@@ -230,7 +230,7 @@ const AnimatedChart = () => (
     </svg>
     
     {/* Floating tooltip */}
-    <div className="absolute top-8 right-12 bg-foreground text-primary-foreground text-xs px-3 py-1.5 rounded-lg shadow-lg">
+    <div className="absolute top-8 right-12 bg-foreground text-background text-xs px-3 py-1.5 rounded-lg shadow-lg">
       R$ 4.250
       <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-foreground rotate-45" />
     </div>
