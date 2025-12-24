@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Menu, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 const navLinks = [
   { label: 'Funcionalidades', href: '#features' },
@@ -24,7 +25,7 @@ export const Navbar = () => {
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         isScrolled
-          ? 'bg-surface/80 backdrop-blur-xl border-b border-border'
+          ? 'bg-background/80 backdrop-blur-xl border-b border-border'
           : 'bg-transparent'
       }`}
     >
@@ -52,7 +53,8 @@ export const Navbar = () => {
           </div>
 
           {/* Desktop CTA */}
-          <div className="hidden lg:flex items-center gap-4">
+          <div className="hidden lg:flex items-center gap-3">
+            <ThemeToggle />
             <Link
               to="/login"
               className="text-sm font-medium text-foreground hover:text-accent transition-colors"
