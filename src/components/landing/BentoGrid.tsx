@@ -3,8 +3,7 @@ import {
   Layers, 
   Calendar, 
   CreditCard,
-  Sparkles,
-  Target
+  Bell
 } from 'lucide-react';
 
 export const BentoGrid = () => {
@@ -20,8 +19,7 @@ export const BentoGrid = () => {
             Funcionalidades
           </span>
           <h2 className="text-h1 mb-4">
-            Tudo que você precisa,{' '}
-            <span className="text-gradient">nada além</span>
+            Tudo o que você <span className="text-gradient">precisa</span>
           </h2>
           <p className="text-body-lg text-muted-foreground">
             Ferramentas poderosas projetadas para dar visibilidade e controle total 
@@ -33,48 +31,46 @@ export const BentoGrid = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6 max-w-6xl mx-auto">
           {/* Large Card - Cash Flow Visualization */}
           <div className="md:col-span-2 md:row-span-2 group">
-            <BentoCard className="h-full min-h-[400px] p-8">
-              <div className="flex flex-col h-full">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-2 rounded-xl bg-accent/10">
-                    <TrendingUp className="w-5 h-5 text-accent" />
-                  </div>
-                  <span className="text-micro uppercase tracking-widest text-muted-foreground">
-                    Fluxo de Caixa
-                  </span>
+            <BentoCard className="h-full min-h-[400px] p-8 flex flex-col">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 rounded-xl bg-accent/10">
+                  <TrendingUp className="w-5 h-5 text-accent" />
                 </div>
-                
-                <h3 className="text-h2 mb-3">
-                  Visualize seu dinheiro em movimento
-                </h3>
-                <p className="text-muted-foreground mb-8">
-                  Gráficos em tempo real que respiram com suas finanças. Veja padrões, 
-                  preveja tendências e tome decisões informadas.
-                </p>
-                
-                {/* Chart Animation */}
-                <div className="flex-1 relative rounded-xl bg-secondary/50 overflow-hidden">
-                  <AnimatedChart />
-                </div>
+                <span className="text-micro uppercase tracking-widest text-muted-foreground">
+                  Fluxo de Caixa
+                </span>
+              </div>
+              
+              <h3 className="text-h2 mb-3">
+                Visualize seu dinheiro em movimento
+              </h3>
+              <p className="text-muted-foreground mb-6">
+                Gráficos em tempo real que respiram com suas finanças. Veja padrões, 
+                preveja tendências e tome decisões informadas.
+              </p>
+              
+              {/* Chart Animation */}
+              <div className="flex-1 relative rounded-xl bg-secondary/50 overflow-hidden min-h-[180px]">
+                <AnimatedChart />
               </div>
             </BentoCard>
           </div>
 
-          {/* Smart Categorization */}
+          {/* Custom Categories */}
           <div className="group">
             <BentoCard className="h-full min-h-[200px] p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-2 rounded-xl bg-success/10">
-                  <Sparkles className="w-5 h-5 text-success" />
+                  <Layers className="w-5 h-5 text-success" />
                 </div>
                 <span className="text-micro uppercase tracking-widest text-muted-foreground">
-                  IA Inteligente
+                  Organização
                 </span>
               </div>
               
-              <h3 className="text-h3 mb-2">Categorização automática</h3>
+              <h3 className="text-h3 mb-2">Categorias Personalizadas</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                A IA aprende seus padrões de gastos e categoriza automaticamente.
+                Organize seus gastos por categorias que fazem sentido para você.
               </p>
               
               <div className="space-y-2">
@@ -120,10 +116,10 @@ export const BentoGrid = () => {
                     </span>
                   </div>
                   
-                  <h3 className="text-h3 mb-2">Gerencie todos os seus cartões</h3>
+                  <h3 className="text-h3 mb-2">Gerencie os seus cartões</h3>
                   <p className="text-sm text-muted-foreground">
                     Acompanhe limites, datas de fechamento e encontre o melhor dia para comprar. 
-                    Bloqueie cartões instantaneamente quando precisar.
+                    Pare de perder o prazo do pagamento da fatura.
                   </p>
                 </div>
                 
@@ -134,26 +130,27 @@ export const BentoGrid = () => {
             </BentoCard>
           </div>
 
-          {/* Goals */}
+          {/* Bill Reminders */}
           <div className="group">
             <BentoCard className="h-full min-h-[180px] p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-2 rounded-xl bg-success/10">
-                  <Target className="w-5 h-5 text-success" />
+                  <Bell className="w-5 h-5 text-success" />
                 </div>
                 <span className="text-micro uppercase tracking-widest text-muted-foreground">
-                  Metas
+                  Lembretes de Contas
                 </span>
               </div>
               
-              <h3 className="text-h3 mb-2">Economize com propósito</h3>
+              <h3 className="text-h3 mb-2">Nunca mais esqueça</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Defina metas e acompanhe seu progresso crescer.
+                Nunca mais pague juros por esquecer a data de vencimento.
               </p>
               
-              <div className="space-y-3">
-                <GoalProgress label="Reserva de Emergência" progress={72} />
-                <GoalProgress label="Férias" progress={45} />
+              <div className="space-y-2">
+                <ReminderItem name="Aluguel" dueDate="05/01" status="upcoming" />
+                <ReminderItem name="Internet" dueDate="10/01" status="soon" />
+                <ReminderItem name="Luz" dueDate="15/01" status="paid" />
               </div>
             </BentoCard>
           </div>
@@ -182,7 +179,7 @@ const BentoCard = ({
   >
     {/* Noise texture overlay */}
     <div className="absolute inset-0 noise-texture pointer-events-none" />
-    <div className="relative z-10">{children}</div>
+    <div className="relative z-10 h-full">{children}</div>
   </div>
 );
 
@@ -263,8 +260,8 @@ const CalendarMockup = () => (
 );
 
 const CreditCardMockup = () => (
-  <div className="relative w-56 h-36 rounded-xl bg-card-gradient p-5 text-primary-foreground transform transition-transform duration-500 hover:rotate-3 shadow-green-glow">
-    <div className="flex justify-between items-start mb-8">
+  <div className="relative w-56 h-36 rounded-xl bg-card-gradient p-4 text-primary-foreground transform transition-transform duration-500 hover:rotate-3 shadow-green-glow overflow-hidden">
+    <div className="flex justify-between items-start mb-6">
       <div className="w-10 h-7 bg-gradient-to-br from-yellow-300 to-yellow-500 rounded-md" />
       <span className="text-xs opacity-80">tMoney</span>
     </div>
@@ -274,31 +271,47 @@ const CreditCardMockup = () => (
         <span className="text-[10px] uppercase opacity-60 block">Limite Disponível</span>
         <span className="text-sm font-medium">R$ 8.500</span>
       </div>
-      <div className="flex items-center gap-1">
-        <div className="w-6 h-6 rounded-full bg-destructive/80" />
-        <div className="w-6 h-6 rounded-full bg-yellow-500/80 -ml-3" />
+      <div className="flex items-center">
+        <div className="w-5 h-5 rounded-full bg-destructive/80" />
+        <div className="w-5 h-5 rounded-full bg-yellow-500/80 -ml-2" />
       </div>
     </div>
   </div>
 );
 
-const GoalProgress = ({ 
-  label, 
-  progress 
+const ReminderItem = ({ 
+  name, 
+  dueDate, 
+  status 
 }: { 
-  label: string; 
-  progress: number;
-}) => (
-  <div>
-    <div className="flex justify-between text-sm mb-1">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="font-medium">{progress}%</span>
+  name: string; 
+  dueDate: string; 
+  status: 'upcoming' | 'soon' | 'paid';
+}) => {
+  const statusStyles = {
+    upcoming: 'bg-accent/10 text-accent',
+    soon: 'bg-yellow-500/10 text-yellow-600',
+    paid: 'bg-success/10 text-success',
+  };
+  
+  const statusLabels = {
+    upcoming: 'Em breve',
+    soon: 'Próximo',
+    paid: 'Pago',
+  };
+
+  return (
+    <div className="flex items-center justify-between p-2 rounded-lg bg-secondary/50">
+      <div className="flex items-center gap-2">
+        <Bell className="w-4 h-4 text-muted-foreground" />
+        <span className="text-sm font-medium">{name}</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-muted-foreground">{dueDate}</span>
+        <span className={`text-xs px-2 py-0.5 rounded-full ${statusStyles[status]}`}>
+          {statusLabels[status]}
+        </span>
+      </div>
     </div>
-    <div className="h-2 bg-secondary rounded-full overflow-hidden">
-      <div 
-        className="h-full bg-accent rounded-full transition-all duration-1000"
-        style={{ width: `${progress}%` }}
-      />
-    </div>
-  </div>
-);
+  );
+};
