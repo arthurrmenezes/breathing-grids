@@ -1,38 +1,36 @@
-import { ReactNode, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  ArrowLeftRight, 
-  Tags, 
-  Bell, 
-  Repeat, 
-  CreditCard, 
+import { ReactNode, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import {
+  LayoutDashboard,
+  ArrowLeftRight,
+  Tags,
+  Bell,
+  Repeat,
+  CreditCard,
   Settings,
   LogOut,
   Menu,
   X,
   Search,
-  ChevronDown
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { ThemeToggle } from '@/components/ThemeToggle';
+  ChevronDown,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface AppLayoutProps {
   children: ReactNode;
 }
 
 const menuItems = [
-  { label: 'Dashboard', icon: LayoutDashboard, href: '/app' },
-  { label: 'Transações', icon: ArrowLeftRight, href: '/app/transacoes' },
-  { label: 'Categorias', icon: Tags, href: '/app/categorias' },
-  { label: 'Lembretes', icon: Bell, href: '/app/lembretes' },
-  { label: 'Recorrentes', icon: Repeat, href: '/app/recorrentes' },
-  { label: 'Cartões', icon: CreditCard, href: '/app/cartoes' },
+  { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
+  { label: "Transações", icon: ArrowLeftRight, href: "/dashboard/transacoes" },
+  { label: "Categorias", icon: Tags, href: "/dashboard/categorias" },
+  { label: "Lembretes", icon: Bell, href: "/dashboard/lembretes" },
+  { label: "Recorrentes", icon: Repeat, href: "/dashboard/recorrentes" },
+  { label: "Cartões", icon: CreditCard, href: "/dashboard/cartoes" },
 ];
 
-const bottomMenuItems = [
-  { label: 'Configurações', icon: Settings, href: '/app/configuracoes' },
-];
+const bottomMenuItems = [{ label: "Configurações", icon: Settings, href: "/app/configuracoes" }];
 
 export const AppLayout = ({ children }: AppLayoutProps) => {
   const location = useLocation();
@@ -40,18 +38,18 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const handleLogout = () => {
-    navigate('/');
+    navigate("/");
   };
 
   return (
     <div className="min-h-screen bg-background flex">
       {/* Sidebar */}
-      <aside 
+      <aside
         className={`
           fixed lg:static inset-y-0 left-0 z-50
           w-64 bg-sidebar border-r border-sidebar-border
           transform transition-transform duration-300 ease-in-out
-          ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+          ${isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
         `}
       >
         <div className="flex flex-col h-full">
@@ -87,9 +85,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
 
           {/* Navigation */}
           <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-3 mb-2">
-              Menu
-            </p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-3 mb-2">Menu</p>
             {menuItems.map((item) => {
               const isActive = location.pathname === item.href;
               return (
@@ -100,9 +96,10 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
                   className={`
                     flex items-center gap-3 px-3 py-2.5 rounded-lg
                     transition-all duration-200
-                    ${isActive 
-                      ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' 
-                      : 'text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-foreground'
+                    ${
+                      isActive
+                        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                        : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-foreground"
                     }
                   `}
                 >
@@ -125,9 +122,10 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
                   className={`
                     flex items-center gap-3 px-3 py-2.5 rounded-lg
                     transition-all duration-200
-                    ${isActive 
-                      ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' 
-                      : 'text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-foreground'
+                    ${
+                      isActive
+                        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                        : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-foreground"
                     }
                   `}
                 >
@@ -149,7 +147,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
 
       {/* Backdrop */}
       {isSidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-foreground/20 backdrop-blur-sm z-40 lg:hidden"
           onClick={() => setIsSidebarOpen(false)}
         />
@@ -160,13 +158,10 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
         {/* Top Header */}
         <header className="h-16 flex items-center justify-between px-4 lg:px-8 border-b border-border bg-surface">
           <div className="flex items-center gap-4">
-            <button
-              className="lg:hidden text-foreground"
-              onClick={() => setIsSidebarOpen(true)}
-            >
+            <button className="lg:hidden text-foreground" onClick={() => setIsSidebarOpen(true)}>
               <Menu className="w-6 h-6" />
             </button>
-            
+
             {/* Search */}
             <div className="relative hidden sm:block">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -190,9 +185,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto p-4 lg:p-8">
-          {children}
-        </main>
+        <main className="flex-1 overflow-y-auto p-4 lg:p-8">{children}</main>
       </div>
     </div>
   );
