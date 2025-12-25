@@ -127,9 +127,9 @@ export const BentoGrid = () => {
               </p>
 
               <div className="space-y-2">
-                <ReminderItem name="Aluguel" dueDate="15/01" status="upcoming" />
-                <ReminderItem name="Internet" dueDate="10/01" status="soon" />
                 <ReminderItem name="Luz" dueDate="05/01" status="paid" />
+                <ReminderItem name="Internet" dueDate="10/01" status="soon" />
+                <ReminderItem name="Aluguel" dueDate="15/01" status="upcoming" />
               </div>
             </BentoCard>
           </div>
