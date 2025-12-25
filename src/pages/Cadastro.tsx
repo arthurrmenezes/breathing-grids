@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthLayout } from '@/components/auth/AuthLayout';
 import { Button } from '@/components/ui/button';
@@ -6,9 +6,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Eye, EyeOff, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
 
 const Cadastro = () => {
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -16,6 +18,12 @@ const Cadastro = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const hasUnsavedChanges = useMemo(() => {
+    return firstName.length > 0 || lastName.length > 0 || email.length > 0 || password.length > 0 || confirmPassword.length > 0;
+  }, [firstName, lastName, email, password, confirmPassword]);
+
+  useUnsavedChangesWarning(hasUnsavedChanges);
 
   const passwordStrength = {
     hasMinLength: password.length >= 8,
@@ -28,7 +36,7 @@ const Cadastro = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!name || !email || !password || !confirmPassword) {
+    if (!firstName || !lastName || !email || !password || !confirmPassword) {
       toast({
         title: "Erro",
         description: "Preencha todos os campos",
@@ -74,16 +82,29 @@ const Cadastro = () => {
       subtitle="Junte-se ao tMoney e comece a controlar suas finanças."
     >
       <form onSubmit={handleSubmit} className="space-y-5">
-        <div className="space-y-2">
-          <Label htmlFor="name">Nome completo</Label>
-          <Input
-            id="name"
-            type="text"
-            placeholder="Seu nome"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="h-12"
-          />
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="firstName">Nome</Label>
+            <Input
+              id="firstName"
+              type="text"
+              placeholder="Seu nome"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              className="h-12"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="lastName">Sobrenome</Label>
+            <Input
+              id="lastName"
+              type="text"
+              placeholder="Seu sobrenome"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              className="h-12"
+            />
+          </div>
         </div>
         
         <div className="space-y-2">

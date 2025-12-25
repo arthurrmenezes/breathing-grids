@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { Button } from "@/components/ui/button";
@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -15,6 +16,12 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const hasUnsavedChanges = useMemo(() => {
+    return email.length > 0 || password.length > 0;
+  }, [email, password]);
+
+  useUnsavedChangesWarning(hasUnsavedChanges);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
