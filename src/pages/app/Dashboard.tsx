@@ -45,8 +45,9 @@ const upcomingBills = [
 const Dashboard = () => {
   return (
     <AppLayout>
+      <div className="space-y-6">
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <SummaryCard
             title="Saldo Total"
             value="R$ 47.892,54"
@@ -67,13 +68,6 @@ const Dashboard = () => {
             change="+5,4%"
             trend="down"
             icon={TrendingDown}
-          />
-          <SummaryCard
-            title="Livre para Gastar"
-            value="R$ 2.400,00"
-            change="-8,1%"
-            trend="down"
-            icon={Wallet}
           />
         </div>
 
@@ -244,6 +238,7 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
+      </div>
     </AppLayout>
   );
 };

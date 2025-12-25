@@ -61,18 +61,17 @@ export const AuthLayout = ({ children, title, subtitle }: AuthLayoutProps) => {
           
           {/* Main Content */}
           <div className="max-w-md space-y-8">
-            <div className="animate-fade-in">
-              <h2 className="text-3xl font-bold mb-2">Você está quase lá!</h2>
-              <div className="w-16 h-1 bg-white/30 rounded-full" />
+            <div className="opacity-0 animate-[fade-in_0.6s_ease-out_forwards]">
+              <h2 className="text-3xl font-bold">Você está quase lá!</h2>
             </div>
             
             {/* Features */}
-            <div className="space-y-6">
+            <div className="space-y-4">
               {features.map((feature, index) => (
                 <div 
                   key={feature.title}
-                  className="flex gap-4 items-start p-4 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/10 transition-all duration-300 hover:bg-white/15 hover:scale-[1.02] animate-fade-in"
-                  style={{ animationDelay: `${(index + 1) * 150}ms` }}
+                  className="flex gap-4 items-start p-4 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/10 transition-all duration-300 hover:bg-white/15 hover:scale-[1.02] opacity-0 animate-[fade-in_0.5s_ease-out_forwards]"
+                  style={{ animationDelay: `${(index + 1) * 100}ms` }}
                 >
                   <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
                     <feature.icon className="w-5 h-5" />
@@ -87,10 +86,7 @@ export const AuthLayout = ({ children, title, subtitle }: AuthLayoutProps) => {
           </div>
           
           {/* Footer */}
-          <div className="flex items-center gap-2 text-sm opacity-60">
-            <div className="w-2 h-2 bg-white/40 rounded-full animate-pulse" />
-            <span>Seguro e gratuito para começar</span>
-          </div>
+          <div />
         </div>
       </div>
       
