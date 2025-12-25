@@ -43,27 +43,8 @@ const upcomingBills = [
 ];
 
 const Dashboard = () => {
-  const greeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Bom dia';
-    if (hour < 18) return 'Boa tarde';
-    return 'Boa noite';
-  };
-
   return (
     <AppLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-h2">{greeting()}, João!</h1>
-            <p className="text-muted-foreground">Aqui está o resumo das suas finanças</p>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span>Dezembro 2024</span>
-          </div>
-        </div>
-
         {/* Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <SummaryCard
