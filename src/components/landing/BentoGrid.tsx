@@ -1,8 +1,21 @@
 import { TrendingUp, Layers, Calendar, CreditCard, Bell } from "lucide-react";
 
+// Helper function to get next month's date for bill reminders
+const getNextBillDate = (day: number): string => {
+  const now = new Date();
+  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, day);
+  const dayFormatted = String(nextMonth.getDate()).padStart(2, '0');
+  const monthFormatted = String(nextMonth.getMonth() + 1).padStart(2, '0');
+  return `${dayFormatted}/${monthFormatted}`;
+};
+
 export const BentoGrid = () => {
+  const luzDate = getNextBillDate(5);
+  const internetDate = getNextBillDate(10);
+  const aluguelDate = getNextBillDate(15);
+
   return (
-    <section id="features" className="py-12 lg:py-16 relative bg-background">
+    <section id="features" className="py-8 lg:py-10 relative bg-background">
       {/* Subtle grid background */}
       <div className="absolute inset-0 grid-pattern opacity-20 dark:opacity-10" />
 
@@ -127,9 +140,9 @@ export const BentoGrid = () => {
               </p>
 
               <div className="space-y-2">
-                <ReminderItem name="Luz" dueDate="05/01" status="paid" />
-                <ReminderItem name="Internet" dueDate="10/01" status="soon" />
-                <ReminderItem name="Aluguel" dueDate="15/01" status="upcoming" />
+                <ReminderItem name="Luz" dueDate={luzDate} status="paid" />
+                <ReminderItem name="Internet" dueDate={internetDate} status="soon" />
+                <ReminderItem name="Aluguel" dueDate={aluguelDate} status="upcoming" />
               </div>
             </BentoCard>
           </div>

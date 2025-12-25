@@ -30,11 +30,11 @@ const faqs = [
 
 export const FAQ = () => {
   return (
-    <section id="faq" className="py-12 lg:py-16 relative bg-background">
+    <section id="faq" className="py-8 lg:py-10 relative bg-background">
       <div className="absolute inset-0 grid-pattern opacity-20 dark:opacity-10" />
 
       <div className="container relative mx-auto px-6 lg:px-8">
-        <div className="text-center max-w-2xl mx-auto mb-16">
+        <div className="text-center max-w-2xl mx-auto mb-12">
           <span className="text-micro uppercase tracking-widest text-accent mb-4 block">Dúvidas Frequentes</span>
           <h2 className="text-h1 mb-4">
             Perguntas <span className="text-gradient">Frequentes</span>
