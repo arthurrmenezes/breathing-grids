@@ -1,6 +1,6 @@
-import { AppLayout } from '@/components/app/AppLayout';
+import { AppLayout, useValuesVisibility } from '@/components/app/AppLayout';
 import { Button } from '@/components/ui/button';
-import { Plus, Repeat, Calendar, TrendingUp, MoreHorizontal, Pause, Play } from 'lucide-react';
+import { Plus, Repeat, Calendar, TrendingUp, MoreHorizontal, Pause, Play, Eye, EyeOff } from 'lucide-react';
 
 const recurringExpenses = [
   { 
@@ -108,6 +108,8 @@ const recurringIncome = [
 ];
 
 const Recorrentes = () => {
+  const { showValues, setShowValues } = useValuesVisibility();
+
   const totalMonthlyExpenses = recurringExpenses
     .filter(r => r.active)
     .reduce((sum, r) => sum + r.amount, 0);
@@ -125,10 +127,15 @@ const Recorrentes = () => {
             <h1 className="text-h2">Recorrentes</h1>
             <p className="text-muted-foreground">Gerencie suas despesas e receitas recorrentes</p>
           </div>
-          <Button variant="accent" size="sm">
-            <Plus className="w-4 h-4 mr-2" />
-            Nova Recorrência
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setShowValues(!showValues)}>
+              {showValues ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+            </Button>
+            <Button variant="accent" size="sm">
+              <Plus className="w-4 h-4 mr-2" />
+              Nova Recorrência
+            </Button>
+          </div>
         </div>
 
         {/* Summary */}

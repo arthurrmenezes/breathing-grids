@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { AppLayout } from '@/components/app/AppLayout';
+import { AppLayout, useValuesVisibility } from '@/components/app/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
@@ -11,7 +11,9 @@ import {
   ChevronRight,
   MoreHorizontal,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
 const transactions = [
@@ -29,25 +31,11 @@ const transactions = [
 
 const Transacoes = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedTransactions, setSelectedTransactions] = useState<string[]>([]);
+  const { showValues, setShowValues } = useValuesVisibility();
 
   const totalTransactions = 125430;
   const totalIncome = 92000;
   const totalExpenses = 58500;
-
-  const toggleSelection = (id: string) => {
-    setSelectedTransactions(prev => 
-      prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id]
-    );
-  };
-
-  const toggleAll = () => {
-    if (selectedTransactions.length === transactions.length) {
-      setSelectedTransactions([]);
-    } else {
-      setSelectedTransactions(transactions.map(t => t.id));
-    }
-  };
 
   return (
     <AppLayout>
@@ -59,6 +47,9 @@ const Transacoes = () => {
             <Button variant="outline" size="sm">
               <Download className="w-4 h-4 mr-2" />
               Exportar
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setShowValues(!showValues)}>
+              {showValues ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
             </Button>
             <Button variant="accent" size="sm">
               <Plus className="w-4 h-4 mr-2" />
@@ -148,15 +139,6 @@ const Transacoes = () => {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border">
-                  <th className="text-left p-4 font-medium text-muted-foreground">
-                    <input
-                      type="checkbox"
-                      checked={selectedTransactions.length === transactions.length}
-                      onChange={toggleAll}
-                      className="w-4 h-4 rounded border-border"
-                    />
-                  </th>
-                  <th className="text-left p-4 font-medium text-muted-foreground text-sm">ID da Transação</th>
                   <th className="text-left p-4 font-medium text-muted-foreground text-sm">Nome</th>
                   <th className="text-left p-4 font-medium text-muted-foreground text-sm">Valor</th>
                   <th className="text-left p-4 font-medium text-muted-foreground text-sm">Data</th>
@@ -170,17 +152,6 @@ const Transacoes = () => {
                     key={tx.id} 
                     className="border-b border-border hover:bg-secondary/30 transition-colors"
                   >
-                    <td className="p-4">
-                      <input
-                        type="checkbox"
-                        checked={selectedTransactions.includes(tx.id)}
-                        onChange={() => toggleSelection(tx.id)}
-                        className="w-4 h-4 rounded border-border"
-                      />
-                    </td>
-                    <td className="p-4">
-                      <span className="text-sm font-mono text-muted-foreground">{tx.id}</span>
-                    </td>
                     <td className="p-4">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-sm">

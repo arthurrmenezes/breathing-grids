@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { AppLayout } from '@/components/app/AppLayout';
+import { AppLayout, useValuesVisibility } from '@/components/app/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Plus, CreditCard, Lock, Unlock, Eye, EyeOff, MoreHorizontal, ArrowUpRight } from 'lucide-react';
 
@@ -67,7 +67,7 @@ const recentCardTransactions = [
 
 const Cartoes = () => {
   const [selectedCard, setSelectedCard] = useState(cards[0]);
-  const [showBalance, setShowBalance] = useState(true);
+  const { showValues, setShowValues } = useValuesVisibility();
 
   const totalLimit = cards.filter(c => c.type === 'credit').reduce((sum, c) => sum + (c.limit || 0), 0);
   const totalUsed = cards.filter(c => c.type === 'credit').reduce((sum, c) => sum + (c.used || 0), 0);
@@ -82,13 +82,8 @@ const Cartoes = () => {
             <p className="text-muted-foreground">Gerencie seus cartões de crédito e débito</p>
           </div>
           <div className="flex items-center gap-2">
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => setShowBalance(!showBalance)}
-            >
-              {showBalance ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
-              {showBalance ? 'Ocultar' : 'Mostrar'}
+            <Button variant="outline" size="sm" onClick={() => setShowValues(!showValues)}>
+              {showValues ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
             </Button>
             <Button variant="accent" size="sm">
               <Plus className="w-4 h-4 mr-2" />
@@ -107,7 +102,7 @@ const Cartoes = () => {
               <span className="text-sm text-muted-foreground">Limite Total</span>
             </div>
             <p className="text-2xl font-semibold">
-              {showBalance ? `R$ ${totalLimit.toLocaleString('pt-BR')}` : '••••••'}
+              {showValues ? `R$ ${totalLimit.toLocaleString('pt-BR')}` : '••••••'}
             </p>
           </div>
           
@@ -119,7 +114,7 @@ const Cartoes = () => {
               <span className="text-sm text-muted-foreground">Utilizado</span>
             </div>
             <p className="text-2xl font-semibold">
-              {showBalance ? `R$ ${totalUsed.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '••••••'}
+              {showValues ? `R$ ${totalUsed.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '••••••'}
             </p>
             <p className="text-sm text-muted-foreground mt-1">
               {((totalUsed / totalLimit) * 100).toFixed(1)}% do limite
@@ -134,7 +129,7 @@ const Cartoes = () => {
               <span className="text-sm text-muted-foreground">Disponível</span>
             </div>
             <p className="text-2xl font-semibold text-success">
-              {showBalance ? `R$ ${(totalLimit - totalUsed).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '••••••'}
+              {showValues ? `R$ ${(totalLimit - totalUsed).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '••••••'}
             </p>
           </div>
         </div>
@@ -176,7 +171,7 @@ const Cartoes = () => {
                         <div>
                           <p className="text-xs opacity-60">Disponível</p>
                           <p className="text-sm font-medium">
-                            {showBalance ? `R$ ${card.available?.toLocaleString('pt-BR')}` : '••••'}
+                            {showValues ? `R$ ${card.available?.toLocaleString('pt-BR')}` : '••••'}
                           </p>
                         </div>
                         <div className="text-right">
@@ -188,7 +183,7 @@ const Cartoes = () => {
                       <div>
                         <p className="text-xs opacity-60">Saldo</p>
                         <p className="text-sm font-medium">
-                          {showBalance ? `R$ ${card.balance?.toLocaleString('pt-BR')}` : '••••'}
+                          {showValues ? `R$ ${card.balance?.toLocaleString('pt-BR')}` : '••••'}
                         </p>
                       </div>
                     )}
@@ -234,13 +229,13 @@ const Cartoes = () => {
                   <div className="flex justify-between py-3 border-b border-border">
                     <span className="text-muted-foreground">Limite</span>
                     <span className="font-medium">
-                      {showBalance ? `R$ ${selectedCard.limit?.toLocaleString('pt-BR')}` : '••••••'}
+                      {showValues ? `R$ ${selectedCard.limit?.toLocaleString('pt-BR')}` : '••••••'}
                     </span>
                   </div>
                   <div className="flex justify-between py-3 border-b border-border">
                     <span className="text-muted-foreground">Fatura Atual</span>
                     <span className="font-medium">
-                      {showBalance ? `R$ ${selectedCard.used?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '••••••'}
+                      {showValues ? `R$ ${selectedCard.used?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '••••••'}
                     </span>
                   </div>
                   <div className="flex justify-between py-3">

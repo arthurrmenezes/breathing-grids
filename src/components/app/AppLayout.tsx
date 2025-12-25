@@ -37,9 +37,9 @@ export const useValuesVisibility = () => useContext(ValuesVisibilityContext);
 const menuItems = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/app" },
   { label: "Transações", icon: ArrowLeftRight, href: "/app/transacoes" },
-  { label: "Categorias", icon: Tags, href: "/app/categorias" },
-  { label: "Lembretes", icon: Bell, href: "/app/lembretes" },
   { label: "Recorrentes", icon: Repeat, href: "/app/recorrentes" },
+  { label: "Lembretes", icon: Bell, href: "/app/lembretes" },
+  { label: "Categorias", icon: Tags, href: "/app/categorias" },
   { label: "Cartões", icon: CreditCard, href: "/app/cartoes" },
 ];
 
@@ -57,11 +57,11 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
 
   return (
     <ValuesVisibilityContext.Provider value={{ showValues, setShowValues }}>
-      <div className="min-h-screen bg-background flex">
-        {/* Sidebar */}
+      <div className="min-h-screen bg-background flex w-full">
+        {/* Sidebar - Always fixed */}
         <aside
           className={`
-            fixed lg:static inset-y-0 left-0 z-50
+            fixed inset-y-0 left-0 z-50
             w-64 bg-sidebar border-r border-sidebar-border
             transform transition-transform duration-300 ease-in-out
             ${isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
@@ -113,15 +113,13 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
 
           {/* Bottom Navigation - Always Fixed at Bottom */}
           <div className="px-4 py-4 border-t border-sidebar-border space-y-1 shrink-0 mt-auto">
-            {/* User Profile - No Arrow */}
-            <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-sidebar-accent cursor-pointer transition-colors mb-2">
-              <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center">
+            {/* User Profile - Centered */}
+            <div className="flex flex-col items-center p-2 rounded-lg hover:bg-sidebar-accent cursor-pointer transition-colors mb-2">
+              <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center mb-2">
                 <span className="text-sm font-medium text-accent">JD</span>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">João da Silva</p>
-                <p className="text-xs text-muted-foreground truncate">joao@email.com</p>
-              </div>
+              <p className="text-sm font-medium truncate text-center">João da Silva</p>
+              <p className="text-xs text-muted-foreground truncate text-center">joao@email.com</p>
             </div>
 
             {bottomMenuItems.map((item) => {
@@ -165,24 +163,12 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
         )}
 
         {/* Main Content */}
-        <div className="flex-1 flex flex-col min-w-0">
-          {/* Top Header */}
-          <header className="h-16 flex items-center justify-between px-4 lg:px-8 border-b border-border bg-surface">
-            <div className="flex items-center gap-4">
-              <button className="lg:hidden text-foreground" onClick={() => setIsSidebarOpen(true)}>
-                <Menu className="w-6 h-6" />
-              </button>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <Button variant="outline" size="sm" onClick={() => setShowValues(!showValues)}>
-                {showValues ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-              </Button>
-              <ThemeToggle />
-              <Button variant="accent" size="sm">
-                + Adicionar
-              </Button>
-            </div>
+        <div className="flex-1 flex flex-col min-w-0 lg:ml-64">
+          {/* Top Header - Only for mobile toggle */}
+          <header className="h-16 flex items-center px-4 lg:px-8 border-b border-border bg-surface lg:hidden">
+            <button className="text-foreground" onClick={() => setIsSidebarOpen(true)}>
+              <Menu className="w-6 h-6" />
+            </button>
           </header>
 
           {/* Page Content */}
