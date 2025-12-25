@@ -52,7 +52,7 @@ export const Navbar = () => {
               ))}
             </div>
             
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-6">
             <ThemeToggle />
             <Link to="/login" className="text-sm font-medium text-foreground hover:text-accent transition-colors">
               Entrar
