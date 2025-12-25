@@ -94,9 +94,9 @@ export const Hero = () => {
                   <div className="grid grid-cols-12 gap-4 lg:gap-6">
                     {/* Summary Cards Row */}
                     <div className="col-span-12 grid grid-cols-3 gap-4">
-                      <SummaryCard label="Saldo Total" value="R$ 12.480,75" trend="+4,3%" positive />
-                      <SummaryCard label="Receitas" value="R$ 5.200,00" trend="+2,1%" positive />
-                      <SummaryCard label="Despesas" value="R$ 3.850,40" trend="-5,6%%" />
+                      <SummaryCard label="Saldo Total" value="R$ 23.450,00" trend="+6,8%" positive />
+                      <SummaryCard label="Receitas" value="R$ 8.200,00" trend="+2,4%" positive />
+                      <SummaryCard label="Despesas" value="R$ 4.900,00" trend="-5,1%" />
                     </div>
 
                     {/* Chart Area */}
