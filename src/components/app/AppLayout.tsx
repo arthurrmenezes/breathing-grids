@@ -22,12 +22,12 @@ interface AppLayoutProps {
 }
 
 const menuItems = [
-  { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
-  { label: "Transações", icon: ArrowLeftRight, href: "/dashboard/transacoes" },
-  { label: "Categorias", icon: Tags, href: "/dashboard/categorias" },
-  { label: "Lembretes", icon: Bell, href: "/dashboard/lembretes" },
-  { label: "Recorrentes", icon: Repeat, href: "/dashboard/recorrentes" },
-  { label: "Cartões", icon: CreditCard, href: "/dashboard/cartoes" },
+  { label: "Dashboard", icon: LayoutDashboard, href: "/app" },
+  { label: "Transações", icon: ArrowLeftRight, href: "/app/transacoes" },
+  { label: "Categorias", icon: Tags, href: "/app/categorias" },
+  { label: "Lembretes", icon: Bell, href: "/app/lembretes" },
+  { label: "Recorrentes", icon: Repeat, href: "/app/recorrentes" },
+  { label: "Cartões", icon: CreditCard, href: "/app/cartoes" },
 ];
 
 const bottomMenuItems = [{ label: "Configurações", icon: Settings, href: "/app/configuracoes" }];
