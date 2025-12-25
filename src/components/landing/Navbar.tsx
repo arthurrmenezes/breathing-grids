@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Menu, X } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { ThemeToggle } from '@/components/ThemeToggle';
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Menu, X } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const navLinks = [
-  { label: 'Funcionalidades', href: '#features' },
-  { label: 'FAQ', href: '#faq' },
+  { label: "Funcionalidades", href: "#features" },
+  { label: "FAQ", href: "#faq" },
 ];
 
 export const Navbar = () => {
@@ -17,16 +17,14 @@ export const Navbar = () => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
     };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   return (
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled
-          ? 'bg-background/80 backdrop-blur-xl border-b border-border'
-          : 'bg-transparent'
+        isScrolled ? "bg-background/80 backdrop-blur-xl border-b border-border" : "bg-transparent"
       }`}
     >
       <div className="container mx-auto px-6 lg:px-8">
@@ -55,24 +53,18 @@ export const Navbar = () => {
           {/* Desktop CTA */}
           <div className="hidden lg:flex items-center gap-3">
             <ThemeToggle />
-            <Link
-              to="/login"
-              className="text-sm font-medium text-foreground hover:text-accent transition-colors"
-            >
+            <Link to="/login" className="text-sm font-medium text-foreground hover:text-accent transition-colors">
               Entrar
             </Link>
             <Link to="/cadastro">
               <Button variant="default" size="default">
-                Começar grátis
+                Criar conta
               </Button>
             </Link>
           </div>
 
           {/* Mobile Menu Button */}
-          <button
-            className="lg:hidden p-2 text-foreground"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          >
+          <button className="lg:hidden p-2 text-foreground" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
             {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
@@ -92,10 +84,7 @@ export const Navbar = () => {
                 </a>
               ))}
               <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-border">
-                <Link
-                  to="/login"
-                  className="px-4 py-3 text-sm font-medium text-foreground"
-                >
+                <Link to="/login" className="px-4 py-3 text-sm font-medium text-foreground">
                   Entrar
                 </Link>
                 <Link to="/cadastro" className="mx-4">
