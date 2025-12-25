@@ -83,7 +83,8 @@ const Dashboard = () => {
                     border: "1px solid hsl(var(--border))",
                     borderRadius: "8px",
                   }}
-                  formatter={(value: number) => [`R$ ${value.toLocaleString("pt-BR")}`, ""]}
+                  labelFormatter={(label) => label}
+                  formatter={(value: number) => [`R$ ${value.toLocaleString("pt-BR")}`]}
                 />
                 <Area
                   type="monotone"
@@ -128,12 +129,14 @@ const Dashboard = () => {
                   width={80}
                 />
                 <Tooltip
-                  formatter={(value: number) => [`R$ ${value.toLocaleString("pt-BR")}`, ""]}
+                  formatter={(value: number) => [`R$ ${value.toLocaleString("pt-BR")}`]}
+                  labelFormatter={(label) => label}
                   contentStyle={{
                     backgroundColor: "hsl(var(--card))",
                     border: "1px solid hsl(var(--border))",
                     borderRadius: "8px",
                   }}
+                  cursor={false}
                 />
                 <Bar dataKey="value" fill="hsl(160 84% 39%)" radius={[0, 4, 4, 0]} />
               </BarChart>
