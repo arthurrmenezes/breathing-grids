@@ -118,8 +118,8 @@ export const Hero = () => {
                       <div className="bg-secondary/50 rounded-xl p-4">
                         <span className="text-xs text-muted-foreground uppercase tracking-wider">Próximos</span>
                         <div className="mt-2 space-y-2">
-                          <UpcomingItem name="Netflix" date="Amanhã" amount="R$ 55,90" />
-                          <UpcomingItem name="Spotify" date="28 Dez" amount="R$ 21,90" />
+                          <UpcomingItem name="Netflix" date="Amanhã" amount="R$ 44,90" />
+                          <UpcomingItem name="Academia" date="05 Jan" amount="R$ 149,90" />
                         </div>
                       </div>
                     </div>
