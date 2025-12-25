@@ -84,7 +84,7 @@ export const Hero = () => {
                   </div>
                   <div className="flex-1 flex justify-center">
                     <div className="px-4 py-1 rounded-full bg-secondary text-xs text-muted-foreground">
-                      app.tmoney.com.br
+                      tmoney.com.br
                     </div>
                   </div>
                 </div>
@@ -94,9 +94,9 @@ export const Hero = () => {
                   <div className="grid grid-cols-12 gap-4 lg:gap-6">
                     {/* Summary Cards Row */}
                     <div className="col-span-12 grid grid-cols-3 gap-4">
-                      <SummaryCard label="Saldo Total" value="R$ 47.892,54" trend="+12,5%" positive />
-                      <SummaryCard label="Entrada Mensal" value="R$ 8.450,00" trend="+3,2%" positive />
-                      <SummaryCard label="Livre para Gastar" value="R$ 2.341,20" trend="-8,1%" />
+                      <SummaryCard label="Saldo Total" value="R$ 12.480,75" trend="+4,3%" positive />
+                      <SummaryCard label="Receitas" value="R$ 5.200,00" trend="+2,1%" positive />
+                      <SummaryCard label="Despesas" value="R$ 3.850,40" trend="-5,6%%" />
                     </div>
 
                     {/* Chart Area */}
