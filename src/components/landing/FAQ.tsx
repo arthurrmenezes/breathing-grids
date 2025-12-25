@@ -4,7 +4,7 @@ const faqs = [
   {
     question: "O tMoney é gratuito?",
     answer:
-      "Sim! O tMoney oferece um plano gratuito com todas as funcionalidades essenciais para você começar a organizar suas finanças.",
+      "Sim! O tMoney oferece um plano gratuito com todas as funcionalidades essenciais para você organizar suas finanças.",
   },
   {
     question: "Posso usar o tMoney no celular?",
@@ -14,12 +14,17 @@ const faqs = [
   {
     question: "Como funcionam os lembretes de contas?",
     answer:
-      "Você cadastra suas contas recorrentes e o tMoney te avisa antes do vencimento por email ou SMS. Nunca mais pague juros por esquecimento!",
+      "Você cadastra suas contas recorrentes e o tMoney te avisa antes do vencimento. Nunca mais pague juros por esquecimento!",
+  },
+  {
+    question: "Como funciona o controle de categorias?",
+    answer:
+      "Você pode criar categorias personalizadas para organizar suas receitas e despesas da forma que fizer mais sentido para você, além de editá-las e criar novas quando quiser.",
   },
   {
     question: "Posso compartilhar minha conta com minha família?",
     answer:
-      "Em breve! Estamos desenvolvendo para que você possa convidar membros da família para gerenciar as finanças juntos, com controle de permissões.",
+      "Em breve! Estamos desenvolvendo para que você possa convidar membros da família para gerenciar as finanças juntos.",
   },
 ];
 
