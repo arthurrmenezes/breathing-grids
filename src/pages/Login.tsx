@@ -1,15 +1,15 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { AuthLayout } from '@/components/auth/AuthLayout';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Eye, EyeOff } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { AuthLayout } from "@/components/auth/AuthLayout";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Eye, EyeOff } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const Login = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -18,7 +18,7 @@ const Login = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email || !password) {
       toast({
         title: "Erro",
@@ -27,9 +27,9 @@ const Login = () => {
       });
       return;
     }
-    
+
     setIsLoading(true);
-    
+
     // Simulating login - replace with actual auth later
     setTimeout(() => {
       setIsLoading(false);
@@ -37,15 +37,12 @@ const Login = () => {
         title: "Login realizado!",
         description: "Bem-vindo de volta ao tMoney",
       });
-      navigate('/app');
+      navigate("/app");
     }, 1000);
   };
 
   return (
-    <AuthLayout
-      title="Bem-vindo de volta"
-      subtitle="Entre com seu email e senha para acessar sua conta."
-    >
+    <AuthLayout title="Bem-vindo de volta" subtitle="Entre com seu email e senha para acessar suas finanças.">
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
@@ -58,13 +55,13 @@ const Login = () => {
             className="h-12"
           />
         </div>
-        
+
         <div className="space-y-2">
           <Label htmlFor="password">Senha</Label>
           <div className="relative">
             <Input
               id="password"
-              type={showPassword ? 'text' : 'password'}
+              type={showPassword ? "text" : "password"}
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -79,7 +76,7 @@ const Login = () => {
             </button>
           </div>
         </div>
-        
+
         <div className="flex items-center justify-between">
           <label className="flex items-center gap-2 cursor-pointer">
             <input
@@ -90,24 +87,15 @@ const Login = () => {
             />
             <span className="text-sm text-muted-foreground">Lembrar de mim</span>
           </label>
-          <Link 
-            to="/esqueci-senha" 
-            className="text-sm text-accent hover:underline font-medium"
-          >
+          <Link to="/esqueci-senha" className="text-sm text-accent hover:underline font-medium">
             Esqueceu a senha?
           </Link>
         </div>
-        
-        <Button 
-          type="submit" 
-          variant="accent" 
-          size="lg" 
-          className="w-full"
-          disabled={isLoading}
-        >
-          {isLoading ? 'Entrando...' : 'Entrar'}
+
+        <Button type="submit" variant="accent" size="lg" className="w-full" disabled={isLoading}>
+          {isLoading ? "Entrando..." : "Entrar"}
         </Button>
-        
+
         <div className="relative my-6">
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-border" />
@@ -116,13 +104,8 @@ const Login = () => {
             <span className="bg-background px-2 text-muted-foreground">ou</span>
           </div>
         </div>
-        
-        <Button 
-          type="button" 
-          variant="outline" 
-          size="lg" 
-          className="w-full"
-        >
+
+        <Button type="button" variant="outline" size="lg" className="w-full">
           <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
             <path
               fill="currentColor"
@@ -143,9 +126,9 @@ const Login = () => {
           </svg>
           Continuar com Google
         </Button>
-        
+
         <p className="text-center text-sm text-muted-foreground">
-          Não tem uma conta?{' '}
+          Não tem uma conta?{" "}
           <Link to="/cadastro" className="text-accent hover:underline font-medium">
             Cadastre-se
           </Link>
