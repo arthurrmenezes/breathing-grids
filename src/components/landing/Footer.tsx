@@ -21,9 +21,8 @@ const footerLinks = {
 };
 
 const socialLinks = [
-  { icon: Twitter, href: "#twitter", label: "Twitter" },
-  { icon: Github, href: "#github", label: "GitHub" },
   { icon: Linkedin, href: "#linkedin", label: "LinkedIn" },
+  { icon: Twitter, href: "#twitter", label: "Twitter" },
   { icon: Instagram, href: "#instagram", label: "Instagram" },
 ];
 
@@ -60,7 +59,7 @@ export const Footer = () => {
 
           {/* Product */}
           <div>
-            <h4 className="text-sm font-medium mb-4">Produto</h4>
+            <h4 className="text-sm font-medium mb-4">Website</h4>
             <ul className="space-y-3">
               {footerLinks.product.map((link) => (
                 <li key={link.label}>
