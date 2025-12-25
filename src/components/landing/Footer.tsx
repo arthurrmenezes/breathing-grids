@@ -1,4 +1,4 @@
-import { Github, Twitter, Linkedin, Instagram } from "lucide-react";
+import { Twitter, Linkedin, Instagram } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const footerLinks = {
@@ -9,14 +9,6 @@ const footerLinks = {
   company: [
     { label: "Sobre", href: "#about" },
     { label: "Blog", href: "#blog" },
-  ],
-  resources: [
-    { label: "Central de Ajuda", href: "#help" },
-    { label: "Comunidade", href: "#community" },
-  ],
-  legal: [
-    { label: "Privacidade", href: "#privacy" },
-    { label: "Termos de Uso", href: "#terms" },
   ],
 };
 
@@ -30,7 +22,7 @@ export const Footer = () => {
   return (
     <footer className="py-16 lg:py-24 border-t border-border">
       <div className="container mx-auto px-6 lg:px-8">
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-8 lg:gap-12">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 lg:gap-12">
           {/* Logo & Description */}
           <div className="col-span-2">
             <Link to="/" className="flex items-center gap-2 mb-4">
@@ -85,33 +77,6 @@ export const Footer = () => {
             </ul>
           </div>
 
-          {/* Resources */}
-          <div>
-            <h4 className="text-sm font-medium mb-4">Recursos</h4>
-            <ul className="space-y-3">
-              {footerLinks.resources.map((link) => (
-                <li key={link.label}>
-                  <a href={link.href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                    {link.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Legal */}
-          <div>
-            <h4 className="text-sm font-medium mb-4">Legal</h4>
-            <ul className="space-y-3">
-              {footerLinks.legal.map((link) => (
-                <li key={link.label}>
-                  <a href={link.href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                    {link.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
         </div>
 
         {/* Bottom Bar */}

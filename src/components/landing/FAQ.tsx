@@ -30,7 +30,7 @@ const faqs = [
 
 export const FAQ = () => {
   return (
-    <section id="faq" className="py-24 lg:py-32 relative bg-background">
+    <section id="faq" className="py-12 lg:py-16 relative bg-background">
       <div className="absolute inset-0 grid-pattern opacity-20 dark:opacity-10" />
 
       <div className="container relative mx-auto px-6 lg:px-8">

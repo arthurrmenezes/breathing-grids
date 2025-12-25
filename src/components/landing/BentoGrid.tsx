@@ -2,7 +2,7 @@ import { TrendingUp, Layers, Calendar, CreditCard, Bell } from "lucide-react";
 
 export const BentoGrid = () => {
   return (
-    <section id="features" className="py-24 lg:py-32 relative bg-background">
+    <section id="features" className="py-12 lg:py-16 relative bg-background">
       {/* Subtle grid background */}
       <div className="absolute inset-0 grid-pattern opacity-20 dark:opacity-10" />
 

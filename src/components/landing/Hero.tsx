@@ -2,6 +2,33 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 
+const getNextGymDate = () => {
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+  const currentDay = now.getDate();
+  
+  // Academia é sempre dia 4 do próximo mês
+  let targetMonth = currentMonth + 1;
+  let targetYear = currentYear;
+  
+  // Se já passou do dia 4 do mês atual, vai para o próximo mês
+  if (currentDay >= 4) {
+    targetMonth = currentMonth + 1;
+  } else {
+    targetMonth = currentMonth;
+  }
+  
+  // Ajusta o ano se necessário
+  if (targetMonth > 11) {
+    targetMonth = 0;
+    targetYear = currentYear + 1;
+  }
+  
+  const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+  return `04 ${monthNames[targetMonth]}`;
+};
+
 export const Hero = () => {
   return (
     <section className="relative min-h-screen pt-32 pb-20 overflow-hidden">
@@ -119,7 +146,7 @@ export const Hero = () => {
                         <span className="text-xs text-muted-foreground uppercase tracking-wider">Próximos</span>
                         <div className="mt-2 space-y-2">
                           <UpcomingItem name="Netflix" date="Amanhã" amount="R$ 44,90" />
-                          <UpcomingItem name="Academia" date="05 Jan" amount="R$ 149,90" />
+                          <UpcomingItem name="Academia" date={getNextGymDate()} amount="R$ 149,90" />
                         </div>
                       </div>
                     </div>
