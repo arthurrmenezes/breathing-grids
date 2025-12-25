@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { AppLayout } from '@/components/app/AppLayout';
+import { AppLayout, useValuesVisibility } from '@/components/app/AppLayout';
 import { Button } from '@/components/ui/button';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Eye, EyeOff } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 
 const categories = [
@@ -23,6 +23,7 @@ const chartData = categories.map(cat => ({
 
 const Categorias = () => {
   const [view, setView] = useState<'grid' | 'list'>('grid');
+  const { showValues, setShowValues } = useValuesVisibility();
 
   const totalBudget = categories.reduce((sum, cat) => sum + cat.budget, 0);
   const totalSpent = categories.reduce((sum, cat) => sum + cat.spent, 0);
@@ -36,10 +37,15 @@ const Categorias = () => {
             <h1 className="text-h2">Categorias</h1>
             <p className="text-muted-foreground">Gerencie suas categorias de gastos</p>
           </div>
-          <Button variant="accent" size="sm">
-            <Plus className="w-4 h-4 mr-2" />
-            Nova Categoria
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setShowValues(!showValues)}>
+              {showValues ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+            </Button>
+            <Button variant="accent" size="sm">
+              <Plus className="w-4 h-4 mr-2" />
+              Nova Categoria
+            </Button>
+          </div>
         </div>
 
         {/* Overview */}

@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { AppLayout } from '@/components/app/AppLayout';
+import { AppLayout, useValuesVisibility } from '@/components/app/AppLayout';
 import { Button } from '@/components/ui/button';
-import { Plus, Bell, BellOff, Calendar, MoreHorizontal, Check } from 'lucide-react';
+import { Plus, Bell, BellOff, Calendar, MoreHorizontal, Check, Eye, EyeOff } from 'lucide-react';
 
 const reminders = [
   { 
@@ -97,6 +97,7 @@ const paidReminders = [
 
 const Lembretes = () => {
   const [filter, setFilter] = useState<'all' | 'pending' | 'paid'>('all');
+  const { showValues, setShowValues } = useValuesVisibility();
 
   const totalPending = reminders.reduce((sum, r) => sum + r.amount, 0);
   const upcomingThisWeek = reminders.filter(r => r.daysUntil <= 7);
@@ -110,10 +111,15 @@ const Lembretes = () => {
             <h1 className="text-h2">Lembretes</h1>
             <p className="text-muted-foreground">Gerencie suas contas e lembretes de pagamento</p>
           </div>
-          <Button variant="accent" size="sm">
-            <Plus className="w-4 h-4 mr-2" />
-            Novo Lembrete
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setShowValues(!showValues)}>
+              {showValues ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+            </Button>
+            <Button variant="accent" size="sm">
+              <Plus className="w-4 h-4 mr-2" />
+              Novo Lembrete
+            </Button>
+          </div>
         </div>
 
         {/* Summary */}
