@@ -37,21 +37,22 @@ export const Navbar = () => {
             <span className="font-semibold text-lg tracking-tight">tMoney</span>
           </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden lg:flex items-center gap-1">
-            {navLinks.map((link) => (
-              <a
-                key={link.label}
-                href={link.href}
-                className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground rounded-full hover:bg-secondary transition-all duration-200"
-              >
-                {link.label}
-              </a>
-            ))}
-          </div>
-
           {/* Desktop CTA */}
-          <div className="hidden lg:flex items-center gap-3">
+          <div className="hidden lg:flex items-center gap-6">
+            {/* Navigation Links */}
+            <div className="flex items-center gap-1">
+              {navLinks.map((link) => (
+                <a
+                  key={link.label}
+                  href={link.href}
+                  className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground rounded-full hover:bg-secondary transition-all duration-200"
+                >
+                  {link.label}
+                </a>
+              ))}
+            </div>
+            
+            <div className="flex items-center gap-3">
             <ThemeToggle />
             <Link to="/login" className="text-sm font-medium text-foreground hover:text-accent transition-colors">
               Entrar
@@ -61,6 +62,7 @@ export const Navbar = () => {
                 Criar conta
               </Button>
             </Link>
+            </div>
           </div>
 
           {/* Mobile Menu Button */}
