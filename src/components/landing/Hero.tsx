@@ -22,7 +22,7 @@ export const Hero = () => {
             style={{ animationDelay: "0ms" }}
           >
             <span className="w-2 h-2 rounded-full bg-accent animate-pulse-soft" />
-            Em beta público
+            Fase beta para público
           </div>
 
           {/* Main Headline */}
