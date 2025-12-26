@@ -1,19 +1,34 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { AuthLayout } from '@/components/auth/AuthLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Eye, EyeOff, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { authService } from '@/services/authService';
 
 const ResetarSenha = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const token = searchParams.get('token') || '';
+  const email = searchParams.get('email') || '';
+
+  useEffect(() => {
+    if (!token || !email) {
+      toast({
+        title: "Link inválido",
+        description: "O link de redefinição de senha é inválido ou expirou",
+        variant: "destructive",
+      });
+    }
+  }, [token, email, toast]);
 
   const passwordStrength = {
     hasMinLength: password.length >= 8,
@@ -55,15 +70,26 @@ const ResetarSenha = () => {
     
     setIsLoading(true);
     
-    // Simulating password reset - replace with actual auth later
-    setTimeout(() => {
-      setIsLoading(false);
+    const result = await authService.resetPassword(email, token, {
+      newPassword: password,
+      confirmNewPassword: confirmPassword,
+    });
+    
+    setIsLoading(false);
+    
+    if (result.error) {
+      toast({
+        title: "Erro ao redefinir senha",
+        description: result.error,
+        variant: "destructive",
+      });
+    } else {
       toast({
         title: "Senha redefinida!",
         description: "Sua senha foi alterada com sucesso",
       });
       navigate('/login');
-    }, 1000);
+    }
   };
 
   return (
@@ -132,7 +158,7 @@ const ResetarSenha = () => {
           variant="accent" 
           size="lg" 
           className="w-full"
-          disabled={isLoading}
+          disabled={isLoading || !token || !email}
         >
           {isLoading ? 'Redefinindo...' : 'Redefinir senha'}
         </Button>

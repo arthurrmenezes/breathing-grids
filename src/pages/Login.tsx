@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -16,6 +17,7 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { login } = useAuth();
 
   const hasUnsavedChanges = useMemo(() => {
     return email.length > 0 || password.length > 0;
@@ -37,15 +39,23 @@ const Login = () => {
 
     setIsLoading(true);
 
-    // Simulating login - replace with actual auth later
-    setTimeout(() => {
-      setIsLoading(false);
+    const result = await login(email, password);
+
+    setIsLoading(false);
+
+    if (result.success) {
       toast({
         title: "Login realizado!",
         description: "Bem-vindo de volta ao tMoney",
       });
       navigate("/app");
-    }, 1000);
+    } else {
+      toast({
+        title: "Erro ao fazer login",
+        description: result.error || "Verifique suas credenciais e tente novamente",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

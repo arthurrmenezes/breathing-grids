@@ -59,9 +59,9 @@ export const AuthLayout = ({ children, title, subtitle }: AuthLayoutProps) => {
             <span className="font-semibold text-xl">tMoney</span>
           </Link>
           
-          {/* Main Content */}
-          <div className="max-w-md space-y-8">
-            <div className="opacity-0 animate-[fade-in_0.6s_ease-out_forwards]">
+          {/* Main Content - Centered */}
+          <div className="max-w-md space-y-8 mx-auto">
+            <div className="opacity-0 animate-[fade-in_0.6s_ease-out_forwards] text-center">
               <h2 className="text-3xl font-bold">Você está quase lá!</h2>
             </div>
             
