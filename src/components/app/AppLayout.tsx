@@ -141,17 +141,12 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
           {/* Bottom Navigation - Always Fixed at Bottom */}
           <div className="px-2 py-4 border-t border-sidebar-border space-y-1 shrink-0 mt-auto">
           {/* User Profile */}
-            <div className={`flex items-center p-2 rounded-lg hover:bg-sidebar-accent cursor-pointer transition-colors mb-2 ${isSidebarCollapsed ? "justify-center" : "gap-3"}`}>
-              <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center shrink-0">
-                <span className="text-sm font-medium text-accent">JD</span>
+            {!isSidebarCollapsed && (
+              <div className="flex flex-col items-center text-center p-2 rounded-lg mb-2">
+                <p className="text-sm font-medium truncate">João da Silva</p>
+                <p className="text-xs text-muted-foreground truncate">joao@email.com</p>
               </div>
-              {!isSidebarCollapsed && (
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">João da Silva</p>
-                  <p className="text-xs text-muted-foreground truncate">joao@email.com</p>
-                </div>
-              )}
-            </div>
+            )}
 
             {bottomMenuItems.map((item) => {
               const isActive = location.pathname === item.href;

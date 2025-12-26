@@ -63,12 +63,6 @@ const Configuracoes = () => {
                   <p className="text-sm text-muted-foreground">Atualize suas informações pessoais</p>
                 </div>
 
-                <div className="flex items-center gap-6">
-                  <div className="w-20 h-20 rounded-full bg-accent/10 flex items-center justify-center">
-                    <span className="text-2xl font-medium text-accent">JD</span>
-                  </div>
-                </div>
-
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="firstName">Nome</Label>
@@ -106,6 +100,28 @@ const Configuracoes = () => {
                     description="Receba alertas antes do vencimento das contas"
                     defaultChecked={true}
                   />
+                </div>
+
+                <div className="pt-4 border-t border-border">
+                  <h4 className="font-medium mb-3">Canais de Notificação</h4>
+                  <p className="text-sm text-muted-foreground mb-4">Escolha por onde deseja receber as notificações</p>
+                  <div className="space-y-3">
+                    <NotificationToggle
+                      title="Email"
+                      description="Receba notificações por email"
+                      defaultChecked={true}
+                    />
+                    <NotificationToggle
+                      title="SMS"
+                      description="Receba notificações por SMS"
+                      defaultChecked={false}
+                    />
+                    <NotificationToggle
+                      title="WhatsApp"
+                      description="Receba notificações pelo WhatsApp"
+                      defaultChecked={false}
+                    />
+                  </div>
                 </div>
               </div>
             )}
