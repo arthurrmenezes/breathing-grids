@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -50,16 +51,22 @@ const bottomMenuItems = [{ label: "Configurações", icon: Settings, href: "/app
 export const AppLayout = ({ children }: AppLayoutProps) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [showValues, setShowValues] = useState(true);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await logout();
     navigate("/");
   };
 
   // Pages that should show the header (only Dashboard now)
   const showHeader = location.pathname === "/app";
+
+  // Get user display name
+  const userName = user ? `${user.firstName} ${user.lastName}` : "";
+  const userEmail = user?.email || "";
 
   return (
     <ValuesVisibilityContext.Provider value={{ showValues, setShowValues }}>
@@ -143,8 +150,8 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
           {/* User Profile */}
             {!isSidebarCollapsed && (
               <div className="flex flex-col items-center text-center p-2 rounded-lg mb-2">
-                <p className="text-sm font-medium truncate">João da Silva</p>
-                <p className="text-xs text-muted-foreground truncate">joao@email.com</p>
+                <p className="text-sm font-medium truncate">{userName}</p>
+                <p className="text-xs text-muted-foreground truncate">{userEmail}</p>
               </div>
             )}
 

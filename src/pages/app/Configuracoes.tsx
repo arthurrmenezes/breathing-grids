@@ -2,7 +2,11 @@ import { useState } from 'react';
 import { AppLayout } from '@/components/app/AppLayout';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 import { useTheme } from 'next-themes';
+import { useAuth } from '@/contexts/AuthContext';
+import { authService } from '@/services/authService';
+import { toast } from 'sonner';
 import { 
   User, 
   Bell, 
@@ -12,8 +16,19 @@ import {
   ChevronRight,
   Moon,
   Sun,
-  Smartphone
+  Smartphone,
+  Loader2,
+  Eye,
+  EyeOff
 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const settingsSections = [
   { id: 'profile', label: 'Perfil', icon: User },
@@ -26,6 +41,81 @@ const settingsSections = [
 const Configuracoes = () => {
   const [activeSection, setActiveSection] = useState('profile');
   const { theme, setTheme } = useTheme();
+  const { user, updateUser } = useAuth();
+
+  // Profile state
+  const [firstName, setFirstName] = useState(user?.firstName || '');
+  const [lastName, setLastName] = useState(user?.lastName || '');
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  // Change password state
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const handleSaveProfile = async () => {
+    setSavingProfile(true);
+    try {
+      const response = await authService.updateProfile({
+        firstName: firstName || undefined,
+        lastName: lastName || undefined,
+      });
+
+      if (response.error) {
+        toast.error(response.error);
+      } else if (response.data) {
+        updateUser({
+          firstName: response.data.firstName,
+          lastName: response.data.lastName,
+        });
+        toast.success('Perfil atualizado com sucesso');
+      }
+    } catch (error) {
+      toast.error('Erro ao atualizar perfil');
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (newPassword !== confirmNewPassword) {
+      toast.error('As senhas não coincidem');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast.error('A nova senha deve ter pelo menos 6 caracteres');
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      const response = await authService.changePassword({
+        currentPassword,
+        newPassword,
+        confirmNewPassword,
+      });
+
+      if (response.error) {
+        toast.error(response.error);
+      } else {
+        toast.success('Senha alterada com sucesso');
+        setChangePasswordOpen(false);
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmNewPassword('');
+      }
+    } catch (error) {
+      toast.error('Erro ao alterar senha');
+    } finally {
+      setChangingPassword(false);
+    }
+  };
 
   return (
     <AppLayout>
@@ -66,23 +156,42 @@ const Configuracoes = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="firstName">Nome</Label>
-                    <Input id="firstName" defaultValue="João" />
+                    <Input 
+                      id="firstName" 
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="lastName">Sobrenome</Label>
-                    <Input id="lastName" defaultValue="da Silva" />
+                    <Input 
+                      id="lastName" 
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                    />
                   </div>
                   <div className="space-y-2 sm:col-span-2">
                     <Label htmlFor="email">Email</Label>
                     <Input 
                       id="email" 
                       type="email" 
-                      defaultValue="joao@email.com" 
+                      value={user?.email || ''} 
                       disabled 
                       className="bg-muted cursor-not-allowed"
                     />
                     <p className="text-xs text-muted-foreground">O email não pode ser alterado</p>
                   </div>
+                </div>
+
+                <div className="pt-4 border-t border-border">
+                  <Button 
+                    variant="accent" 
+                    onClick={handleSaveProfile}
+                    disabled={savingProfile}
+                  >
+                    {savingProfile && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                    Salvar Alterações
+                  </Button>
                 </div>
               </div>
             )}
@@ -134,13 +243,16 @@ const Configuracoes = () => {
                 </div>
 
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 rounded-xl border border-border hover:border-accent/30 transition-colors cursor-pointer">
-                    <div>
+                  <button 
+                    onClick={() => setChangePasswordOpen(true)}
+                    className="w-full flex items-center justify-between p-4 rounded-xl border border-border hover:border-accent/30 transition-colors cursor-pointer"
+                  >
+                    <div className="text-left">
                       <p className="font-medium">Alterar Senha</p>
-                      <p className="text-sm text-muted-foreground">Última alteração há 3 meses</p>
+                      <p className="text-sm text-muted-foreground">Atualize sua senha de acesso</p>
                     </div>
                     <ChevronRight className="w-5 h-5 text-muted-foreground" />
-                  </div>
+                  </button>
                   
                   <div className="flex items-center justify-between p-4 rounded-xl border border-border hover:border-accent/30 transition-colors cursor-pointer">
                     <div>
@@ -228,6 +340,94 @@ const Configuracoes = () => {
           </div>
         </div>
       </div>
+
+      {/* Change Password Dialog */}
+      <Dialog open={changePasswordOpen} onOpenChange={setChangePasswordOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Alterar Senha</DialogTitle>
+            <DialogDescription>
+              Digite sua senha atual e a nova senha para atualizar.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="currentPassword">Senha Atual</Label>
+              <div className="relative">
+                <Input
+                  id="currentPassword"
+                  type={showCurrentPassword ? "text" : "password"}
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  placeholder="Digite sua senha atual"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="newPassword">Nova Senha</Label>
+              <div className="relative">
+                <Input
+                  id="newPassword"
+                  type={showNewPassword ? "text" : "password"}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Digite a nova senha"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="confirmNewPassword">Confirmar Nova Senha</Label>
+              <div className="relative">
+                <Input
+                  id="confirmNewPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={confirmNewPassword}
+                  onChange={(e) => setConfirmNewPassword(e.target.value)}
+                  placeholder="Confirme a nova senha"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setChangePasswordOpen(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              variant="accent" 
+              onClick={handleChangePassword}
+              disabled={changingPassword || !currentPassword || !newPassword || !confirmNewPassword}
+            >
+              {changingPassword && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Alterar Senha
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 };
