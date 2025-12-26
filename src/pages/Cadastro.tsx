@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Eye, EyeOff, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Cadastro = () => {
   const [firstName, setFirstName] = useState('');
@@ -18,6 +19,7 @@ const Cadastro = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { register } = useAuth();
 
   const hasUnsavedChanges = useMemo(() => {
     return firstName.length > 0 || lastName.length > 0 || email.length > 0 || password.length > 0 || confirmPassword.length > 0;
@@ -65,15 +67,25 @@ const Cadastro = () => {
     
     setIsLoading(true);
     
-    // Simulating signup - replace with actual auth later
-    setTimeout(() => {
-      setIsLoading(false);
+    const result = await register(firstName, lastName, email, password, confirmPassword);
+    
+    setIsLoading(false);
+    
+    if (result.success) {
       toast({
         title: "Conta criada!",
         description: "Verifique seu email para confirmar sua conta",
       });
+      // Store email for confirmation page
+      sessionStorage.setItem('pendingConfirmationEmail', email);
       navigate('/confirmar-email');
-    }, 1000);
+    } else {
+      toast({
+        title: "Erro ao criar conta",
+        description: result.error || "Tente novamente mais tarde",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

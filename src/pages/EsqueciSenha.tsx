@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, Mail } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { authService } from '@/services/authService';
 
 const EsqueciSenha = () => {
   const [email, setEmail] = useState('');
@@ -27,11 +28,19 @@ const EsqueciSenha = () => {
     
     setIsLoading(true);
     
-    // Simulating password reset - replace with actual auth later
-    setTimeout(() => {
-      setIsLoading(false);
+    const result = await authService.forgotPassword({ email });
+    
+    setIsLoading(false);
+    
+    if (result.error) {
+      toast({
+        title: "Erro",
+        description: result.error,
+        variant: "destructive",
+      });
+    } else {
       setIsSubmitted(true);
-    }, 1000);
+    }
   };
 
   if (isSubmitted) {
