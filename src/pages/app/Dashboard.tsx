@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { AppLayout, useValuesVisibility } from "@/components/app/AppLayout";
 import { TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight, MoreHorizontal } from "lucide-react";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import {
   Select,
   SelectContent,
@@ -80,12 +80,13 @@ const upcomingBills = [
   { id: 3, name: "Energia", amount: 245.0, dueDate: "15 Jan", status: "pending" },
 ];
 
+// Category data with percentages
 const categoryData = [
-  { category: "Alimentação", value: 1850 },
-  { category: "Transporte", value: 980 },
-  { category: "Lazer", value: 650 },
-  { category: "Moradia", value: 2800 },
-  { category: "Outros", value: 520 },
+  { category: "Moradia", value: 2800, percentage: 40, color: "hsl(160 84% 39%)" },
+  { category: "Alimentação", value: 1850, percentage: 27, color: "hsl(200 84% 45%)" },
+  { category: "Transporte", value: 980, percentage: 14, color: "hsl(280 84% 50%)" },
+  { category: "Lazer", value: 650, percentage: 9, color: "hsl(40 84% 50%)" },
+  { category: "Outros", value: 520, percentage: 10, color: "hsl(0 0% 60%)" },
 ];
 
 // Helper function to calculate nice Y-axis ticks based on max value
@@ -161,12 +162,13 @@ const Dashboard = () => {
   return (
     <AppLayout>
       <div className="space-y-6">
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* Summary Cards - Compact */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <SummaryCard 
-            title="Saldo Total" 
+            title="Saldo disponível" 
             value={hideValue("R$ 47.892,54")} 
-            change="+12,5%" 
+            change="+12%"
+            changeValue="+R$ 1.560"
             trend="up" 
             icon={Wallet}
             showValues={showValues}
@@ -174,7 +176,8 @@ const Dashboard = () => {
           <SummaryCard 
             title="Receitas" 
             value={hideValue("R$ 10.200,00")} 
-            change="+7,4%" 
+            change="+17%"
+            changeValue="+R$ 2.560"
             trend="up" 
             icon={TrendingUp}
             showValues={showValues}
@@ -182,130 +185,18 @@ const Dashboard = () => {
           <SummaryCard 
             title="Despesas" 
             value={hideValue("R$ 7.800,00")} 
-            change="+5,4%" 
+            change="-12%"
+            changeValue="-R$ 560"
             trend="down" 
             icon={TrendingDown}
             showValues={showValues}
           />
         </div>
 
-        {/* Charts Row */}
+        {/* Middle Row - Transactions and Category Chart */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Chart */}
-          <div className="lg:col-span-2 bg-card rounded-2xl border border-border p-6">
-            <div className="flex items-center justify-between mb-2">
-              <div>
-                <h3 className="text-lg font-medium">Fluxo de Caixa</h3>
-                <p className="text-sm text-muted-foreground">{periodLabels[selectedPeriod]}</p>
-              </div>
-              <Select value={selectedPeriod} onValueChange={(value) => setSelectedPeriod(value as PeriodType)}>
-                <SelectTrigger className="w-[160px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="year">Último ano</SelectItem>
-                  <SelectItem value="6months">Últimos 6 meses</SelectItem>
-                  <SelectItem value="3months">Últimos 3 meses</SelectItem>
-                  <SelectItem value="month">Este mês</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center gap-4 text-sm mb-4">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-accent" />
-                <span className="text-muted-foreground">Receitas</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-destructive/60" />
-                <span className="text-muted-foreground">Despesas</span>
-              </div>
-            </div>
-            <ResponsiveContainer width="100%" height={280}>
-              <AreaChart data={chartData}>
-                <defs>
-                  <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(160 84% 39%)" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="hsl(160 84% 39%)" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                <XAxis
-                  dataKey="label"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
-                  interval={selectedPeriod === "month" ? 4 : 0}
-                />
-                <YAxis
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
-                  ticks={yAxisTicks}
-                  domain={yAxisDomain}
-                  tickFormatter={formatYAxisValue}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "8px",
-                  }}
-                  labelFormatter={(label) => selectedPeriod === "month" ? `Dia ${label}` : label}
-                  formatter={(value: number) => [showValues ? `R$ ${value.toLocaleString("pt-BR")}` : "••••••"]}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="income"
-                  stroke="hsl(160 84% 39%)"
-                  strokeWidth={2}
-                  fill="url(#incomeGradient)"
-                />
-                <Area
-                  type="monotone"
-                  dataKey="expense"
-                  stroke="hsl(var(--destructive))"
-                  strokeWidth={2}
-                  fill="transparent"
-                  strokeDasharray="5 5"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* Expense Breakdown */}
-          <div className="bg-card rounded-2xl border border-border p-6">
-            <h3 className="text-lg font-medium mb-6">Gastos por Categoria</h3>
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={categoryData} layout="vertical">
-                <XAxis type="number" hide />
-                <YAxis
-                  type="category"
-                  dataKey="category"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
-                  width={80}
-                />
-                <Tooltip
-                  formatter={(value: number) => [showValues ? `R$ ${value.toLocaleString("pt-BR")}` : "••••••"]}
-                  labelFormatter={(label) => label}
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "8px",
-                  }}
-                  cursor={false}
-                />
-                <Bar dataKey="value" fill="hsl(160 84% 39%)" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Bottom Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Recent Transactions */}
-          <div className="bg-card rounded-2xl border border-border p-6">
+          <div className="lg:col-span-2 bg-card rounded-2xl border border-border p-6">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-medium">Transações Recentes</h3>
               <a href="/app/transacoes" className="text-sm text-accent hover:underline">
@@ -338,38 +229,178 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Upcoming Bills */}
+          {/* Category Breakdown with Donut Chart */}
           <div className="bg-card rounded-2xl border border-border p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-medium">Próximas Despesas</h3>
-              <a href="/app/lembretes" className="text-sm text-accent hover:underline">
-                Ver todas
-              </a>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium">Gastos por Categoria</h3>
+              <button className="p-1.5 rounded-lg hover:bg-secondary transition-colors">
+                <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
+              </button>
             </div>
+            
+            {/* Donut Chart */}
+            <div className="relative mb-4">
+              <ResponsiveContainer width="100%" height={160}>
+                <PieChart>
+                  <Pie
+                    data={categoryData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={70}
+                    paddingAngle={2}
+                    dataKey="value"
+                  >
+                    {categoryData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+              {/* Center Text */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-center">
+                  <p className="text-xl font-semibold">{showValues ? "R$ 6.800" : "••••••"}</p>
+                  <p className="text-xs text-muted-foreground">Total</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Category List with percentages */}
             <div className="space-y-3">
-              {upcomingBills.map((bill) => (
-                <div
-                  key={bill.id}
-                  className="flex items-center justify-between p-4 rounded-xl border border-border hover:border-accent/30 transition-colors"
-                >
-                  <div>
-                    <p className="font-medium">{bill.name}</p>
-                    <p className="text-sm text-muted-foreground">Vence em {bill.dueDate}</p>
+              {categoryData.map((cat) => (
+                <div key={cat.category} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: cat.color }} />
+                    <span className="text-sm">{cat.category}</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <p className="font-medium tabular-nums">
-                      {showValues
-                        ? `R$ ${bill.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
-                        : "••••••"}
-                    </p>
-                    <button className="p-1.5 rounded-lg hover:bg-secondary transition-colors">
-                      <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
-                    </button>
+                    <span className="text-sm font-medium">{showValues ? `R$ ${cat.value.toLocaleString("pt-BR")}` : "••••••"}</span>
+                    <span className="text-xs text-muted-foreground w-8 text-right">{cat.percentage}%</span>
                   </div>
                 </div>
               ))}
             </div>
+
+            {/* Comparison with last month */}
+            <div className="mt-4 pt-4 border-t border-border">
+              <p className="text-sm text-success flex items-center gap-1">
+                <ArrowUpRight className="w-4 h-4" />
+                +12% comparado ao mês anterior
+              </p>
+            </div>
           </div>
+        </div>
+
+        {/* Upcoming Bills */}
+        <div className="bg-card rounded-2xl border border-border p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-medium">Próximas Despesas</h3>
+            <a href="/app/lembretes" className="text-sm text-accent hover:underline">
+              Ver todas
+            </a>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {upcomingBills.map((bill) => (
+              <div
+                key={bill.id}
+                className="flex items-center justify-between p-4 rounded-xl border border-border hover:border-accent/30 transition-colors"
+              >
+                <div>
+                  <p className="font-medium">{bill.name}</p>
+                  <p className="text-sm text-muted-foreground">Vence em {bill.dueDate}</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <p className="font-medium tabular-nums">
+                    {showValues
+                      ? `R$ ${bill.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
+                      : "••••••"}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Cash Flow Chart - Bottom */}
+        <div className="bg-card rounded-2xl border border-border p-6">
+          <div className="flex items-center justify-between mb-2">
+            <div>
+              <h3 className="text-lg font-medium">Fluxo de Caixa</h3>
+              <p className="text-sm text-muted-foreground">{periodLabels[selectedPeriod]}</p>
+            </div>
+            <Select value={selectedPeriod} onValueChange={(value) => setSelectedPeriod(value as PeriodType)}>
+              <SelectTrigger className="w-[160px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="year">Último ano</SelectItem>
+                <SelectItem value="6months">Últimos 6 meses</SelectItem>
+                <SelectItem value="3months">Últimos 3 meses</SelectItem>
+                <SelectItem value="month">Este mês</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-4 text-sm mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-accent" />
+              <span className="text-muted-foreground">Receitas</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-destructive/60" />
+              <span className="text-muted-foreground">Despesas</span>
+            </div>
+          </div>
+          <ResponsiveContainer width="100%" height={280}>
+            <AreaChart data={chartData}>
+              <defs>
+                <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="hsl(160 84% 39%)" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="hsl(160 84% 39%)" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+              <XAxis
+                dataKey="label"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                interval={selectedPeriod === "month" ? 4 : 0}
+              />
+              <YAxis
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                ticks={yAxisTicks}
+                domain={yAxisDomain}
+                tickFormatter={formatYAxisValue}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "hsl(var(--card))",
+                  border: "1px solid hsl(var(--border))",
+                  borderRadius: "8px",
+                }}
+                labelFormatter={(label) => selectedPeriod === "month" ? `Dia ${label}` : label}
+                formatter={(value: number) => [showValues ? `R$ ${value.toLocaleString("pt-BR")}` : "••••••"]}
+              />
+              <Area
+                type="monotone"
+                dataKey="income"
+                stroke="hsl(160 84% 39%)"
+                strokeWidth={2}
+                fill="url(#incomeGradient)"
+              />
+              <Area
+                type="monotone"
+                dataKey="expense"
+                stroke="hsl(var(--destructive))"
+                strokeWidth={2}
+                fill="transparent"
+                strokeDasharray="5 5"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
         </div>
       </div>
     </AppLayout>
@@ -380,6 +411,7 @@ const SummaryCard = ({
   title,
   value,
   change,
+  changeValue,
   trend,
   icon: Icon,
   showValues,
@@ -387,24 +419,30 @@ const SummaryCard = ({
   title: string;
   value: string;
   change: string;
+  changeValue: string;
   trend: "up" | "down";
   icon: React.ComponentType<{ className?: string }>;
   showValues: boolean;
 }) => (
-  <div className="bg-card rounded-2xl border border-border p-6 hover:shadow-card-hover transition-shadow">
-    <div className="flex items-start justify-between mb-4">
+  <div className="bg-card rounded-xl border border-border p-4 hover:shadow-card-hover transition-shadow">
+    <div className="flex items-center justify-between">
+      <div className="flex-1">
+        <p className="text-sm text-muted-foreground mb-1">{title}</p>
+        <p className="text-xl font-semibold tabular-nums">{value}</p>
+        <div className="flex items-center gap-2 mt-1">
+          <span className={`text-xs font-medium ${trend === "up" ? "text-success" : "text-destructive"}`}>
+            {trend === "up" ? <ArrowUpRight className="w-3 h-3 inline" /> : <ArrowDownRight className="w-3 h-3 inline" />}
+            {showValues ? change : "••"}
+          </span>
+          <span className="text-xs text-muted-foreground">
+            {showValues ? changeValue : "••••"} vs mês anterior
+          </span>
+        </div>
+      </div>
       <div className="p-2 rounded-xl bg-accent/10">
         <Icon className="w-5 h-5 text-accent" />
       </div>
-      <div
-        className={`flex items-center gap-1 text-sm font-medium ${trend === "up" ? "text-success" : "text-destructive"}`}
-      >
-        {trend === "up" ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
-        {showValues ? change : "••••"}
-      </div>
     </div>
-    <p className="text-sm text-muted-foreground mb-1">{title}</p>
-    <p className="text-2xl font-semibold tabular-nums">{value}</p>
   </div>
 );
 
