@@ -430,9 +430,20 @@ const SummaryCard = ({
       <div className="flex-1">
         <p className="text-sm text-muted-foreground mb-1">{title}</p>
         <p className="text-xl font-semibold tabular-nums">{value}</p>
-        <p className={`text-sm mt-1 ${trend === "up" ? "text-success" : "text-destructive"}`}>
-          {showValues ? `${changeValue} vs mês anterior (${change})` : "•••••••"}
-        </p>
+        <div className="flex items-center gap-2 mt-1">
+          <span className={`text-sm ${trend === "up" ? "text-success" : "text-destructive"}`}>
+            {showValues ? `${changeValue} vs mês anterior` : "•••••••"}
+          </span>
+          {showValues && (
+            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+              trend === "up" 
+                ? "bg-success/10 text-success" 
+                : "bg-destructive/10 text-destructive"
+            }`}>
+              {change}
+            </span>
+          )}
+        </div>
       </div>
       <div className="p-2 rounded-xl bg-accent/10">
         <Icon className="w-5 h-5 text-accent" />

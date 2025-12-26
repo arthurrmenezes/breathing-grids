@@ -112,9 +112,9 @@ export const NewTransactionModal = ({ open, onOpenChange }: NewTransactionModalP
           <DialogTitle>Nova Transação</DialogTitle>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-          {/* Title */}
-          <div className="space-y-2">
+        <form onSubmit={handleSubmit} className="space-y-3 mt-4">
+          {/* Linha 1 - Título */}
+          <div className="space-y-1.5">
             <Label htmlFor="title">Título <span className="text-destructive">*</span></Label>
             <Input
               id="title"
@@ -125,9 +125,9 @@ export const NewTransactionModal = ({ open, onOpenChange }: NewTransactionModalP
             />
           </div>
 
-          {/* Row: Value, Date, Type, Status */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="space-y-2">
+          {/* Linha 2 - Valor + Data */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
               <Label htmlFor="value">Valor <span className="text-destructive">*</span></Label>
               <div className="relative">
                 <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">R$</span>
@@ -142,7 +142,7 @@ export const NewTransactionModal = ({ open, onOpenChange }: NewTransactionModalP
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label htmlFor="date">Data <span className="text-destructive">*</span></Label>
               <Input
                 id="date"
@@ -153,8 +153,11 @@ export const NewTransactionModal = ({ open, onOpenChange }: NewTransactionModalP
                 className="text-sm"
               />
             </div>
+          </div>
 
-            <div className="space-y-2">
+          {/* Linha 3 - Tipo + Status */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
               <Label>Tipo <span className="text-destructive">*</span></Label>
               <Select value={type} onValueChange={setType} required>
                 <SelectTrigger className="text-sm">
@@ -167,7 +170,7 @@ export const NewTransactionModal = ({ open, onOpenChange }: NewTransactionModalP
               </Select>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Status <span className="text-destructive">*</span></Label>
               <Select value={status} onValueChange={setStatus} required>
                 <SelectTrigger className="text-sm">
@@ -182,13 +185,13 @@ export const NewTransactionModal = ({ open, onOpenChange }: NewTransactionModalP
             </div>
           </div>
 
-          {/* Row: Category, Payment */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-2">
+          {/* Linha 4 - Categoria + Forma de Pagamento */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
               <Label>Categoria <span className="text-destructive">*</span></Label>
               <Select value={category} onValueChange={setCategory} required>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione a categoria" />
+                <SelectTrigger className="text-sm">
+                  <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
                 <SelectContent>
                   {categories.map((cat) => (
@@ -198,10 +201,10 @@ export const NewTransactionModal = ({ open, onOpenChange }: NewTransactionModalP
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label>Forma de Pagamento <span className="text-destructive">*</span></Label>
+            <div className="space-y-1.5">
+              <Label>Pagamento <span className="text-destructive">*</span></Label>
               <Select value={payment} onValueChange={setPayment} required>
-                <SelectTrigger>
+                <SelectTrigger className="text-sm">
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
                 <SelectContent>
@@ -213,19 +216,21 @@ export const NewTransactionModal = ({ open, onOpenChange }: NewTransactionModalP
             </div>
           </div>
 
-          {/* Destination */}
-          <div className="space-y-2">
-            <Label htmlFor="destination">Destino (opcional)</Label>
+          {/* Linha 5 - Destino/Origem */}
+          <div className="space-y-1.5">
+            <Label htmlFor="destination">
+              {type === 'Receita' ? 'Origem' : 'Destino'} (opcional)
+            </Label>
             <Input
               id="destination"
               value={destination}
               onChange={(e) => setDestination(e.target.value)}
-              placeholder="Ex: Pão de Açúcar"
+              placeholder={type === 'Receita' ? 'Ex: Empresa XYZ' : 'Ex: Pão de Açúcar'}
             />
           </div>
 
-          {/* Description */}
-          <div className="space-y-2">
+          {/* Linha 6 - Descrição */}
+          <div className="space-y-1.5">
             <Label htmlFor="description">Descrição (opcional)</Label>
             <Textarea
               id="description"
@@ -233,6 +238,7 @@ export const NewTransactionModal = ({ open, onOpenChange }: NewTransactionModalP
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Ex: Detalhes adicionais..."
               rows={2}
+              className="resize-none"
             />
           </div>
 
