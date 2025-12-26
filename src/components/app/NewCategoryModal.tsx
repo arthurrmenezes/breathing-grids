@@ -56,7 +56,7 @@ export const NewCategoryModal = ({ open, onOpenChange }: NewCategoryModalProps) 
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           {/* Title */}
           <div className="space-y-2">
-            <Label htmlFor="title">Título *</Label>
+            <Label htmlFor="title">Título <span className="text-destructive">*</span></Label>
             <Input
               id="title"
               value={title}
@@ -68,7 +68,7 @@ export const NewCategoryModal = ({ open, onOpenChange }: NewCategoryModalProps) 
 
           {/* Type */}
           <div className="space-y-2">
-            <Label>Tipo *</Label>
+            <Label>Tipo <span className="text-destructive">*</span></Label>
             <Select value={type} onValueChange={setType} required>
               <SelectTrigger>
                 <SelectValue placeholder="Selecione o tipo" />

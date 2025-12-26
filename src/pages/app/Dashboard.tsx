@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { AppLayout, useValuesVisibility } from "@/components/app/AppLayout";
-import { TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight, MoreHorizontal } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, ArrowUpRight } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import {
   Select,
@@ -275,9 +275,9 @@ const Dashboard = () => {
         </div>
 
         {/* Middle Row - Transactions and Category Chart */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           {/* Recent Transactions */}
-          <div className="lg:col-span-2 bg-card rounded-2xl border border-border p-6">
+          <div className="lg:col-span-3 bg-card rounded-2xl border border-border p-6">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-medium">Transações Recentes</h3>
               <a href="/app/transacoes" className="text-sm text-accent hover:underline">
@@ -311,7 +311,7 @@ const Dashboard = () => {
           </div>
 
         {/* Category Breakdown with Donut Chart */}
-          <div className="bg-card rounded-2xl border border-border p-6">
+          <div className="lg:col-span-2 bg-card rounded-2xl border border-border p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium">Gastos por Categoria</h3>
               <a href="/app/categorias" className="text-sm text-accent hover:underline">
@@ -428,16 +428,10 @@ const SummaryCard = ({
   <div className="bg-card rounded-xl border border-border p-4 hover:shadow-card-hover transition-shadow">
     <div className="flex items-center justify-between">
       <div className="flex-1">
-        <div className="flex items-center justify-between mb-1">
-          <p className="text-sm text-muted-foreground">{title}</p>
-          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${trend === "up" ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}`}>
-            {showValues ? change : "••"}
-          </span>
-        </div>
+        <p className="text-sm text-muted-foreground mb-1">{title}</p>
         <p className="text-xl font-semibold tabular-nums">{value}</p>
-        <p className={`text-sm mt-1 flex items-center gap-1 ${trend === "up" ? "text-success" : "text-destructive"}`}>
-          {trend === "up" ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-          {showValues ? `${changeValue} vs mês anterior` : "•••••••"}
+        <p className={`text-sm mt-1 ${trend === "up" ? "text-success" : "text-destructive"}`}>
+          {showValues ? `${changeValue} vs mês anterior (${change})` : "•••••••"}
         </p>
       </div>
       <div className="p-2 rounded-xl bg-accent/10">
