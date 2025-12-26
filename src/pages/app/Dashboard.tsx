@@ -193,6 +193,87 @@ const Dashboard = () => {
           />
         </div>
 
+        {/* Cash Flow Chart - Second Position */}
+        <div className="bg-card rounded-2xl border border-border p-6">
+          <div className="flex items-center justify-between mb-2">
+            <div>
+              <h3 className="text-lg font-medium">Fluxo de Caixa</h3>
+              <p className="text-sm text-muted-foreground">{periodLabels[selectedPeriod]}</p>
+            </div>
+            <Select value={selectedPeriod} onValueChange={(value) => setSelectedPeriod(value as PeriodType)}>
+              <SelectTrigger className="w-[160px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="year">Último ano</SelectItem>
+                <SelectItem value="6months">Últimos 6 meses</SelectItem>
+                <SelectItem value="3months">Últimos 3 meses</SelectItem>
+                <SelectItem value="month">Este mês</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-4 text-sm mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-accent" />
+              <span className="text-muted-foreground">Receitas</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-destructive/60" />
+              <span className="text-muted-foreground">Despesas</span>
+            </div>
+          </div>
+          <ResponsiveContainer width="100%" height={280}>
+            <AreaChart data={chartData}>
+              <defs>
+                <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="hsl(160 84% 39%)" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="hsl(160 84% 39%)" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+              <XAxis
+                dataKey="label"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                interval={selectedPeriod === "month" ? 4 : 0}
+              />
+              <YAxis
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                ticks={yAxisTicks}
+                domain={yAxisDomain}
+                tickFormatter={formatYAxisValue}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "hsl(var(--card))",
+                  border: "1px solid hsl(var(--border))",
+                  borderRadius: "8px",
+                }}
+                labelFormatter={(label) => selectedPeriod === "month" ? `Dia ${label}` : label}
+                formatter={(value: number) => [showValues ? `R$ ${value.toLocaleString("pt-BR")}` : "••••••"]}
+              />
+              <Area
+                type="monotone"
+                dataKey="income"
+                stroke="hsl(160 84% 39%)"
+                strokeWidth={2}
+                fill="url(#incomeGradient)"
+              />
+              <Area
+                type="monotone"
+                dataKey="expense"
+                stroke="hsl(var(--destructive))"
+                strokeWidth={2}
+                fill="transparent"
+                strokeDasharray="5 5"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+
         {/* Middle Row - Transactions and Category Chart */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Recent Transactions */}
@@ -229,13 +310,13 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Category Breakdown with Donut Chart */}
+        {/* Category Breakdown with Donut Chart */}
           <div className="bg-card rounded-2xl border border-border p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium">Gastos por Categoria</h3>
-              <button className="p-1.5 rounded-lg hover:bg-secondary transition-colors">
-                <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
-              </button>
+              <a href="/app/categorias" className="text-sm text-accent hover:underline">
+                Ver todas
+              </a>
             </div>
             
             {/* Donut Chart */}
@@ -322,86 +403,6 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Cash Flow Chart - Bottom */}
-        <div className="bg-card rounded-2xl border border-border p-6">
-          <div className="flex items-center justify-between mb-2">
-            <div>
-              <h3 className="text-lg font-medium">Fluxo de Caixa</h3>
-              <p className="text-sm text-muted-foreground">{periodLabels[selectedPeriod]}</p>
-            </div>
-            <Select value={selectedPeriod} onValueChange={(value) => setSelectedPeriod(value as PeriodType)}>
-              <SelectTrigger className="w-[160px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="year">Último ano</SelectItem>
-                <SelectItem value="6months">Últimos 6 meses</SelectItem>
-                <SelectItem value="3months">Últimos 3 meses</SelectItem>
-                <SelectItem value="month">Este mês</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-center gap-4 text-sm mb-4">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-accent" />
-              <span className="text-muted-foreground">Receitas</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-destructive/60" />
-              <span className="text-muted-foreground">Despesas</span>
-            </div>
-          </div>
-          <ResponsiveContainer width="100%" height={280}>
-            <AreaChart data={chartData}>
-              <defs>
-                <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="hsl(160 84% 39%)" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="hsl(160 84% 39%)" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-              <XAxis
-                dataKey="label"
-                axisLine={false}
-                tickLine={false}
-                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
-                interval={selectedPeriod === "month" ? 4 : 0}
-              />
-              <YAxis
-                axisLine={false}
-                tickLine={false}
-                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
-                ticks={yAxisTicks}
-                domain={yAxisDomain}
-                tickFormatter={formatYAxisValue}
-              />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "hsl(var(--card))",
-                  border: "1px solid hsl(var(--border))",
-                  borderRadius: "8px",
-                }}
-                labelFormatter={(label) => selectedPeriod === "month" ? `Dia ${label}` : label}
-                formatter={(value: number) => [showValues ? `R$ ${value.toLocaleString("pt-BR")}` : "••••••"]}
-              />
-              <Area
-                type="monotone"
-                dataKey="income"
-                stroke="hsl(160 84% 39%)"
-                strokeWidth={2}
-                fill="url(#incomeGradient)"
-              />
-              <Area
-                type="monotone"
-                dataKey="expense"
-                stroke="hsl(var(--destructive))"
-                strokeWidth={2}
-                fill="transparent"
-                strokeDasharray="5 5"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
       </div>
     </AppLayout>
   );
@@ -427,17 +428,17 @@ const SummaryCard = ({
   <div className="bg-card rounded-xl border border-border p-4 hover:shadow-card-hover transition-shadow">
     <div className="flex items-center justify-between">
       <div className="flex-1">
-        <p className="text-sm text-muted-foreground mb-1">{title}</p>
-        <p className="text-xl font-semibold tabular-nums">{value}</p>
-        <div className="flex items-center gap-2 mt-1">
-          <span className={`text-xs font-medium ${trend === "up" ? "text-success" : "text-destructive"}`}>
-            {trend === "up" ? <ArrowUpRight className="w-3 h-3 inline" /> : <ArrowDownRight className="w-3 h-3 inline" />}
+        <div className="flex items-center justify-between mb-1">
+          <p className="text-sm text-muted-foreground">{title}</p>
+          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${trend === "up" ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}`}>
             {showValues ? change : "••"}
           </span>
-          <span className="text-xs text-muted-foreground">
-            {showValues ? changeValue : "••••"} vs mês anterior
-          </span>
         </div>
+        <p className="text-xl font-semibold tabular-nums">{value}</p>
+        <p className={`text-sm mt-1 flex items-center gap-1 ${trend === "up" ? "text-success" : "text-destructive"}`}>
+          {trend === "up" ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+          {showValues ? `${changeValue} vs mês anterior` : "•••••••"}
+        </p>
       </div>
       <div className="p-2 rounded-xl bg-accent/10">
         <Icon className="w-5 h-5 text-accent" />

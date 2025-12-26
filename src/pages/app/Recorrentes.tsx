@@ -1,6 +1,23 @@
+import { useState } from 'react';
 import { AppLayout, useValuesVisibility } from '@/components/app/AppLayout';
 import { Button } from '@/components/ui/button';
-import { Plus, Repeat, Calendar, TrendingUp, MoreHorizontal, Pause, Play, Eye, EyeOff } from 'lucide-react';
+import { Plus, Repeat, Calendar, TrendingUp, MoreHorizontal, Eye, EyeOff, Pencil, Trash2 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const recurringExpenses = [
   { 
@@ -109,6 +126,8 @@ const recurringIncome = [
 
 const Recorrentes = () => {
   const { showValues, setShowValues } = useValuesVisibility();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedRecurrence, setSelectedRecurrence] = useState<number | null>(null);
 
   const totalMonthlyExpenses = recurringExpenses
     .filter(r => r.active)
@@ -117,6 +136,17 @@ const Recorrentes = () => {
   const totalMonthlyIncome = recurringIncome
     .filter(r => r.active)
     .reduce((sum, r) => sum + r.amount, 0);
+
+  const handleDelete = (id: number) => {
+    setSelectedRecurrence(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    console.log('Deleting recurrence:', selectedRecurrence);
+    setDeleteDialogOpen(false);
+    setSelectedRecurrence(null);
+  };
 
   return (
     <AppLayout>
@@ -138,38 +168,8 @@ const Recorrentes = () => {
           </div>
         </div>
 
-        {/* Summary */}
+        {/* Summary - Reordered: Saldo, Receita, Despesa */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-card rounded-xl border border-border p-5">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 rounded-lg bg-destructive/10">
-                <TrendingUp className="w-4 h-4 text-destructive rotate-180" />
-              </div>
-              <span className="text-sm text-muted-foreground">Despesas Mensais</span>
-            </div>
-            <p className="text-2xl font-semibold">
-              R$ {totalMonthlyExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-            </p>
-            <p className="text-sm text-muted-foreground mt-1">
-              {recurringExpenses.filter(r => r.active).length} assinaturas ativas
-            </p>
-          </div>
-          
-          <div className="bg-card rounded-xl border border-border p-5">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 rounded-lg bg-success/10">
-                <TrendingUp className="w-4 h-4 text-success" />
-              </div>
-              <span className="text-sm text-muted-foreground">Receitas Mensais</span>
-            </div>
-            <p className="text-2xl font-semibold">
-              R$ {totalMonthlyIncome.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-            </p>
-            <p className="text-sm text-muted-foreground mt-1">
-              {recurringIncome.filter(r => r.active).length} fontes de renda
-            </p>
-          </div>
-          
           <div className="bg-card rounded-xl border border-border p-5">
             <div className="flex items-center gap-3 mb-2">
               <div className="p-2 rounded-lg bg-accent/10">
@@ -178,9 +178,48 @@ const Recorrentes = () => {
               <span className="text-sm text-muted-foreground">Saldo Recorrente</span>
             </div>
             <p className="text-2xl font-semibold text-success">
-              + R$ {(totalMonthlyIncome - totalMonthlyExpenses).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              {showValues 
+                ? `+ R$ ${(totalMonthlyIncome - totalMonthlyExpenses).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                : '••••••'
+              }
             </p>
             <p className="text-sm text-muted-foreground mt-1">por mês</p>
+          </div>
+          
+          <div className="bg-card rounded-xl border border-border p-5">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 rounded-lg bg-success/10">
+                <TrendingUp className="w-4 h-4 text-success" />
+              </div>
+              <span className="text-sm text-muted-foreground">Receita Recorrente</span>
+            </div>
+            <p className="text-2xl font-semibold">
+              {showValues 
+                ? `R$ ${totalMonthlyIncome.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                : '••••••'
+              }
+            </p>
+            <p className="text-sm text-muted-foreground mt-1">
+              {recurringIncome.filter(r => r.active).length} fontes de renda
+            </p>
+          </div>
+
+          <div className="bg-card rounded-xl border border-border p-5">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 rounded-lg bg-destructive/10">
+                <TrendingUp className="w-4 h-4 text-destructive rotate-180" />
+              </div>
+              <span className="text-sm text-muted-foreground">Despesa Recorrente</span>
+            </div>
+            <p className="text-2xl font-semibold">
+              {showValues 
+                ? `R$ ${totalMonthlyExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                : '••••••'
+              }
+            </p>
+            <p className="text-sm text-muted-foreground mt-1">
+              {recurringExpenses.filter(r => r.active).length} assinaturas ativas
+            </p>
           </div>
         </div>
 
@@ -212,13 +251,39 @@ const Recorrentes = () => {
                     </div>
                   </div>
                   
-                  <div className="text-right">
-                    <p className="font-medium text-success tabular-nums">
-                      + R$ {item.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Total: R$ {item.totalReceived.toLocaleString('pt-BR')}
-                    </p>
+                  <div className="flex items-center gap-4">
+                    <div className="text-right">
+                      <p className="font-medium text-success tabular-nums">
+                        {showValues 
+                          ? `+ R$ ${item.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                          : '••••••'
+                        }
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Total: {showValues ? `R$ ${item.totalReceived.toLocaleString('pt-BR')}` : '••••••'}
+                      </p>
+                    </div>
+                    
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="p-2 rounded-lg hover:bg-secondary transition-colors">
+                          <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem>
+                          <Pencil className="w-4 h-4 mr-2" />
+                          Editar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => handleDelete(item.id)}
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Excluir
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
               </div>
@@ -267,25 +332,36 @@ const Recorrentes = () => {
                   <div className="flex items-center gap-4">
                     <div className="text-right">
                       <p className="font-medium tabular-nums">
-                        - R$ {item.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        {showValues 
+                          ? `- R$ ${item.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                          : '••••••'
+                        }
                       </p>
                       <p className="text-xs text-muted-foreground">
                         Próximo: {item.nextDate}
                       </p>
                     </div>
                     
-                    <div className="flex items-center gap-1">
-                      <button className="p-2 rounded-lg hover:bg-secondary transition-colors">
-                        {item.active ? (
-                          <Pause className="w-4 h-4 text-muted-foreground" />
-                        ) : (
-                          <Play className="w-4 h-4 text-accent" />
-                        )}
-                      </button>
-                      <button className="p-2 rounded-lg hover:bg-secondary transition-colors">
-                        <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
-                      </button>
-                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="p-2 rounded-lg hover:bg-secondary transition-colors">
+                          <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem>
+                          <Pencil className="w-4 h-4 mr-2" />
+                          Editar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => handleDelete(item.id)}
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Excluir
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
               </div>
@@ -293,6 +369,24 @@ const Recorrentes = () => {
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Recorrência</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir esta recorrência? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
   );
 };

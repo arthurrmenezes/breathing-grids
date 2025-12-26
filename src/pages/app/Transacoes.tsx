@@ -3,6 +3,7 @@ import { AppLayout, useValuesVisibility } from '@/components/app/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { NewTransactionModal } from '@/components/app/NewTransactionModal';
 import { 
   Search, 
   Filter, 
@@ -95,6 +96,7 @@ const Transacoes = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<string | null>(null);
+  const [newTransactionOpen, setNewTransactionOpen] = useState(false);
   
   // Filter states
   const [filterType, setFilterType] = useState('Todos');
@@ -153,7 +155,7 @@ const Transacoes = () => {
             <Button variant="outline" size="sm" onClick={() => setShowValues(!showValues)}>
               {showValues ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
             </Button>
-            <Button variant="accent" size="sm">
+            <Button variant="accent" size="sm" onClick={() => setNewTransactionOpen(true)}>
               <Plus className="w-4 h-4 mr-2" />
               Nova Transação
             </Button>
@@ -465,6 +467,9 @@ const Transacoes = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* New Transaction Modal */}
+      <NewTransactionModal open={newTransactionOpen} onOpenChange={setNewTransactionOpen} />
     </AppLayout>
   );
 };
