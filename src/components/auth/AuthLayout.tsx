@@ -60,28 +60,30 @@ export const AuthLayout = ({ children, title, subtitle }: AuthLayoutProps) => {
           </Link>
           
           {/* Main Content - Centered */}
-          <div className="max-w-md space-y-8 mx-auto">
-            <div className="opacity-0 animate-[fade-in_0.6s_ease-out_forwards] text-center">
-              <h2 className="text-3xl font-bold">Você está quase lá!</h2>
-            </div>
-            
-            {/* Features */}
-            <div className="space-y-4">
-              {features.map((feature, index) => (
-                <div 
-                  key={feature.title}
-                  className="flex gap-4 items-start p-4 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/10 transition-all duration-300 hover:bg-white/15 hover:scale-[1.02] opacity-0 animate-[fade-in_0.5s_ease-out_forwards]"
-                  style={{ animationDelay: `${(index + 1) * 100}ms` }}
-                >
-                  <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
-                    <feature.icon className="w-5 h-5" />
+          <div className="flex-1 flex items-center justify-center">
+            <div className="max-w-md space-y-8">
+              <div className="opacity-0 animate-[fade-in_0.6s_ease-out_forwards] text-center">
+                <h2 className="text-3xl font-bold">Você está quase lá!</h2>
+              </div>
+              
+              {/* Features */}
+              <div className="space-y-4">
+                {features.map((feature, index) => (
+                  <div 
+                    key={feature.title}
+                    className="flex gap-4 items-start p-4 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/10 transition-all duration-300 hover:bg-white/15 hover:scale-[1.02] opacity-0 animate-[fade-in_0.5s_ease-out_forwards]"
+                    style={{ animationDelay: `${(index + 1) * 100}ms` }}
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
+                      <feature.icon className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold mb-1">{feature.title}</h3>
+                      <p className="text-sm opacity-80 leading-relaxed">{feature.description}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-semibold mb-1">{feature.title}</h3>
-                    <p className="text-sm opacity-80 leading-relaxed">{feature.description}</p>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
           

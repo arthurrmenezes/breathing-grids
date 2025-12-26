@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -9,6 +9,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { transactionService } from '@/services/transactionService';
+import { TransactionTypeEnum, PaymentMethodEnum, PaymentStatusEnum } from '@/types/transaction';
+import { Category } from '@/types/category';
 import {
   Select,
   SelectContent,
@@ -20,32 +25,21 @@ import {
 interface NewTransactionModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onSuccess?: () => void;
+  categories?: Category[];
 }
 
-const categories = [
-  'Alimentação',
-  'Transporte',
-  'Assinatura',
-  'Conta',
-  'Compras',
-  'Investimento',
-  'Lazer',
-  'Saúde',
-  'Moradia',
-  'Recebido',
-];
-
 const paymentMethods = [
-  'Pix',
-  'Cartão Crédito',
-  'Cartão Débito',
-  'Débito Automático',
-  'Transferência',
-  'Boleto',
-  'Dinheiro',
+  { label: 'Pix', value: 'Pix' },
+  { label: 'Cartão Crédito', value: 'Cartão Crédito' },
+  { label: 'Cartão Débito', value: 'Cartão Débito' },
+  { label: 'Débito Automático', value: 'Débito Automático' },
+  { label: 'Transferência', value: 'Transferência' },
+  { label: 'Boleto', value: 'Boleto' },
+  { label: 'Dinheiro', value: 'Dinheiro' },
 ];
 
-export const NewTransactionModal = ({ open, onOpenChange }: NewTransactionModalProps) => {
+export const NewTransactionModal = ({ open, onOpenChange, onSuccess, categories = [] }: NewTransactionModalProps) => {
   const [title, setTitle] = useState('');
   const [rawValue, setRawValue] = useState(0);
   const [date, setDate] = useState('');
@@ -55,6 +49,7 @@ export const NewTransactionModal = ({ open, onOpenChange }: NewTransactionModalP
   const [status, setStatus] = useState('');
   const [destination, setDestination] = useState('');
   const [description, setDescription] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const formatCurrency = (cents: number) => {
     return (cents / 100).toLocaleString('pt-BR', {
@@ -69,40 +64,58 @@ export const NewTransactionModal = ({ open, onOpenChange }: NewTransactionModalP
     setRawValue(numericValue);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate required fields
     if (!title || !rawValue || !date || !category || !type || !payment || !status) {
+      toast.error('Preencha todos os campos obrigatórios');
       return;
     }
 
-    const transactionData = {
-      title,
-      value: rawValue / 100,
-      date,
-      category,
-      type,
-      payment,
-      status,
-      destination: destination || null,
-      description: description || null,
-    };
+    setLoading(true);
+    try {
+      const transactionType = type === 'Receita' ? TransactionTypeEnum.Receita : TransactionTypeEnum.Despesa;
+      const paymentMethod = PaymentMethodEnum[payment as keyof typeof PaymentMethodEnum] ?? 0;
+      const paymentStatus = status === 'Pago' 
+        ? PaymentStatusEnum.Pago 
+        : status === 'Pendente' 
+        ? PaymentStatusEnum.Pendente 
+        : PaymentStatusEnum.Atrasado;
 
-    console.log('Creating transaction:', transactionData);
-    
-    // Reset form
-    setTitle('');
-    setRawValue(0);
-    setDate('');
-    setCategory('');
-    setType('');
-    setPayment('');
-    setStatus('');
-    setDestination('');
-    setDescription('');
-    
-    onOpenChange(false);
+      const response = await transactionService.create({
+        categoryId: category,
+        title,
+        description: description || undefined,
+        amount: rawValue / 100,
+        date: new Date(date).toISOString(),
+        transactionType,
+        paymentMethod,
+        status: paymentStatus,
+        destination: destination || undefined,
+      });
+
+      if (response.error) {
+        toast.error(response.error);
+      } else {
+        toast.success('Transação criada com sucesso');
+        // Reset form
+        setTitle('');
+        setRawValue(0);
+        setDate('');
+        setCategory('');
+        setType('');
+        setPayment('');
+        setStatus('');
+        setDestination('');
+        setDescription('');
+        onOpenChange(false);
+        onSuccess?.();
+      }
+    } catch (error) {
+      toast.error('Erro ao criar transação');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -122,6 +135,7 @@ export const NewTransactionModal = ({ open, onOpenChange }: NewTransactionModalP
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Ex: Mercado"
               required
+              disabled={loading}
             />
           </div>
 
@@ -138,6 +152,7 @@ export const NewTransactionModal = ({ open, onOpenChange }: NewTransactionModalP
                   className="pl-8 text-right font-mono text-sm"
                   placeholder="0,00"
                   required
+                  disabled={loading}
                 />
               </div>
             </div>
@@ -151,6 +166,7 @@ export const NewTransactionModal = ({ open, onOpenChange }: NewTransactionModalP
                 onChange={(e) => setDate(e.target.value)}
                 required
                 className="text-sm"
+                disabled={loading}
               />
             </div>
           </div>
@@ -159,7 +175,7 @@ export const NewTransactionModal = ({ open, onOpenChange }: NewTransactionModalP
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Tipo <span className="text-destructive">*</span></Label>
-              <Select value={type} onValueChange={setType} required>
+              <Select value={type} onValueChange={setType} required disabled={loading}>
                 <SelectTrigger className="text-sm">
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
@@ -172,7 +188,7 @@ export const NewTransactionModal = ({ open, onOpenChange }: NewTransactionModalP
 
             <div className="space-y-1.5">
               <Label>Status <span className="text-destructive">*</span></Label>
-              <Select value={status} onValueChange={setStatus} required>
+              <Select value={status} onValueChange={setStatus} required disabled={loading}>
                 <SelectTrigger className="text-sm">
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
@@ -189,13 +205,13 @@ export const NewTransactionModal = ({ open, onOpenChange }: NewTransactionModalP
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Categoria <span className="text-destructive">*</span></Label>
-              <Select value={category} onValueChange={setCategory} required>
+              <Select value={category} onValueChange={setCategory} required disabled={loading}>
                 <SelectTrigger className="text-sm">
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
                 <SelectContent>
                   {categories.map((cat) => (
-                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                    <SelectItem key={cat.id} value={cat.id}>{cat.title}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -203,13 +219,13 @@ export const NewTransactionModal = ({ open, onOpenChange }: NewTransactionModalP
 
             <div className="space-y-1.5">
               <Label>Pagamento <span className="text-destructive">*</span></Label>
-              <Select value={payment} onValueChange={setPayment} required>
+              <Select value={payment} onValueChange={setPayment} required disabled={loading}>
                 <SelectTrigger className="text-sm">
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
                 <SelectContent>
                   {paymentMethods.map((method) => (
-                    <SelectItem key={method} value={method}>{method}</SelectItem>
+                    <SelectItem key={method.value} value={method.value}>{method.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -226,6 +242,7 @@ export const NewTransactionModal = ({ open, onOpenChange }: NewTransactionModalP
               value={destination}
               onChange={(e) => setDestination(e.target.value)}
               placeholder={type === 'Receita' ? 'Ex: Empresa XYZ' : 'Ex: Pão de Açúcar'}
+              disabled={loading}
             />
           </div>
 
@@ -239,15 +256,17 @@ export const NewTransactionModal = ({ open, onOpenChange }: NewTransactionModalP
               placeholder="Ex: Detalhes adicionais..."
               rows={2}
               className="resize-none"
+              disabled={loading}
             />
           </div>
 
           {/* Actions */}
           <div className="flex gap-2 pt-2">
-            <Button type="button" variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" className="flex-1" onClick={() => onOpenChange(false)} disabled={loading}>
               Cancelar
             </Button>
-            <Button type="submit" variant="accent" className="flex-1">
+            <Button type="submit" variant="accent" className="flex-1" disabled={loading}>
+              {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
               Criar Transação
             </Button>
           </div>
