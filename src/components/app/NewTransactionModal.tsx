@@ -107,7 +107,7 @@ export const NewTransactionModal = ({ open, onOpenChange }: NewTransactionModalP
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Nova Transação</DialogTitle>
         </DialogHeader>
@@ -115,7 +115,7 @@ export const NewTransactionModal = ({ open, onOpenChange }: NewTransactionModalP
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           {/* Title */}
           <div className="space-y-2">
-            <Label htmlFor="title">Título *</Label>
+            <Label htmlFor="title">Título <span className="text-destructive">*</span></Label>
             <Input
               id="title"
               value={title}
@@ -125,91 +125,92 @@ export const NewTransactionModal = ({ open, onOpenChange }: NewTransactionModalP
             />
           </div>
 
-          {/* Value */}
-          <div className="space-y-2">
-            <Label htmlFor="value">Valor *</Label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">R$</span>
+          {/* Row: Value, Date, Type, Status */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="space-y-2">
+              <Label htmlFor="value">Valor <span className="text-destructive">*</span></Label>
+              <div className="relative">
+                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">R$</span>
+                <Input
+                  id="value"
+                  value={formatCurrency(rawValue)}
+                  onChange={handleValueChange}
+                  className="pl-8 text-right font-mono text-sm"
+                  placeholder="0,00"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="date">Data <span className="text-destructive">*</span></Label>
               <Input
-                id="value"
-                value={formatCurrency(rawValue)}
-                onChange={handleValueChange}
-                className="pl-10 text-right font-mono"
-                placeholder="0,00"
+                id="date"
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
                 required
+                className="text-sm"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Tipo <span className="text-destructive">*</span></Label>
+              <Select value={type} onValueChange={setType} required>
+                <SelectTrigger className="text-sm">
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Receita">Receita</SelectItem>
+                  <SelectItem value="Despesa">Despesa</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Status <span className="text-destructive">*</span></Label>
+              <Select value={status} onValueChange={setStatus} required>
+                <SelectTrigger className="text-sm">
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Pago">Pago</SelectItem>
+                  <SelectItem value="Pendente">Pendente</SelectItem>
+                  <SelectItem value="Atrasado">Atrasado</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
-          {/* Date */}
-          <div className="space-y-2">
-            <Label htmlFor="date">Data *</Label>
-            <Input
-              id="date"
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              required
-            />
-          </div>
+          {/* Row: Category, Payment */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label>Categoria <span className="text-destructive">*</span></Label>
+              <Select value={category} onValueChange={setCategory} required>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-          {/* Type */}
-          <div className="space-y-2">
-            <Label>Tipo *</Label>
-            <Select value={type} onValueChange={setType} required>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o tipo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Receita">Receita</SelectItem>
-                <SelectItem value="Despesa">Despesa</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Category */}
-          <div className="space-y-2">
-            <Label>Categoria *</Label>
-            <Select value={category} onValueChange={setCategory} required>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione a categoria" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((cat) => (
-                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Payment Method */}
-          <div className="space-y-2">
-            <Label>Forma de Pagamento *</Label>
-            <Select value={payment} onValueChange={setPayment} required>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione a forma de pagamento" />
-              </SelectTrigger>
-              <SelectContent>
-                {paymentMethods.map((method) => (
-                  <SelectItem key={method} value={method}>{method}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Status */}
-          <div className="space-y-2">
-            <Label>Status *</Label>
-            <Select value={status} onValueChange={setStatus} required>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Pago">Pago</SelectItem>
-                <SelectItem value="Pendente">Pendente</SelectItem>
-                <SelectItem value="Atrasado">Atrasado</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="space-y-2">
+              <Label>Forma de Pagamento <span className="text-destructive">*</span></Label>
+              <Select value={payment} onValueChange={setPayment} required>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  {paymentMethods.map((method) => (
+                    <SelectItem key={method} value={method}>{method}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* Destination */}
@@ -231,12 +232,12 @@ export const NewTransactionModal = ({ open, onOpenChange }: NewTransactionModalP
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Ex: Detalhes adicionais..."
-              rows={3}
+              rows={2}
             />
           </div>
 
           {/* Actions */}
-          <div className="flex gap-2 pt-4">
+          <div className="flex gap-2 pt-2">
             <Button type="button" variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>

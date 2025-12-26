@@ -13,8 +13,8 @@ import {
   X,
   Eye,
   EyeOff,
-  PanelLeftClose,
-  PanelLeft,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -58,8 +58,8 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
     navigate("/");
   };
 
-  // Pages that should show the header
-  const showHeader = location.pathname === "/app" || location.pathname === "/app/configuracoes";
+  // Pages that should show the header (only Dashboard now)
+  const showHeader = location.pathname === "/app";
 
   return (
     <ValuesVisibilityContext.Provider value={{ showValues, setShowValues }}>
@@ -88,7 +88,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
                   className="hidden lg:flex text-muted-foreground hover:text-foreground p-1 rounded-lg hover:bg-sidebar-accent transition-colors"
                   onClick={() => setIsSidebarCollapsed(true)}
                 >
-                  <PanelLeftClose className="w-5 h-5" />
+                  <ChevronLeft className="w-5 h-5" />
                 </button>
                 <button
                   className="lg:hidden text-muted-foreground hover:text-foreground"
@@ -102,7 +102,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
                 className="hidden lg:flex text-muted-foreground hover:text-foreground p-2 rounded-lg hover:bg-sidebar-accent transition-colors"
                 onClick={() => setIsSidebarCollapsed(false)}
               >
-                <PanelLeft className="w-5 h-5" />
+                <ChevronRight className="w-5 h-5" />
               </button>
             )}
           </div>
@@ -140,16 +140,16 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
 
           {/* Bottom Navigation - Always Fixed at Bottom */}
           <div className="px-2 py-4 border-t border-sidebar-border space-y-1 shrink-0 mt-auto">
-            {/* User Profile - Centered */}
-            <div className={`flex flex-col items-center p-2 rounded-lg hover:bg-sidebar-accent cursor-pointer transition-colors mb-2 ${isSidebarCollapsed ? "px-1" : ""}`}>
-              <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center mb-2">
+          {/* User Profile */}
+            <div className={`flex items-center p-2 rounded-lg hover:bg-sidebar-accent cursor-pointer transition-colors mb-2 ${isSidebarCollapsed ? "justify-center" : "gap-3"}`}>
+              <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center shrink-0">
                 <span className="text-sm font-medium text-accent">JD</span>
               </div>
               {!isSidebarCollapsed && (
-                <>
-                  <p className="text-sm font-medium truncate text-center">João da Silva</p>
-                  <p className="text-xs text-muted-foreground truncate text-center">joao@email.com</p>
-                </>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">João da Silva</p>
+                  <p className="text-xs text-muted-foreground truncate">joao@email.com</p>
+                </div>
               )}
             </div>
 

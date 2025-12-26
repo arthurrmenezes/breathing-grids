@@ -1,14 +1,13 @@
 import { useState } from 'react';
 import { AppLayout } from '@/components/app/AppLayout';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useTheme } from 'next-themes';
 import { 
   User, 
   Bell, 
   Lock, 
   Palette, 
-  CreditCard, 
   HelpCircle,
   ChevronRight,
   Moon,
@@ -21,23 +20,16 @@ const settingsSections = [
   { id: 'notifications', label: 'Notificações', icon: Bell },
   { id: 'security', label: 'Segurança', icon: Lock },
   { id: 'appearance', label: 'Aparência', icon: Palette },
-  { id: 'billing', label: 'Assinatura', icon: CreditCard },
   { id: 'help', label: 'Ajuda', icon: HelpCircle },
 ];
 
 const Configuracoes = () => {
   const [activeSection, setActiveSection] = useState('profile');
-  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('light');
+  const { theme, setTheme } = useTheme();
 
   return (
     <AppLayout>
       <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-h2">Configurações</h1>
-          <p className="text-muted-foreground">Gerencie sua conta e preferências</p>
-        </div>
-
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Sidebar */}
           <div className="lg:col-span-1">
@@ -75,10 +67,6 @@ const Configuracoes = () => {
                   <div className="w-20 h-20 rounded-full bg-accent/10 flex items-center justify-center">
                     <span className="text-2xl font-medium text-accent">JD</span>
                   </div>
-                  <div>
-                    <Button variant="outline" size="sm">Alterar Foto</Button>
-                    <p className="text-xs text-muted-foreground mt-2">JPG, PNG ou GIF. Max 2MB.</p>
-                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -92,16 +80,15 @@ const Configuracoes = () => {
                   </div>
                   <div className="space-y-2 sm:col-span-2">
                     <Label htmlFor="email">Email</Label>
-                    <Input id="email" type="email" defaultValue="joao@email.com" />
+                    <Input 
+                      id="email" 
+                      type="email" 
+                      defaultValue="joao@email.com" 
+                      disabled 
+                      className="bg-muted cursor-not-allowed"
+                    />
+                    <p className="text-xs text-muted-foreground">O email não pode ser alterado</p>
                   </div>
-                  <div className="space-y-2 sm:col-span-2">
-                    <Label htmlFor="phone">Telefone</Label>
-                    <Input id="phone" type="tel" defaultValue="(11) 99999-9999" />
-                  </div>
-                </div>
-
-                <div className="flex justify-end">
-                  <Button variant="accent">Salvar Alterações</Button>
                 </div>
               </div>
             )}
@@ -119,26 +106,6 @@ const Configuracoes = () => {
                     description="Receba alertas antes do vencimento das contas"
                     defaultChecked={true}
                   />
-                  <NotificationToggle
-                    title="Relatórios Semanais"
-                    description="Resumo semanal dos seus gastos"
-                    defaultChecked={true}
-                  />
-                  <NotificationToggle
-                    title="Transações"
-                    description="Notificações de novas transações"
-                    defaultChecked={false}
-                  />
-                  <NotificationToggle
-                    title="Metas Atingidas"
-                    description="Celebre quando atingir uma meta"
-                    defaultChecked={true}
-                  />
-                  <NotificationToggle
-                    title="Dicas Financeiras"
-                    description="Receba dicas personalizadas de economia"
-                    defaultChecked={false}
-                  />
                 </div>
               </div>
             )}
@@ -151,7 +118,7 @@ const Configuracoes = () => {
                 </div>
 
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 rounded-xl border border-border hover:border-accent/30 transition-colors">
+                  <div className="flex items-center justify-between p-4 rounded-xl border border-border hover:border-accent/30 transition-colors cursor-pointer">
                     <div>
                       <p className="font-medium">Alterar Senha</p>
                       <p className="text-sm text-muted-foreground">Última alteração há 3 meses</p>
@@ -159,20 +126,12 @@ const Configuracoes = () => {
                     <ChevronRight className="w-5 h-5 text-muted-foreground" />
                   </div>
                   
-                  <div className="flex items-center justify-between p-4 rounded-xl border border-border hover:border-accent/30 transition-colors">
+                  <div className="flex items-center justify-between p-4 rounded-xl border border-border hover:border-accent/30 transition-colors cursor-pointer">
                     <div>
                       <p className="font-medium">Autenticação de Dois Fatores</p>
                       <p className="text-sm text-muted-foreground">Adicione uma camada extra de segurança</p>
                     </div>
                     <span className="text-xs px-2 py-1 rounded-full bg-yellow-500/10 text-yellow-600">Desativado</span>
-                  </div>
-                  
-                  <div className="flex items-center justify-between p-4 rounded-xl border border-border hover:border-accent/30 transition-colors">
-                    <div>
-                      <p className="font-medium">Sessões Ativas</p>
-                      <p className="text-sm text-muted-foreground">Gerencie seus dispositivos conectados</p>
-                    </div>
-                    <span className="text-sm text-muted-foreground">2 dispositivos</span>
                   </div>
                 </div>
               </div>
@@ -218,49 +177,6 @@ const Configuracoes = () => {
                       <Smartphone className="w-6 h-6" />
                       <span className="text-sm font-medium">Sistema</span>
                     </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeSection === 'billing' && (
-              <div className="bg-card rounded-2xl border border-border p-6 space-y-6">
-                <div>
-                  <h3 className="text-lg font-medium mb-1">Assinatura</h3>
-                  <p className="text-sm text-muted-foreground">Gerencie seu plano e pagamentos</p>
-                </div>
-
-                <div className="p-4 rounded-xl bg-accent/5 border border-accent/20">
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <span className="text-xs px-2 py-1 rounded-full bg-accent text-accent-foreground">PRO</span>
-                      <p className="text-lg font-medium mt-2">Plano Pro</p>
-                      <p className="text-sm text-muted-foreground">R$ 23/mês (anual)</p>
-                    </div>
-                    <Button variant="outline">Alterar Plano</Button>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Próxima cobrança em 15 de Janeiro de 2025
-                  </p>
-                </div>
-
-                <div className="space-y-3">
-                  <h4 className="font-medium">Histórico de Pagamentos</h4>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between py-3 border-b border-border">
-                      <div>
-                        <p className="font-medium">Dezembro 2024</p>
-                        <p className="text-sm text-muted-foreground">Plano Pro Anual</p>
-                      </div>
-                      <span className="text-success">R$ 23,00</span>
-                    </div>
-                    <div className="flex items-center justify-between py-3 border-b border-border">
-                      <div>
-                        <p className="font-medium">Novembro 2024</p>
-                        <p className="text-sm text-muted-foreground">Plano Pro Anual</p>
-                      </div>
-                      <span className="text-success">R$ 23,00</span>
-                    </div>
                   </div>
                 </div>
               </div>
