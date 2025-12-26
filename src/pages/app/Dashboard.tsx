@@ -1,7 +1,14 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { AppLayout, useValuesVisibility } from "@/components/app/AppLayout";
-import { TrendingUp, TrendingDown, Wallet, ArrowUpRight } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, ArrowUpRight, Loader2 } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { transactionService } from "@/services/transactionService";
+import { categoryService } from "@/services/categoryService";
+import { useAuth } from "@/contexts/AuthContext";
+import { Transaction } from "@/types/transaction";
+import { Category } from "@/types/category";
+import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import {
   Select,
   SelectContent,
@@ -19,78 +26,9 @@ const periodLabels: Record<PeriodType, string> = {
   month: "Este mês",
 };
 
-// Mock data for different periods
-const yearlyData = [
-  { label: "Jan", income: 7200, expense: 5800 },
-  { label: "Fev", income: 7800, expense: 6100 },
-  { label: "Mar", income: 8100, expense: 6400 },
-  { label: "Abr", income: 7500, expense: 5900 },
-  { label: "Mai", income: 8400, expense: 6200 },
-  { label: "Jun", income: 8900, expense: 6700 },
-  { label: "Jul", income: 8400, expense: 6200 },
-  { label: "Ago", income: 7800, expense: 5900 },
-  { label: "Set", income: 9200, expense: 7100 },
-  { label: "Out", income: 8900, expense: 6800 },
-  { label: "Nov", income: 9500, expense: 7400 },
-  { label: "Dez", income: 10200, expense: 7800 },
-];
-
-const sixMonthsData = [
-  { label: "Jul", income: 8400, expense: 6200 },
-  { label: "Ago", income: 7800, expense: 5900 },
-  { label: "Set", income: 9200, expense: 7100 },
-  { label: "Out", income: 8900, expense: 6800 },
-  { label: "Nov", income: 9500, expense: 7400 },
-  { label: "Dez", income: 10200, expense: 7800 },
-];
-
-const threeMonthsData = [
-  { label: "Out", income: 8900, expense: 6800 },
-  { label: "Nov", income: 9500, expense: 7400 },
-  { label: "Dez", income: 10200, expense: 7800 },
-];
-
-// Generate daily data for the current month (December)
-const generateMonthlyData = () => {
-  const daysInMonth = 31; // December
-  const data = [];
-  for (let i = 1; i <= daysInMonth; i++) {
-    data.push({
-      label: i.toString(),
-      income: Math.floor(Math.random() * 500 + 100),
-      expense: Math.floor(Math.random() * 400 + 50),
-    });
-  }
-  return data;
-};
-
-const monthlyData = generateMonthlyData();
-
-const recentTransactions = [
-  { id: 1, name: "Supermercado Extra", category: "Alimentação", amount: -342.5, date: "24 Dez", icon: "🛒" },
-  { id: 2, name: "Salário", category: "Receita", amount: 8450.0, date: "23 Dez", icon: "💰" },
-  { id: 3, name: "Netflix", category: "Entretenimento", amount: -55.9, date: "22 Dez", icon: "🎬" },
-  { id: 4, name: "Uber", category: "Transporte", amount: -28.9, date: "22 Dez", icon: "🚗" },
-  { id: 5, name: "iFood", category: "Alimentação", amount: -67.8, date: "21 Dez", icon: "🍔" },
-];
-
-const upcomingBills = [
-  { id: 1, name: "Aluguel", amount: 2500.0, dueDate: "05 Jan", status: "pending" },
-  { id: 2, name: "Internet", amount: 129.9, dueDate: "10 Jan", status: "pending" },
-  { id: 3, name: "Energia", amount: 245.0, dueDate: "15 Jan", status: "pending" },
-];
-
-// Category data with percentages
-const categoryData = [
-  { category: "Moradia", value: 2800, percentage: 40, color: "hsl(160 84% 39%)" },
-  { category: "Alimentação", value: 1850, percentage: 27, color: "hsl(200 84% 45%)" },
-  { category: "Transporte", value: 980, percentage: 14, color: "hsl(280 84% 50%)" },
-  { category: "Lazer", value: 650, percentage: 9, color: "hsl(40 84% 50%)" },
-  { category: "Outros", value: 520, percentage: 10, color: "hsl(0 0% 60%)" },
-];
-
 // Helper function to calculate nice Y-axis ticks based on max value
 const calculateYAxisTicks = (maxValue: number): number[] => {
+  if (maxValue === 0) return [0];
   const magnitude = Math.pow(10, Math.floor(Math.log10(maxValue)));
   const normalized = maxValue / magnitude;
   
@@ -127,26 +65,222 @@ const formatYAxisValue = (value: number): string => {
   return value.toString();
 };
 
+const monthLabels = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+
+interface FinancialData {
+  totalIncome: number;
+  totalExpense: number;
+  balance: number;
+}
+
+interface ChartDataPoint {
+  label: string;
+  income: number;
+  expense: number;
+}
+
+// Color palette for categories
+const categoryColors = [
+  "hsl(160 84% 39%)", "hsl(200 84% 45%)", "hsl(280 84% 50%)", 
+  "hsl(40 84% 50%)", "hsl(0 0% 60%)", "hsl(340 84% 50%)",
+  "hsl(120 84% 39%)", "hsl(220 84% 50%)"
+];
+
 const Dashboard = () => {
   const { showValues } = useValuesVisibility();
+  const { user } = useAuth();
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodType>("6months");
+  const [loading, setLoading] = useState(true);
+  
+  // Data states
+  const [currentSummary, setCurrentSummary] = useState<FinancialData | null>(null);
+  const [previousSummary, setPreviousSummary] = useState<FinancialData | null>(null);
+  const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
+  const [categorySpending, setCategorySpending] = useState<{ category: string; value: number; percentage: number; color: string }[]>([]);
 
-  const chartData = useMemo(() => {
-    switch (selectedPeriod) {
+  // Calculate date ranges for the selected period
+  const getDateRanges = (period: PeriodType) => {
+    const now = new Date();
+    let startDate: Date;
+    let previousStartDate: Date;
+    let previousEndDate: Date;
+    
+    switch (period) {
       case "year":
-        return yearlyData;
+        startDate = subMonths(startOfMonth(now), 11);
+        previousStartDate = subMonths(startDate, 12);
+        previousEndDate = subMonths(startDate, 1);
+        break;
       case "6months":
-        return sixMonthsData;
+        startDate = subMonths(startOfMonth(now), 5);
+        previousStartDate = subMonths(startDate, 6);
+        previousEndDate = subMonths(startDate, 1);
+        break;
       case "3months":
-        return threeMonthsData;
+        startDate = subMonths(startOfMonth(now), 2);
+        previousStartDate = subMonths(startDate, 3);
+        previousEndDate = subMonths(startDate, 1);
+        break;
       case "month":
-        return monthlyData;
       default:
-        return sixMonthsData;
+        startDate = startOfMonth(now);
+        previousStartDate = subMonths(startDate, 1);
+        previousEndDate = endOfMonth(previousStartDate);
+        break;
     }
+    
+    return {
+      current: {
+        start: format(startDate, "yyyy-MM-dd"),
+        end: format(endOfMonth(now), "yyyy-MM-dd"),
+      },
+      previous: {
+        start: format(previousStartDate, "yyyy-MM-dd"),
+        end: format(previousEndDate, "yyyy-MM-dd"),
+      },
+    };
+  };
+
+  // Fetch data
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      const dateRanges = getDateRanges(selectedPeriod);
+      
+      try {
+        // Fetch current period summary
+        const currentResponse = await transactionService.getFinancialSummary(
+          dateRanges.current.start,
+          dateRanges.current.end
+        );
+        
+        if (currentResponse.data) {
+          setCurrentSummary({
+            totalIncome: currentResponse.data.totalIncome,
+            totalExpense: currentResponse.data.totalExpense,
+            balance: currentResponse.data.balance,
+          });
+        }
+
+        // Fetch previous period for comparison
+        const previousResponse = await transactionService.getFinancialSummary(
+          dateRanges.previous.start,
+          dateRanges.previous.end
+        );
+        
+        if (previousResponse.data) {
+          setPreviousSummary({
+            totalIncome: previousResponse.data.totalIncome,
+            totalExpense: previousResponse.data.totalExpense,
+            balance: previousResponse.data.balance,
+          });
+        }
+
+        // Fetch recent transactions
+        const transactionsResponse = await transactionService.getAll({
+          pageNumber: 1,
+          pageSize: 5,
+        });
+        
+        if (transactionsResponse.data) {
+          setRecentTransactions(transactionsResponse.data.transactions);
+        }
+
+        // Fetch categories
+        const categoriesResponse = await categoryService.getAll({ pageSize: 50 });
+        
+        if (categoriesResponse.data) {
+          setCategories(categoriesResponse.data.categories);
+        }
+
+        // Fetch all transactions for chart data and category spending
+        const allTransactionsResponse = await transactionService.getAll({
+          pageNumber: 1,
+          pageSize: 1000,
+          startDate: dateRanges.current.start,
+          endDate: dateRanges.current.end,
+        });
+
+        if (allTransactionsResponse.data) {
+          const transactions = allTransactionsResponse.data.transactions;
+          
+          // Build chart data by month
+          const monthlyData = new Map<string, { income: number; expense: number }>();
+          
+          transactions.forEach((tx) => {
+            const date = new Date(tx.date);
+            const monthKey = format(date, "yyyy-MM");
+            const monthLabel = monthLabels[date.getMonth()];
+            
+            if (!monthlyData.has(monthKey)) {
+              monthlyData.set(monthKey, { income: 0, expense: 0 });
+            }
+            
+            const data = monthlyData.get(monthKey)!;
+            const isIncome = tx.transactionType === "Income" || tx.transactionType === "Receita";
+            
+            if (isIncome) {
+              data.income += tx.amount;
+            } else {
+              data.expense += tx.amount;
+            }
+          });
+
+          // Convert to array sorted by date
+          const sortedEntries = Array.from(monthlyData.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+          const chartDataPoints = sortedEntries.map(([key, data]) => {
+            const date = new Date(key + "-01");
+            return {
+              label: monthLabels[date.getMonth()],
+              income: data.income,
+              expense: data.expense,
+            };
+          });
+          
+          setChartData(chartDataPoints.length > 0 ? chartDataPoints : [{ label: "-", income: 0, expense: 0 }]);
+
+          // Calculate spending by category
+          const categorySpendingMap = new Map<string, number>();
+          
+          transactions.forEach((tx) => {
+            const isExpense = tx.transactionType === "Expense" || tx.transactionType === "Despesa";
+            if (isExpense) {
+              const current = categorySpendingMap.get(tx.categoryId) || 0;
+              categorySpendingMap.set(tx.categoryId, current + tx.amount);
+            }
+          });
+
+          const totalSpending = Array.from(categorySpendingMap.values()).reduce((a, b) => a + b, 0);
+          
+          const spendingData = Array.from(categorySpendingMap.entries())
+            .map(([categoryId, value], index) => {
+              const category = categoriesResponse.data?.categories.find(c => c.id === categoryId);
+              return {
+                category: category?.title || "Outros",
+                value,
+                percentage: totalSpending > 0 ? Math.round((value / totalSpending) * 100) : 0,
+                color: categoryColors[index % categoryColors.length],
+              };
+            })
+            .sort((a, b) => b.value - a.value)
+            .slice(0, 5);
+          
+          setCategorySpending(spendingData);
+        }
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, [selectedPeriod]);
 
   const yAxisTicks = useMemo(() => {
+    if (chartData.length === 0) return [0];
     const maxIncome = Math.max(...chartData.map((d) => d.income));
     const maxExpense = Math.max(...chartData.map((d) => d.expense));
     const maxValue = Math.max(maxIncome, maxExpense);
@@ -154,10 +288,45 @@ const Dashboard = () => {
   }, [chartData]);
 
   const yAxisDomain = useMemo(() => {
-    return [0, yAxisTicks[yAxisTicks.length - 1]];
+    return [0, yAxisTicks[yAxisTicks.length - 1] || 1];
   }, [yAxisTicks]);
 
   const hideValue = (value: string) => (showValues ? value : "••••••");
+
+  // Calculate percentage changes
+  const calculateChange = (current: number, previous: number) => {
+    if (previous === 0) return { percentage: 0, value: current };
+    const percentage = Math.round(((current - previous) / previous) * 100);
+    const value = current - previous;
+    return { percentage, value };
+  };
+
+  const balanceChange = currentSummary && previousSummary
+    ? calculateChange(currentSummary.balance, previousSummary.balance)
+    : { percentage: 0, value: 0 };
+
+  const incomeChange = currentSummary && previousSummary
+    ? calculateChange(currentSummary.totalIncome, previousSummary.totalIncome)
+    : { percentage: 0, value: 0 };
+
+  const expenseChange = currentSummary && previousSummary
+    ? calculateChange(currentSummary.totalExpense, previousSummary.totalExpense)
+    : { percentage: 0, value: 0 };
+
+  const formatCurrency = (value: number) => 
+    `R$ ${Math.abs(value).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+
+  const totalCategorySpending = categorySpending.reduce((sum, cat) => sum + cat.value, 0);
+
+  if (loading) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
@@ -166,28 +335,28 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <SummaryCard 
             title="Saldo disponível" 
-            value={hideValue("R$ 47.892,54")} 
-            change="+12%"
-            changeValue="+R$ 1.560"
-            trend="up" 
+            value={hideValue(formatCurrency(user?.balance || currentSummary?.balance || 0))} 
+            change={`${balanceChange.percentage >= 0 ? "+" : ""}${balanceChange.percentage}%`}
+            changeValue={`${balanceChange.value >= 0 ? "+" : "-"}${formatCurrency(balanceChange.value)}`}
+            trend={balanceChange.percentage >= 0 ? "up" : "down"} 
             icon={Wallet}
             showValues={showValues}
           />
           <SummaryCard 
             title="Receitas" 
-            value={hideValue("R$ 10.200,00")} 
-            change="+17%"
-            changeValue="+R$ 2.560"
-            trend="up" 
+            value={hideValue(formatCurrency(currentSummary?.totalIncome || 0))} 
+            change={`${incomeChange.percentage >= 0 ? "+" : ""}${incomeChange.percentage}%`}
+            changeValue={`${incomeChange.value >= 0 ? "+" : "-"}${formatCurrency(incomeChange.value)}`}
+            trend={incomeChange.percentage >= 0 ? "up" : "down"} 
             icon={TrendingUp}
             showValues={showValues}
           />
           <SummaryCard 
             title="Despesas" 
-            value={hideValue("R$ 7.800,00")} 
-            change="-12%"
-            changeValue="-R$ 560"
-            trend="down" 
+            value={hideValue(formatCurrency(currentSummary?.totalExpense || 0))} 
+            change={`${expenseChange.percentage >= 0 ? "+" : ""}${expenseChange.percentage}%`}
+            changeValue={`${expenseChange.value >= 0 ? "+" : "-"}${formatCurrency(expenseChange.value)}`}
+            trend={expenseChange.percentage <= 0 ? "up" : "down"} 
             icon={TrendingDown}
             showValues={showValues}
           />
@@ -236,7 +405,7 @@ const Dashboard = () => {
                 axisLine={false}
                 tickLine={false}
                 tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
-                interval={selectedPeriod === "month" ? 4 : 0}
+                interval={0}
               />
               <YAxis
                 axisLine={false}
@@ -252,8 +421,7 @@ const Dashboard = () => {
                   border: "1px solid hsl(var(--border))",
                   borderRadius: "8px",
                 }}
-                labelFormatter={(label) => selectedPeriod === "month" ? `Dia ${label}` : label}
-                formatter={(value: number) => [showValues ? `R$ ${value.toLocaleString("pt-BR")}` : "••••••"]}
+                formatter={(value: number) => [showValues ? formatCurrency(value) : "••••••"]}
               />
               <Area
                 type="monotone"
@@ -284,30 +452,40 @@ const Dashboard = () => {
                 Ver todas
               </a>
             </div>
-            <div className="space-y-3">
-              {recentTransactions.map((tx) => (
-                <div
-                  key={tx.id}
-                  className="flex items-center gap-4 p-3 rounded-xl hover:bg-secondary/50 transition-colors"
-                >
-                  <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-lg">
-                    {tx.icon}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{tx.name}</p>
-                    <p className="text-sm text-muted-foreground">{tx.category}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className={`font-medium tabular-nums ${tx.amount > 0 ? "text-success" : ""}`}>
-                      {showValues
-                        ? `${tx.amount > 0 ? "+" : ""}R$ ${Math.abs(tx.amount).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
-                        : "••••••"}
-                    </p>
-                    <p className="text-sm text-muted-foreground">{tx.date}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+            {recentTransactions.length === 0 ? (
+              <p className="text-muted-foreground text-center py-8">Nenhuma transação encontrada</p>
+            ) : (
+              <div className="space-y-3">
+                {recentTransactions.map((tx) => {
+                  const isIncome = tx.transactionType === "Income" || tx.transactionType === "Receita";
+                  const category = categories.find(c => c.id === tx.categoryId);
+                  const formattedDate = format(new Date(tx.date), "dd MMM", { locale: ptBR });
+                  
+                  return (
+                    <div
+                      key={tx.id}
+                      className="flex items-center gap-4 p-3 rounded-xl hover:bg-secondary/50 transition-colors"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-lg">
+                        {isIncome ? "💰" : "💸"}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{tx.title}</p>
+                        <p className="text-sm text-muted-foreground">{category?.title || "Sem categoria"}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className={`font-medium tabular-nums ${isIncome ? "text-success" : ""}`}>
+                          {showValues
+                            ? `${isIncome ? "+" : "-"}${formatCurrency(tx.amount)}`
+                            : "••••••"}
+                        </p>
+                        <p className="text-sm text-muted-foreground">{formattedDate}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
         {/* Category Breakdown with Donut Chart */}
@@ -319,90 +497,57 @@ const Dashboard = () => {
               </a>
             </div>
             
-            {/* Donut Chart */}
-            <div className="relative mb-4">
-              <ResponsiveContainer width="100%" height={160}>
-                <PieChart>
-                  <Pie
-                    data={categoryData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={70}
-                    paddingAngle={2}
-                    dataKey="value"
-                  >
-                    {categoryData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
-              {/* Center Text */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center">
-                  <p className="text-xl font-semibold">{showValues ? "R$ 6.800" : "••••••"}</p>
-                  <p className="text-xs text-muted-foreground">Total</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Category List with percentages */}
-            <div className="space-y-3">
-              {categoryData.map((cat) => (
-                <div key={cat.category} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: cat.color }} />
-                    <span className="text-sm">{cat.category}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-medium">{showValues ? `R$ ${cat.value.toLocaleString("pt-BR")}` : "••••••"}</span>
-                    <span className="text-xs text-muted-foreground w-8 text-right">{cat.percentage}%</span>
+            {categorySpending.length === 0 ? (
+              <p className="text-muted-foreground text-center py-8">Nenhum gasto no período</p>
+            ) : (
+              <>
+                {/* Donut Chart */}
+                <div className="relative mb-4">
+                  <ResponsiveContainer width="100%" height={160}>
+                    <PieChart>
+                      <Pie
+                        data={categorySpending}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={50}
+                        outerRadius={70}
+                        paddingAngle={2}
+                        dataKey="value"
+                      >
+                        {categorySpending.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                  {/* Center Text */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center">
+                      <p className="text-xl font-semibold">{showValues ? formatCurrency(totalCategorySpending) : "••••••"}</p>
+                      <p className="text-xs text-muted-foreground">Total</p>
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
 
-            {/* Comparison with last month */}
-            <div className="mt-4 pt-4 border-t border-border">
-              <p className="text-sm text-success flex items-center gap-1">
-                <ArrowUpRight className="w-4 h-4" />
-                +12% comparado ao mês anterior
-              </p>
-            </div>
+                {/* Category List with percentages */}
+                <div className="space-y-3">
+                  {categorySpending.map((cat) => (
+                    <div key={cat.category} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: cat.color }} />
+                        <span className="text-sm">{cat.category}</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-medium">{showValues ? formatCurrency(cat.value) : "••••••"}</span>
+                        <span className="text-xs text-muted-foreground w-8 text-right">{cat.percentage}%</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </div>
-
-        {/* Upcoming Bills */}
-        <div className="bg-card rounded-2xl border border-border p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-medium">Próximas Despesas</h3>
-            <a href="/app/lembretes" className="text-sm text-accent hover:underline">
-              Ver todas
-            </a>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {upcomingBills.map((bill) => (
-              <div
-                key={bill.id}
-                className="flex items-center justify-between p-4 rounded-xl border border-border hover:border-accent/30 transition-colors"
-              >
-                <div>
-                  <p className="font-medium">{bill.name}</p>
-                  <p className="text-sm text-muted-foreground">Vence em {bill.dueDate}</p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <p className="font-medium tabular-nums">
-                    {showValues
-                      ? `R$ ${bill.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
-                      : "••••••"}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
       </div>
     </AppLayout>
   );
