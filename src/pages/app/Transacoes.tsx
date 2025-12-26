@@ -1,9 +1,24 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AppLayout, useValuesVisibility } from '@/components/app/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { NewTransactionModal } from '@/components/app/NewTransactionModal';
+import { transactionService } from '@/services/transactionService';
+import { categoryService } from '@/services/categoryService';
+import { 
+  Transaction, 
+  TransactionTypeLabels, 
+  PaymentMethodLabels, 
+  PaymentStatusLabels,
+  TransactionTypeEnum,
+  PaymentMethodEnum,
+  PaymentStatusEnum
+} from '@/types/transaction';
+import { Category } from '@/types/category';
+import { toast } from 'sonner';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { 
   Search, 
   Filter, 
@@ -18,7 +33,8 @@ import {
   ChevronUp,
   Pencil,
   Trash2,
-  X
+  X,
+  Loader2
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -44,43 +60,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const transactions = [
-  { id: 'TXN-240101', name: 'Transferência Recebida', type: 'Receita', category: 'Recebido', paymentMethod: 'Pix', amount: 980.00, date: '24 Dez 2024, 09:41', status: 'pago', icon: '💰' },
-  { id: 'TXN-240102', name: 'Youtube Premium', type: 'Despesa', category: 'Assinatura', paymentMethod: 'Cartão Crédito', amount: -20.00, date: '24 Dez 2024, 09:41', status: 'pago', icon: '📺' },
-  { id: 'TXN-240103', name: 'Internet', type: 'Despesa', category: 'Conta', paymentMethod: 'Débito Automático', amount: -120.00, date: '23 Dez 2024, 01:56', status: 'pago', icon: '🌐' },
-  { id: 'TXN-240104', name: 'Transferência Recebida', type: 'Receita', category: 'Recebido', paymentMethod: 'Pix', amount: 1000.00, date: '23 Dez 2024, 11:36', status: 'pago', icon: '💰' },
-  { id: 'TXN-240105', name: 'Starbucks Coffee', type: 'Despesa', category: 'Alimentação', paymentMethod: 'Cartão Débito', amount: -12.00, date: '22 Dez 2024, 09:41', status: 'pago', icon: '☕' },
-  { id: 'TXN-240106', name: 'Salário (Freelance)', type: 'Receita', category: 'Recebido', paymentMethod: 'Pix', amount: 100.00, date: '22 Dez 2024, 10:12', status: 'pendente', icon: '💼' },
-  { id: 'TXN-240107', name: 'Crypto Investment', type: 'Receita', category: 'Investimento', paymentMethod: 'Transferência', amount: 1000.00, date: '21 Dez 2024, 10:12', status: 'pago', icon: '📈' },
-  { id: 'TXN-240108', name: 'Amazon Purchase', type: 'Despesa', category: 'Compras', paymentMethod: 'Cartão Crédito', amount: -30.00, date: '21 Dez 2024, 10:12', status: 'pago', icon: '📦' },
-  { id: 'TXN-240109', name: 'Spotify Premium', type: 'Despesa', category: 'Assinatura', paymentMethod: 'Cartão Crédito', amount: -40.00, date: '20 Dez 2024, 08:00', status: 'atrasado', icon: '🎵' },
-  { id: 'TXN-240110', name: 'Supermercado Extra', type: 'Despesa', category: 'Alimentação', paymentMethod: 'Cartão Débito', amount: -342.50, date: '20 Dez 2024, 14:30', status: 'pago', icon: '🛒' },
-  { id: 'TXN-240111', name: 'Freelance Project', type: 'Receita', category: 'Recebido', paymentMethod: 'Pix', amount: 2500.00, date: '19 Dez 2024, 16:20', status: 'pago', icon: '💼' },
-  { id: 'TXN-240112', name: 'Restaurante', type: 'Despesa', category: 'Alimentação', paymentMethod: 'Cartão Crédito', amount: -85.00, date: '19 Dez 2024, 20:30', status: 'pago', icon: '🍽️' },
-  { id: 'TXN-240113', name: 'Uber', type: 'Despesa', category: 'Transporte', paymentMethod: 'Pix', amount: -28.50, date: '18 Dez 2024, 18:45', status: 'pago', icon: '🚗' },
-  { id: 'TXN-240114', name: 'Farmácia', type: 'Despesa', category: 'Saúde', paymentMethod: 'Cartão Débito', amount: -67.90, date: '18 Dez 2024, 10:15', status: 'pago', icon: '💊' },
-  { id: 'TXN-240115', name: 'Conta de Luz', type: 'Despesa', category: 'Conta', paymentMethod: 'Débito Automático', amount: -189.00, date: '17 Dez 2024, 08:00', status: 'pago', icon: '⚡' },
-  { id: 'TXN-240116', name: 'Netflix', type: 'Despesa', category: 'Assinatura', paymentMethod: 'Cartão Crédito', amount: -55.90, date: '17 Dez 2024, 08:00', status: 'pago', icon: '🎬' },
-  { id: 'TXN-240117', name: 'Dividendos', type: 'Receita', category: 'Investimento', paymentMethod: 'Transferência', amount: 350.00, date: '16 Dez 2024, 14:00', status: 'pago', icon: '📊' },
-  { id: 'TXN-240118', name: 'Gasolina', type: 'Despesa', category: 'Transporte', paymentMethod: 'Cartão Débito', amount: -150.00, date: '16 Dez 2024, 11:30', status: 'pago', icon: '⛽' },
-  { id: 'TXN-240119', name: 'Cinema', type: 'Despesa', category: 'Lazer', paymentMethod: 'Pix', amount: -45.00, date: '15 Dez 2024, 19:00', status: 'pago', icon: '🎬' },
-  { id: 'TXN-240120', name: 'Aluguel', type: 'Despesa', category: 'Moradia', paymentMethod: 'Transferência', amount: -2500.00, date: '15 Dez 2024, 08:00', status: 'pago', icon: '🏠' },
-];
-
-const categories = [
-  'Todas',
-  'Alimentação',
-  'Transporte',
-  'Assinatura',
-  'Conta',
-  'Compras',
-  'Investimento',
-  'Lazer',
-  'Saúde',
-  'Moradia',
-  'Recebido',
-];
-
 const paymentMethods = [
   'Todos',
   'Pix',
@@ -95,8 +74,18 @@ const Transacoes = () => {
   const { showValues, setShowValues } = useValuesVisibility();
   const [showFilters, setShowFilters] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedTransaction, setSelectedTransaction] = useState<string | null>(null);
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [newTransactionOpen, setNewTransactionOpen] = useState(false);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState(false);
+  
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const itemsPerPage = 20;
   
   // Filter states
   const [filterType, setFilterType] = useState('Todos');
@@ -107,12 +96,73 @@ const Transacoes = () => {
   const [filterDateEnd, setFilterDateEnd] = useState('');
   const [filterMinValue, setFilterMinValue] = useState('');
   const [filterMaxValue, setFilterMaxValue] = useState('');
-  
-  // Pagination
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 20;
-  const totalItems = 200;
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+  const fetchCategories = async () => {
+    try {
+      const response = await categoryService.getAll({ pageSize: 50 });
+      if (response.data) {
+        setCategories(response.data.categories);
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
+
+  const fetchTransactions = async () => {
+    setLoading(true);
+    try {
+      const params: any = {
+        pageNumber: currentPage,
+        pageSize: itemsPerPage,
+        textSearch: searchQuery || undefined,
+      };
+
+      if (filterType !== 'Todos') {
+        params.transactionType = filterType === 'Receita' ? TransactionTypeEnum.Receita : TransactionTypeEnum.Despesa;
+      }
+      if (filterCategory !== 'Todas') {
+        const cat = categories.find(c => c.title === filterCategory);
+        if (cat) params.categoryId = cat.id;
+      }
+      if (filterPayment !== 'Todos') {
+        params.paymentMethod = PaymentMethodEnum[filterPayment as keyof typeof PaymentMethodEnum];
+      }
+      if (filterStatus !== 'Todos') {
+        params.paymentStatus = PaymentStatusEnum[filterStatus as keyof typeof PaymentStatusEnum];
+      }
+      if (filterDateStart) params.startDate = filterDateStart;
+      if (filterDateEnd) params.endDate = filterDateEnd;
+      if (filterMinValue) params.minValue = parseFloat(filterMinValue);
+      if (filterMaxValue) params.maxValue = parseFloat(filterMaxValue);
+
+      const response = await transactionService.getAll(params);
+      
+      if (response.error) {
+        toast.error(response.error);
+      } else if (response.data) {
+        setTransactions(response.data.transactions);
+        setTotalPages(response.data.totalPages);
+        setTotalItems(response.data.totalTransactions);
+      }
+    } catch (error) {
+      toast.error('Erro ao carregar transações');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  useEffect(() => {
+    fetchTransactions();
+  }, [currentPage]);
+
+  const handleSearch = () => {
+    setCurrentPage(1);
+    fetchTransactions();
+  };
 
   const clearFilters = () => {
     setFilterType('Todos');
@@ -124,18 +174,55 @@ const Transacoes = () => {
     setFilterMinValue('');
     setFilterMaxValue('');
     setSearchQuery('');
+    setCurrentPage(1);
   };
 
-  const handleDelete = (id: string) => {
-    setSelectedTransaction(id);
+  const handleDelete = (transaction: Transaction) => {
+    setSelectedTransaction(transaction);
     setDeleteDialogOpen(true);
   };
 
-  const confirmDelete = () => {
-    // Handle delete logic here
-    console.log('Deleting transaction:', selectedTransaction);
-    setDeleteDialogOpen(false);
-    setSelectedTransaction(null);
+  const confirmDelete = async () => {
+    if (!selectedTransaction) return;
+    
+    setDeleting(true);
+    try {
+      const response = await transactionService.delete(selectedTransaction.id);
+      
+      if (response.error) {
+        toast.error(response.error);
+      } else {
+        toast.success('Transação excluída com sucesso');
+        fetchTransactions();
+      }
+    } catch (error) {
+      toast.error('Erro ao excluir transação');
+    } finally {
+      setDeleting(false);
+      setDeleteDialogOpen(false);
+      setSelectedTransaction(null);
+    }
+  };
+
+  const handleTransactionCreated = () => {
+    fetchTransactions();
+  };
+
+  const getTypeLabel = (type: string) => TransactionTypeLabels[type] || type;
+  const getPaymentLabel = (method: string) => PaymentMethodLabels[method] || method;
+  const getStatusLabel = (status: string) => PaymentStatusLabels[status] || status;
+
+  const getCategoryName = (categoryId: string) => {
+    const category = categories.find(c => c.id === categoryId);
+    return category?.title || 'Sem categoria';
+  };
+
+  const formatDate = (dateString: string) => {
+    try {
+      return format(new Date(dateString), "dd MMM yyyy, HH:mm", { locale: ptBR });
+    } catch {
+      return dateString;
+    }
   };
 
   const startItem = (currentPage - 1) * itemsPerPage + 1;
@@ -171,6 +258,7 @@ const Transacoes = () => {
                 placeholder="Buscar transação..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 className="pl-10"
               />
             </div>
@@ -188,17 +276,6 @@ const Transacoes = () => {
                   <ChevronDown className="w-4 h-4 ml-2" />
                 )}
               </Button>
-              <Select defaultValue="recent">
-                <SelectTrigger className="w-[150px]">
-                  <SelectValue placeholder="Ordenar" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="recent">Mais Recente</SelectItem>
-                  <SelectItem value="oldest">Mais Antigo</SelectItem>
-                  <SelectItem value="highest">Maior Valor</SelectItem>
-                  <SelectItem value="lowest">Menor Valor</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
           </div>
 
@@ -229,8 +306,9 @@ const Transacoes = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="Todas">Todas</SelectItem>
                       {categories.map((cat) => (
-                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                        <SelectItem key={cat.id} value={cat.title}>{cat.title}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -312,7 +390,7 @@ const Transacoes = () => {
 
               {/* Filter Actions */}
               <div className="flex gap-2 mt-4 pt-4 border-t border-border">
-                <Button variant="accent" size="sm">
+                <Button variant="accent" size="sm" onClick={handleSearch}>
                   <Search className="w-4 h-4 mr-2" />
                   Buscar
                 </Button>
@@ -327,149 +405,165 @@ const Transacoes = () => {
 
         {/* Transactions Table */}
         <div className="bg-card rounded-xl border border-border overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="text-left p-4 font-medium text-muted-foreground text-sm">Nome</th>
-                  <th className="text-left p-4 font-medium text-muted-foreground text-sm">Valor</th>
-                  <th className="text-left p-4 font-medium text-muted-foreground text-sm">Data</th>
-                  <th className="text-left p-4 font-medium text-muted-foreground text-sm">Status</th>
-                  <th className="text-left p-4 font-medium text-muted-foreground text-sm w-12"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {transactions.map((tx) => (
-                  <tr 
-                    key={tx.id} 
-                    className="border-b border-border hover:bg-secondary/30 transition-colors"
-                  >
-                    <td className="p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-sm">
-                          {tx.icon}
-                        </div>
-                        <div>
-                          <p className="font-medium">{tx.name}</p>
-                          <p className="text-sm text-muted-foreground">{tx.category}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="p-4">
-                      <span className={`font-medium tabular-nums ${tx.amount > 0 ? 'text-success' : ''}`}>
-                        {showValues 
-                          ? `${tx.amount > 0 ? '+' : ''}R$ ${Math.abs(tx.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
-                          : '••••••'
-                        }
-                      </span>
-                    </td>
-                    <td className="p-4 text-sm text-muted-foreground">{tx.date}</td>
-                    <td className="p-4">
-                      <span className={`
-                        inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium
-                        ${tx.status === 'pago' ? 'bg-success/10 text-success' : ''}
-                        ${tx.status === 'pendente' ? 'bg-yellow-500/10 text-yellow-600' : ''}
-                        ${tx.status === 'atrasado' ? 'bg-destructive/10 text-destructive' : ''}
-                      `}>
-                        {tx.status === 'pago' && '✓ Pago'}
-                        {tx.status === 'pendente' && '⏳ Pendente'}
-                        {tx.status === 'atrasado' && '⚠ Atrasado'}
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <button className="p-2 rounded-lg hover:bg-secondary transition-colors">
-                            <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
-                            <Pencil className="w-4 h-4 mr-2" />
-                            Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            className="text-destructive focus:text-destructive"
-                            onClick={() => handleDelete(tx.id)}
-                          >
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Excluir
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          
-          {/* Pagination */}
-          <div className="flex items-center justify-between p-4 border-t border-border">
-            <p className="text-sm text-muted-foreground">
-              <strong>{startItem}</strong> - <strong>{endItem}</strong> de <strong>{totalItems}</strong> resultados
-            </p>
-            <div className="flex items-center gap-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage(currentPage - 1)}
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-              {[1, 2, 3].map((page) => (
-                <Button 
-                  key={page}
-                  variant="outline" 
-                  size="sm" 
-                  className={currentPage === page ? "bg-accent text-accent-foreground" : ""}
-                  onClick={() => setCurrentPage(page)}
-                >
-                  {page}
-                </Button>
-              ))}
-              <span className="text-muted-foreground">...</span>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setCurrentPage(totalPages)}
-              >
-                {totalPages}
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage(currentPage + 1)}
-              >
-                <ChevronRight className="w-4 h-4" />
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : transactions.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <p className="text-muted-foreground mb-4">Nenhuma transação encontrada</p>
+              <Button variant="accent" onClick={() => setNewTransactionOpen(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Criar primeira transação
               </Button>
             </div>
-          </div>
+          ) : (
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-border">
+                      <th className="text-left p-4 font-medium text-muted-foreground text-sm">Nome</th>
+                      <th className="text-left p-4 font-medium text-muted-foreground text-sm">Valor</th>
+                      <th className="text-left p-4 font-medium text-muted-foreground text-sm">Data</th>
+                      <th className="text-left p-4 font-medium text-muted-foreground text-sm">Status</th>
+                      <th className="text-left p-4 font-medium text-muted-foreground text-sm w-12"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {transactions.map((tx) => {
+                      const isIncome = tx.transactionType === 'Income' || tx.transactionType === 'Receita';
+                      const statusLower = getStatusLabel(tx.status).toLowerCase();
+                      
+                      return (
+                        <tr 
+                          key={tx.id} 
+                          className="border-b border-border hover:bg-secondary/30 transition-colors"
+                        >
+                          <td className="p-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-sm">
+                                {isIncome ? '💰' : '💸'}
+                              </div>
+                              <div>
+                                <p className="font-medium">{tx.title}</p>
+                                <p className="text-sm text-muted-foreground">{getCategoryName(tx.categoryId)}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="p-4">
+                            <span className={`font-medium tabular-nums ${isIncome ? 'text-success' : ''}`}>
+                              {showValues 
+                                ? `${isIncome ? '+' : '-'}R$ ${Math.abs(tx.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                                : '••••••'
+                              }
+                            </span>
+                          </td>
+                          <td className="p-4 text-sm text-muted-foreground">{formatDate(tx.date)}</td>
+                          <td className="p-4">
+                            <span className={`
+                              inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium
+                              ${statusLower === 'pago' ? 'bg-success/10 text-success' : ''}
+                              ${statusLower === 'pendente' ? 'bg-yellow-500/10 text-yellow-600' : ''}
+                              ${statusLower === 'atrasado' ? 'bg-destructive/10 text-destructive' : ''}
+                            `}>
+                              {statusLower === 'pago' && '✓ Pago'}
+                              {statusLower === 'pendente' && '⏳ Pendente'}
+                              {statusLower === 'atrasado' && '⚠ Atrasado'}
+                            </span>
+                          </td>
+                          <td className="p-4">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <button className="p-2 rounded-lg hover:bg-secondary transition-colors">
+                                  <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
+                                </button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem>
+                                  <Pencil className="w-4 h-4 mr-2" />
+                                  Editar
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  className="text-destructive focus:text-destructive"
+                                  onClick={() => handleDelete(tx)}
+                                >
+                                  <Trash2 className="w-4 h-4 mr-2" />
+                                  Excluir
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination */}
+              <div className="flex items-center justify-between px-4 py-3 border-t border-border">
+                <span className="text-sm text-muted-foreground">
+                  Mostrando {startItem} a {endItem} de {totalItems} transações
+                </span>
+                <div className="flex items-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(p => p - 1)}
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                  <span className="text-sm px-2">
+                    Página {currentPage} de {totalPages}
+                  </span>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    disabled={currentPage >= totalPages}
+                    onClick={() => setCurrentPage(p => p + 1)}
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
+
+      {/* New Transaction Modal */}
+      <NewTransactionModal 
+        open={newTransactionOpen} 
+        onOpenChange={setNewTransactionOpen}
+        onSuccess={handleTransactionCreated}
+        categories={categories}
+      />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir Transação</AlertDialogTitle>
+            <AlertDialogTitle>Excluir transação</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir esta transação? Esta ação não pode ser desfeita.
+              Tem certeza que deseja excluir a transação "{selectedTransaction?.title}"? 
+              Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete} 
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
               Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* New Transaction Modal */}
-      <NewTransactionModal open={newTransactionOpen} onOpenChange={setNewTransactionOpen} />
     </AppLayout>
   );
 };
