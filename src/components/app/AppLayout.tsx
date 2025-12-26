@@ -75,35 +75,36 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
           `}
         >
           {/* Logo */}
-          <div className="h-16 flex items-center justify-between px-4 border-b border-sidebar-border shrink-0">
-            <Link to="/app" className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center shrink-0">
-                <span className="text-accent-foreground font-semibold text-sm">t</span>
-              </div>
-              {!isSidebarCollapsed && <span className="font-semibold text-lg">tMoney</span>}
-            </Link>
-            {!isSidebarCollapsed && (
+          <div className="h-16 flex items-center justify-center px-4 border-b border-sidebar-border shrink-0">
+            {!isSidebarCollapsed ? (
+              <>
+                <Link to="/app" className="flex items-center gap-2 flex-1">
+                  <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center shrink-0">
+                    <span className="text-accent-foreground font-semibold text-sm">t</span>
+                  </div>
+                  <span className="font-semibold text-lg">tMoney</span>
+                </Link>
+                <button
+                  className="hidden lg:flex text-muted-foreground hover:text-foreground p-1 rounded-lg hover:bg-sidebar-accent transition-colors"
+                  onClick={() => setIsSidebarCollapsed(true)}
+                >
+                  <PanelLeftClose className="w-5 h-5" />
+                </button>
+                <button
+                  className="lg:hidden text-muted-foreground hover:text-foreground"
+                  onClick={() => setIsSidebarOpen(false)}
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </>
+            ) : (
               <button
-                className="hidden lg:flex text-muted-foreground hover:text-foreground p-1 rounded-lg hover:bg-sidebar-accent transition-colors"
-                onClick={() => setIsSidebarCollapsed(true)}
-              >
-                <PanelLeftClose className="w-5 h-5" />
-              </button>
-            )}
-            {isSidebarCollapsed && (
-              <button
-                className="hidden lg:flex text-muted-foreground hover:text-foreground p-1 rounded-lg hover:bg-sidebar-accent transition-colors absolute right-1"
+                className="hidden lg:flex text-muted-foreground hover:text-foreground p-2 rounded-lg hover:bg-sidebar-accent transition-colors"
                 onClick={() => setIsSidebarCollapsed(false)}
               >
-                <PanelLeft className="w-4 h-4" />
+                <PanelLeft className="w-5 h-5" />
               </button>
             )}
-            <button
-              className="lg:hidden text-muted-foreground hover:text-foreground"
-              onClick={() => setIsSidebarOpen(false)}
-            >
-              <X className="w-5 h-5" />
-            </button>
           </div>
 
           {/* Navigation - Scrollable */}

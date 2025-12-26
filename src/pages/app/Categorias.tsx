@@ -1,32 +1,52 @@
 import { useState } from 'react';
 import { AppLayout, useValuesVisibility } from '@/components/app/AppLayout';
 import { Button } from '@/components/ui/button';
-import { Plus, Pencil, Trash2, Eye, EyeOff } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { Plus, Pencil, Trash2, Eye, EyeOff, Filter, ChevronDown, ChevronUp } from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { NewCategoryModal } from '@/components/app/NewCategoryModal';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const categories = [
-  { id: 1, name: 'Alimentação', icon: '🍔', color: '#10B981', budget: 1500, spent: 1245.80, transactions: 45 },
-  { id: 2, name: 'Transporte', icon: '🚗', color: '#3B82F6', budget: 800, spent: 562.30, transactions: 28 },
-  { id: 3, name: 'Moradia', icon: '🏠', color: '#8B5CF6', budget: 3000, spent: 2850.00, transactions: 5 },
-  { id: 4, name: 'Entretenimento', icon: '🎬', color: '#F59E0B', budget: 500, spent: 387.50, transactions: 15 },
-  { id: 5, name: 'Saúde', icon: '💊', color: '#EF4444', budget: 600, spent: 234.00, transactions: 8 },
-  { id: 6, name: 'Educação', icon: '📚', color: '#EC4899', budget: 400, spent: 180.00, transactions: 3 },
-  { id: 7, name: 'Compras', icon: '🛍️', color: '#14B8A6', budget: 1000, spent: 856.40, transactions: 22 },
-  { id: 8, name: 'Investimentos', icon: '📈', color: '#6366F1', budget: 2000, spent: 2000.00, transactions: 4 },
+  { id: 1, name: 'Alimentação', icon: '🍔', color: '#10B981', budget: 1500, spent: 1245.80, transactions: 45, type: 'Despesa' },
+  { id: 2, name: 'Transporte', icon: '🚗', color: '#3B82F6', budget: 800, spent: 562.30, transactions: 28, type: 'Despesa' },
+  { id: 3, name: 'Moradia', icon: '🏠', color: '#8B5CF6', budget: 3000, spent: 2850.00, transactions: 5, type: 'Despesa' },
+  { id: 4, name: 'Entretenimento', icon: '🎬', color: '#F59E0B', budget: 500, spent: 387.50, transactions: 15, type: 'Despesa' },
+  { id: 5, name: 'Saúde', icon: '💊', color: '#EF4444', budget: 600, spent: 234.00, transactions: 8, type: 'Despesa' },
+  { id: 6, name: 'Educação', icon: '📚', color: '#EC4899', budget: 400, spent: 180.00, transactions: 3, type: 'Despesa' },
+  { id: 7, name: 'Compras', icon: '🛍️', color: '#14B8A6', budget: 1000, spent: 856.40, transactions: 22, type: 'Despesa' },
+  { id: 8, name: 'Investimentos', icon: '📈', color: '#6366F1', budget: 2000, spent: 2000.00, transactions: 4, type: 'Ambos' },
+  { id: 9, name: 'Salário', icon: '💰', color: '#22C55E', budget: 0, spent: 0, transactions: 12, type: 'Receita' },
+  { id: 10, name: 'Freelance', icon: '💼', color: '#0EA5E9', budget: 0, spent: 0, transactions: 6, type: 'Receita' },
 ];
 
-const chartData = categories.map(cat => ({
-  name: cat.name,
-  value: cat.spent,
-  color: cat.color,
-}));
-
 const Categorias = () => {
-  const [view, setView] = useState<'grid' | 'list'>('grid');
   const { showValues, setShowValues } = useValuesVisibility();
+  const [newCategoryOpen, setNewCategoryOpen] = useState(false);
+  const [filterType, setFilterType] = useState('Todos');
 
-  const totalBudget = categories.reduce((sum, cat) => sum + cat.budget, 0);
-  const totalSpent = categories.reduce((sum, cat) => sum + cat.spent, 0);
+  const filteredCategories = categories.filter(cat => {
+    if (filterType === 'Todos') return true;
+    if (filterType === 'Receita') return cat.type === 'Receita' || cat.type === 'Ambos';
+    if (filterType === 'Despesa') return cat.type === 'Despesa' || cat.type === 'Ambos';
+    return true;
+  });
+
+  const chartData = filteredCategories
+    .filter(cat => cat.spent > 0)
+    .map(cat => ({
+      name: cat.name,
+      value: cat.spent,
+      color: cat.color,
+    }));
+
+  const totalBudget = filteredCategories.reduce((sum, cat) => sum + cat.budget, 0);
+  const totalSpent = filteredCategories.reduce((sum, cat) => sum + cat.spent, 0);
 
   return (
     <AppLayout>
@@ -41,11 +61,29 @@ const Categorias = () => {
             <Button variant="outline" size="sm" onClick={() => setShowValues(!showValues)}>
               {showValues ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
             </Button>
-            <Button variant="accent" size="sm">
+            <Button variant="accent" size="sm" onClick={() => setNewCategoryOpen(true)}>
               <Plus className="w-4 h-4 mr-2" />
               Nova Categoria
             </Button>
           </div>
+        </div>
+
+        {/* Filter by Type */}
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">Filtrar por tipo:</span>
+          </div>
+          <Select value={filterType} onValueChange={setFilterType}>
+            <SelectTrigger className="w-[150px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Todos">Todos</SelectItem>
+              <SelectItem value="Receita">Receita</SelectItem>
+              <SelectItem value="Despesa">Despesa</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Overview */}
@@ -69,7 +107,7 @@ const Categorias = () => {
                   ))}
                 </Pie>
                 <Tooltip 
-                  formatter={(value: number) => [`R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, '']}
+                  formatter={(value: number) => [showValues ? `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '••••••', '']}
                   contentStyle={{ 
                     backgroundColor: 'hsl(var(--card))', 
                     border: '1px solid hsl(var(--border))',
@@ -81,10 +119,10 @@ const Categorias = () => {
             <div className="text-center mt-4">
               <p className="text-sm text-muted-foreground">Total Gasto</p>
               <p className="text-2xl font-semibold">
-                R$ {totalSpent.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                {showValues ? `R$ ${totalSpent.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '••••••'}
               </p>
               <p className="text-sm text-muted-foreground">
-                de R$ {totalBudget.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} orçado
+                de {showValues ? `R$ ${totalBudget.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '••••••'} orçado
               </p>
             </div>
           </div>
@@ -92,8 +130,8 @@ const Categorias = () => {
           {/* Categories Grid */}
           <div className="lg:col-span-2">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {categories.map((category) => {
-                const percentage = (category.spent / category.budget) * 100;
+              {filteredCategories.map((category) => {
+                const percentage = category.budget > 0 ? (category.spent / category.budget) * 100 : 0;
                 const isOverBudget = percentage > 100;
                 
                 return (
@@ -112,7 +150,7 @@ const Categorias = () => {
                         <div>
                           <h4 className="font-medium">{category.name}</h4>
                           <p className="text-sm text-muted-foreground">
-                            {category.transactions} transações
+                            {category.transactions} transações • {category.type}
                           </p>
                         </div>
                       </div>
@@ -126,28 +164,30 @@ const Categorias = () => {
                       </div>
                     </div>
                     
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">
-                          R$ {category.spent.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </span>
-                        <span className={isOverBudget ? 'text-destructive font-medium' : 'text-muted-foreground'}>
-                          {percentage.toFixed(0)}%
-                        </span>
+                    {category.budget > 0 && (
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">
+                            {showValues ? `R$ ${category.spent.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '••••••'}
+                          </span>
+                          <span className={isOverBudget ? 'text-destructive font-medium' : 'text-muted-foreground'}>
+                            {percentage.toFixed(0)}%
+                          </span>
+                        </div>
+                        <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                          <div 
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{ 
+                              width: `${Math.min(percentage, 100)}%`,
+                              backgroundColor: isOverBudget ? 'hsl(var(--destructive))' : category.color
+                            }}
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground text-right">
+                          Limite: {showValues ? `R$ ${category.budget.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '••••••'}
+                        </p>
                       </div>
-                      <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                        <div 
-                          className="h-full rounded-full transition-all duration-500"
-                          style={{ 
-                            width: `${Math.min(percentage, 100)}%`,
-                            backgroundColor: isOverBudget ? 'hsl(var(--destructive))' : category.color
-                          }}
-                        />
-                      </div>
-                      <p className="text-xs text-muted-foreground text-right">
-                        Limite: R$ {category.budget.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      </p>
-                    </div>
+                    )}
                   </div>
                 );
               })}
@@ -155,6 +195,9 @@ const Categorias = () => {
           </div>
         </div>
       </div>
+
+      {/* New Category Modal */}
+      <NewCategoryModal open={newCategoryOpen} onOpenChange={setNewCategoryOpen} />
     </AppLayout>
   );
 };
