@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Plus, Pencil, Trash2, Eye, EyeOff, Filter, Loader2 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { NewCategoryModal } from '@/components/app/NewCategoryModal';
+import { EditCategoryModal } from '@/components/app/EditCategoryModal';
 import { categoryService } from '@/services/categoryService';
 import { Category, CategoryTypeLabels, CategoryTypeEnum } from '@/types/category';
 import { toast } from 'sonner';
@@ -37,6 +38,8 @@ const getCategoryColor = (index: number) => categoryColors[index % categoryColor
 const Categorias = () => {
   const { showValues, setShowValues } = useValuesVisibility();
   const [newCategoryOpen, setNewCategoryOpen] = useState(false);
+  const [editCategoryOpen, setEditCategoryOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [filterType, setFilterType] = useState('Todos');
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -102,6 +105,15 @@ const Categorias = () => {
   };
 
   const handleCategoryCreated = () => {
+    fetchCategories();
+  };
+
+  const handleEdit = (category: Category) => {
+    setEditingCategory(category);
+    setEditCategoryOpen(true);
+  };
+
+  const handleEditSuccess = () => {
     fetchCategories();
   };
 
@@ -232,7 +244,10 @@ const Categorias = () => {
                       </div>
                       {!category.isDefault && (
                         <div className="flex items-center gap-1">
-                          <button className="p-1.5 rounded-lg hover:bg-secondary transition-colors">
+                          <button 
+                            className="p-1.5 rounded-lg hover:bg-secondary transition-colors"
+                            onClick={() => handleEdit(category)}
+                          >
                             <Pencil className="w-4 h-4 text-muted-foreground" />
                           </button>
                           <button 
@@ -257,6 +272,14 @@ const Categorias = () => {
         open={newCategoryOpen} 
         onOpenChange={setNewCategoryOpen} 
         onSuccess={handleCategoryCreated}
+      />
+
+      {/* Edit Category Modal */}
+      <EditCategoryModal
+        open={editCategoryOpen}
+        onOpenChange={setEditCategoryOpen}
+        onSuccess={handleEditSuccess}
+        category={editingCategory}
       />
 
       {/* Delete Confirmation Dialog */}

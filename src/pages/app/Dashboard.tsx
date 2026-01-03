@@ -470,8 +470,8 @@ const Dashboard = () => {
                         {isIncome ? "💰" : "💸"}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{tx.title}</p>
-                        <p className="text-sm text-muted-foreground">{category?.title || "Sem categoria"}</p>
+                        <p className={`font-medium truncate ${!showValues ? 'blur-sm select-none' : ''}`}>{tx.title}</p>
+                        <p className={`text-sm text-muted-foreground ${!showValues ? 'blur-sm select-none' : ''}`}>{category?.title || "Sem categoria"}</p>
                       </div>
                       <div className="text-right">
                         <p className={`font-medium tabular-nums ${isIncome ? "text-success" : ""}`}>
@@ -503,14 +503,14 @@ const Dashboard = () => {
               <>
                 {/* Donut Chart */}
                 <div className="relative mb-4">
-                  <ResponsiveContainer width="100%" height={160}>
+                  <ResponsiveContainer width="100%" height={200}>
                     <PieChart>
                       <Pie
                         data={categorySpending}
                         cx="50%"
                         cy="50%"
-                        innerRadius={50}
-                        outerRadius={70}
+                        innerRadius={60}
+                        outerRadius={85}
                         paddingAngle={2}
                         dataKey="value"
                       >
@@ -523,7 +523,7 @@ const Dashboard = () => {
                   {/* Center Text */}
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="text-center">
-                      <p className="text-xl font-semibold">{showValues ? formatCurrency(totalCategorySpending) : "••••••"}</p>
+                      <p className="text-sm font-semibold">{showValues ? formatCurrency(totalCategorySpending) : "••••••"}</p>
                       <p className="text-xs text-muted-foreground">Total</p>
                     </div>
                   </div>
