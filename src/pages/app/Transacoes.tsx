@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { AppLayout, useValuesVisibility } from '@/components/app/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { NewTransactionModal } from '@/components/app/NewTransactionModal';
 import { transactionService } from '@/services/transactionService';
 import { categoryService } from '@/services/categoryService';
@@ -13,7 +13,8 @@ import {
   PaymentStatusLabels,
   TransactionTypeEnum,
   PaymentMethodEnum,
-  PaymentStatusEnum
+  PaymentStatusEnum,
+  FinancialSummary
 } from '@/types/transaction';
 import { Category } from '@/types/category';
 import { toast } from 'sonner';
@@ -21,20 +22,21 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { 
   Search, 
-  Filter, 
-  Download, 
   Plus,
   ChevronLeft,
   ChevronRight,
   MoreHorizontal,
   Eye,
   EyeOff,
-  ChevronDown,
-  ChevronUp,
   Pencil,
   Trash2,
   X,
-  Loader2
+  Loader2,
+  CalendarDays,
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  FileText
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -59,27 +61,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-const paymentMethods = [
-  'Todos',
-  'Pix',
-  'Cartão Crédito',
-  'Cartão Débito',
-  'Débito Automático',
-  'Transferência',
-];
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Label } from '@/components/ui/label';
 
 const Transacoes = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const { showValues, setShowValues } = useValuesVisibility();
-  const [showFilters, setShowFilters] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [selectedTransactions, setSelectedTransactions] = useState<string[]>([]);
   const [newTransactionOpen, setNewTransactionOpen] = useState(false);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
+  const [summary, setSummary] = useState<FinancialSummary | null>(null);
   
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -88,14 +88,25 @@ const Transacoes = () => {
   const itemsPerPage = 20;
   
   // Filter states
-  const [filterType, setFilterType] = useState('Todos');
-  const [filterCategory, setFilterCategory] = useState('Todas');
-  const [filterPayment, setFilterPayment] = useState('Todos');
-  const [filterStatus, setFilterStatus] = useState('Todos');
-  const [filterDateStart, setFilterDateStart] = useState('');
-  const [filterDateEnd, setFilterDateEnd] = useState('');
+  const [filterType, setFilterType] = useState<string>('all');
+  const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [filterPayment, setFilterPayment] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterMinValue, setFilterMinValue] = useState('');
   const [filterMaxValue, setFilterMaxValue] = useState('');
+
+  // Sort
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  const hasActiveFilters = useMemo(() => {
+    return filterType !== 'all' || 
+           filterCategory !== 'all' || 
+           filterPayment !== 'all' || 
+           filterStatus !== 'all' ||
+           filterMinValue !== '' ||
+           filterMaxValue !== '' ||
+           searchQuery !== '';
+  }, [filterType, filterCategory, filterPayment, filterStatus, filterMinValue, filterMaxValue, searchQuery]);
 
   const fetchCategories = async () => {
     try {
@@ -108,6 +119,17 @@ const Transacoes = () => {
     }
   };
 
+  const fetchSummary = async () => {
+    try {
+      const response = await transactionService.getFinancialSummary();
+      if (response.data) {
+        setSummary(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching summary:', error);
+    }
+  };
+
   const fetchTransactions = async () => {
     setLoading(true);
     try {
@@ -117,21 +139,18 @@ const Transacoes = () => {
         textSearch: searchQuery || undefined,
       };
 
-      if (filterType !== 'Todos') {
-        params.transactionType = filterType === 'Receita' ? TransactionTypeEnum.Receita : TransactionTypeEnum.Despesa;
+      if (filterType !== 'all') {
+        params.transactionType = filterType === 'income' ? TransactionTypeEnum.Receita : TransactionTypeEnum.Despesa;
       }
-      if (filterCategory !== 'Todas') {
-        const cat = categories.find(c => c.title === filterCategory);
-        if (cat) params.categoryId = cat.id;
+      if (filterCategory !== 'all') {
+        params.categoryId = filterCategory;
       }
-      if (filterPayment !== 'Todos') {
-        params.paymentMethod = PaymentMethodEnum[filterPayment as keyof typeof PaymentMethodEnum];
+      if (filterPayment !== 'all') {
+        params.paymentMethod = parseInt(filterPayment);
       }
-      if (filterStatus !== 'Todos') {
-        params.paymentStatus = PaymentStatusEnum[filterStatus as keyof typeof PaymentStatusEnum];
+      if (filterStatus !== 'all') {
+        params.paymentStatus = parseInt(filterStatus);
       }
-      if (filterDateStart) params.startDate = filterDateStart;
-      if (filterDateEnd) params.endDate = filterDateEnd;
       if (filterMinValue) params.minValue = parseFloat(filterMinValue);
       if (filterMaxValue) params.maxValue = parseFloat(filterMaxValue);
 
@@ -153,24 +172,28 @@ const Transacoes = () => {
 
   useEffect(() => {
     fetchCategories();
+    fetchSummary();
   }, []);
 
   useEffect(() => {
     fetchTransactions();
-  }, [currentPage]);
+  }, [currentPage, filterType, filterCategory, filterPayment, filterStatus]);
 
   const handleSearch = () => {
     setCurrentPage(1);
     fetchTransactions();
   };
 
+  const applyValueFilter = () => {
+    setCurrentPage(1);
+    fetchTransactions();
+  };
+
   const clearFilters = () => {
-    setFilterType('Todos');
-    setFilterCategory('Todas');
-    setFilterPayment('Todos');
-    setFilterStatus('Todos');
-    setFilterDateStart('');
-    setFilterDateEnd('');
+    setFilterType('all');
+    setFilterCategory('all');
+    setFilterPayment('all');
+    setFilterStatus('all');
     setFilterMinValue('');
     setFilterMaxValue('');
     setSearchQuery('');
@@ -194,6 +217,7 @@ const Transacoes = () => {
       } else {
         toast.success('Transação excluída com sucesso');
         fetchTransactions();
+        fetchSummary();
       }
     } catch (error) {
       toast.error('Erro ao excluir transação');
@@ -206,11 +230,8 @@ const Transacoes = () => {
 
   const handleTransactionCreated = () => {
     fetchTransactions();
+    fetchSummary();
   };
-
-  const getTypeLabel = (type: string) => TransactionTypeLabels[type] || type;
-  const getPaymentLabel = (method: string) => PaymentMethodLabels[method] || method;
-  const getStatusLabel = (status: string) => PaymentStatusLabels[status] || status;
 
   const getCategoryName = (categoryId: string) => {
     const category = categories.find(c => c.id === categoryId);
@@ -219,10 +240,34 @@ const Transacoes = () => {
 
   const formatDate = (dateString: string) => {
     try {
-      return format(new Date(dateString), "dd MMM yyyy, HH:mm", { locale: ptBR });
+      return format(new Date(dateString), "dd/MM/yyyy", { locale: ptBR });
     } catch {
       return dateString;
     }
+  };
+
+  const formatCurrency = (value: number) => {
+    return `R$ ${Math.abs(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedTransactions.length === transactions.length) {
+      setSelectedTransactions([]);
+    } else {
+      setSelectedTransactions(transactions.map(t => t.id));
+    }
+  };
+
+  const toggleSelectTransaction = (id: string) => {
+    setSelectedTransactions(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const clearSearch = () => {
+    setSearchQuery('');
+    setCurrentPage(1);
+    fetchTransactions();
   };
 
   const startItem = (currentPage - 1) * itemsPerPage + 1;
@@ -232,15 +277,16 @@ const Transacoes = () => {
     <AppLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-center justify-between">
           <h1 className="text-h2">Transações</h1>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
-              <Download className="w-4 h-4 mr-2" />
-              Exportar
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setShowValues(!showValues)}>
-              {showValues ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => setShowValues(!showValues)}
+              title={showValues ? "Ocultar valores" : "Mostrar valores"}
+            >
+              {showValues ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
             </Button>
             <Button variant="accent" size="sm" onClick={() => setNewTransactionOpen(true)}>
               <Plus className="w-4 h-4 mr-2" />
@@ -249,125 +295,80 @@ const Transacoes = () => {
           </div>
         </div>
 
-        {/* Search and Filter Bar */}
-        <div className="bg-card rounded-xl border border-border p-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar transação..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                className="pl-10"
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                size="default"
-                onClick={() => setShowFilters(!showFilters)}
-              >
-                <Filter className="w-4 h-4 mr-2" />
-                Filtros
-                {showFilters ? (
-                  <ChevronUp className="w-4 h-4 ml-2" />
-                ) : (
-                  <ChevronDown className="w-4 h-4 ml-2" />
+        {/* Filter Dropdowns Bar */}
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Transaction Type Filter */}
+          <Select value={filterType} onValueChange={setFilterType}>
+            <SelectTrigger className="w-auto min-w-[180px] bg-card border-border">
+              <CalendarDays className="w-4 h-4 mr-2 text-muted-foreground" />
+              <SelectValue placeholder="Todas as transações" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as transações</SelectItem>
+              <SelectItem value="income">Receitas</SelectItem>
+              <SelectItem value="expense">Despesas</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Payment Method Filter */}
+          <Select value={filterPayment} onValueChange={setFilterPayment}>
+            <SelectTrigger className="w-auto min-w-[180px] bg-card border-border">
+              <SelectValue placeholder="Forma de Pagamento" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as formas</SelectItem>
+              <SelectItem value="0">Pix</SelectItem>
+              <SelectItem value="1">Cartão Crédito</SelectItem>
+              <SelectItem value="2">Cartão Débito</SelectItem>
+              <SelectItem value="3">Débito Automático</SelectItem>
+              <SelectItem value="4">Transferência</SelectItem>
+              <SelectItem value="5">Boleto</SelectItem>
+              <SelectItem value="6">Dinheiro</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Status Filter */}
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="w-auto min-w-[150px] bg-card border-border">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os status</SelectItem>
+              <SelectItem value="0">Pendente</SelectItem>
+              <SelectItem value="1">Pago</SelectItem>
+              <SelectItem value="2">Atrasado</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Category Filter */}
+          <Select value={filterCategory} onValueChange={setFilterCategory}>
+            <SelectTrigger className="w-auto min-w-[150px] bg-card border-border">
+              <SelectValue placeholder="Categorias" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas categorias</SelectItem>
+              {categories.map((cat) => (
+                <SelectItem key={cat.id} value={cat.id}>{cat.title}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Value Filter */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="bg-card border-border">
+                Valor
+                {(filterMinValue || filterMaxValue) && (
+                  <span className="ml-2 text-xs bg-accent text-accent-foreground px-1.5 py-0.5 rounded">
+                    Filtrado
+                  </span>
                 )}
               </Button>
-            </div>
-          </div>
-
-          {/* Expanded Filters */}
-          {showFilters && (
-            <div className="mt-4 pt-4 border-t border-border">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* Type */}
+            </PopoverTrigger>
+            <PopoverContent className="w-64" align="start">
+              <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Tipo</Label>
-                  <Select value={filterType} onValueChange={setFilterType}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Todos">Todos</SelectItem>
-                      <SelectItem value="Receita">Receita</SelectItem>
-                      <SelectItem value="Despesa">Despesa</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Category */}
-                <div className="space-y-2">
-                  <Label>Categoria</Label>
-                  <Select value={filterCategory} onValueChange={setFilterCategory}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Todas">Todas</SelectItem>
-                      {categories.map((cat) => (
-                        <SelectItem key={cat.id} value={cat.title}>{cat.title}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Payment Method */}
-                <div className="space-y-2">
-                  <Label>Forma de Pagamento</Label>
-                  <Select value={filterPayment} onValueChange={setFilterPayment}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {paymentMethods.map((method) => (
-                        <SelectItem key={method} value={method}>{method}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Status */}
-                <div className="space-y-2">
-                  <Label>Status</Label>
-                  <Select value={filterStatus} onValueChange={setFilterStatus}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Todos">Todos</SelectItem>
-                      <SelectItem value="Pago">Pago</SelectItem>
-                      <SelectItem value="Pendente">Pendente</SelectItem>
-                      <SelectItem value="Atrasado">Atrasado</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Date Start */}
-                <div className="space-y-2">
-                  <Label>Data Início</Label>
-                  <Input
-                    type="date"
-                    value={filterDateStart}
-                    onChange={(e) => setFilterDateStart(e.target.value)}
-                  />
-                </div>
-
-                {/* Date End */}
-                <div className="space-y-2">
-                  <Label>Data Fim</Label>
-                  <Input
-                    type="date"
-                    value={filterDateEnd}
-                    onChange={(e) => setFilterDateEnd(e.target.value)}
-                  />
-                </div>
-
-                {/* Min Value */}
-                <div className="space-y-2">
-                  <Label>Valor Mínimo</Label>
+                  <Label>Valor mínimo</Label>
                   <Input
                     type="number"
                     placeholder="R$ 0,00"
@@ -375,10 +376,8 @@ const Transacoes = () => {
                     onChange={(e) => setFilterMinValue(e.target.value)}
                   />
                 </div>
-
-                {/* Max Value */}
                 <div className="space-y-2">
-                  <Label>Valor Máximo</Label>
+                  <Label>Valor máximo</Label>
                   <Input
                     type="number"
                     placeholder="R$ 10.000,00"
@@ -386,21 +385,73 @@ const Transacoes = () => {
                     onChange={(e) => setFilterMaxValue(e.target.value)}
                   />
                 </div>
+                <Button size="sm" className="w-full" onClick={applyValueFilter}>
+                  Aplicar
+                </Button>
               </div>
+            </PopoverContent>
+          </Popover>
+        </div>
 
-              {/* Filter Actions */}
-              <div className="flex gap-2 mt-4 pt-4 border-t border-border">
-                <Button variant="accent" size="sm" onClick={handleSearch}>
-                  <Search className="w-4 h-4 mr-2" />
-                  Buscar
-                </Button>
-                <Button variant="outline" size="sm" onClick={clearFilters}>
-                  <X className="w-4 h-4 mr-2" />
-                  Limpar Filtros
-                </Button>
+        {/* Clear Filters */}
+        {hasActiveFilters && (
+          <button 
+            onClick={clearFilters}
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Limpar filtros
+          </button>
+        )}
+
+        {/* Search and Summary */}
+        <div className="bg-card rounded-xl border border-border p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            {/* Search Input */}
+            <div className="relative max-w-md flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                className="pl-10 pr-10 bg-background border-accent/50 focus:border-accent"
+              />
+              {searchQuery && (
+                <button 
+                  onClick={clearSearch}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            {/* Summary Stats */}
+            <div className="flex items-center gap-6 ml-auto text-sm">
+              <div className="flex items-center gap-2">
+                <FileText className="w-4 h-4 text-muted-foreground" />
+                <span className="font-medium">{totalItems}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <ArrowDown className="w-4 h-4 text-destructive" />
+                <span className={`font-medium ${showValues ? 'text-destructive' : ''}`}>
+                  {showValues ? formatCurrency(summary?.totalExpense || 0) : '••••••'}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <ArrowUp className="w-4 h-4 text-success" />
+                <span className={`font-medium ${showValues ? 'text-success' : ''}`}>
+                  {showValues ? formatCurrency(summary?.totalIncome || 0) : '••••••'}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <ArrowUpDown className="w-4 h-4 text-accent" />
+                <span className={`font-medium ${showValues ? 'text-accent' : ''}`}>
+                  {showValues ? formatCurrency(summary?.balance || 0) : '••••••'}
+                </span>
               </div>
             </div>
-          )}
+          </div>
         </div>
 
         {/* Transactions Table */}
@@ -423,17 +474,45 @@ const Transacoes = () => {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-border">
-                      <th className="text-left p-4 font-medium text-muted-foreground text-sm">Nome</th>
-                      <th className="text-left p-4 font-medium text-muted-foreground text-sm">Valor</th>
-                      <th className="text-left p-4 font-medium text-muted-foreground text-sm">Data</th>
-                      <th className="text-left p-4 font-medium text-muted-foreground text-sm">Status</th>
-                      <th className="text-left p-4 font-medium text-muted-foreground text-sm w-12"></th>
+                      <th className="p-4 w-12">
+                        <Checkbox 
+                          checked={selectedTransactions.length === transactions.length && transactions.length > 0}
+                          onCheckedChange={toggleSelectAll}
+                        />
+                      </th>
+                      <th className="text-left p-4 font-medium text-muted-foreground text-xs uppercase tracking-wider">
+                        Descrição
+                      </th>
+                      <th className="text-left p-4 font-medium text-muted-foreground text-xs uppercase tracking-wider">
+                        Categoria
+                      </th>
+                      <th className="text-left p-4 font-medium text-muted-foreground text-xs uppercase tracking-wider">
+                        Conta
+                      </th>
+                      <th className="text-left p-4 font-medium text-muted-foreground text-xs uppercase tracking-wider">
+                        Data
+                      </th>
+                      <th className="text-left p-4 font-medium text-muted-foreground text-xs uppercase tracking-wider">
+                        <button 
+                          className="flex items-center gap-1 hover:text-foreground transition-colors"
+                          onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                        >
+                          Valor
+                          {sortOrder === 'asc' ? (
+                            <ArrowUp className="w-3 h-3" />
+                          ) : (
+                            <ArrowDown className="w-3 h-3" />
+                          )}
+                        </button>
+                      </th>
+                      <th className="text-left p-4 font-medium text-muted-foreground text-xs uppercase tracking-wider w-12">
+                        Ação
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
-                    {transactions.map((tx) => {
+                    {transactions.map((tx, index) => {
                       const isIncome = tx.transactionType === 'Income' || tx.transactionType === 'Receita';
-                      const statusLower = getStatusLabel(tx.status).toLowerCase();
                       
                       return (
                         <tr 
@@ -442,34 +521,38 @@ const Transacoes = () => {
                         >
                           <td className="p-4">
                             <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-sm">
-                                {isIncome ? '💰' : '💸'}
-                              </div>
-                              <div>
-                                <p className="font-medium">{tx.title}</p>
-                                <p className="text-sm text-muted-foreground">{getCategoryName(tx.categoryId)}</p>
-                              </div>
+                              <Checkbox 
+                                checked={selectedTransactions.includes(tx.id)}
+                                onCheckedChange={() => toggleSelectTransaction(tx.id)}
+                              />
+                              <span className="text-muted-foreground text-sm">{index + 1 + (currentPage - 1) * itemsPerPage}</span>
                             </div>
                           </td>
                           <td className="p-4">
-                            <span className={`font-medium tabular-nums ${isIncome ? 'text-success' : ''}`}>
-                              {showValues 
-                                ? `${isIncome ? '+' : '-'}R$ ${Math.abs(tx.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
-                                : '••••••'
-                              }
+                            <span className={showValues ? '' : 'blur-sm select-none'}>
+                              {tx.title}
                             </span>
                           </td>
-                          <td className="p-4 text-sm text-muted-foreground">{formatDate(tx.date)}</td>
                           <td className="p-4">
-                            <span className={`
-                              inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium
-                              ${statusLower === 'pago' ? 'bg-success/10 text-success' : ''}
-                              ${statusLower === 'pendente' ? 'bg-yellow-500/10 text-yellow-600' : ''}
-                              ${statusLower === 'atrasado' ? 'bg-destructive/10 text-destructive' : ''}
-                            `}>
-                              {statusLower === 'pago' && '✓ Pago'}
-                              {statusLower === 'pendente' && '⏳ Pendente'}
-                              {statusLower === 'atrasado' && '⚠ Atrasado'}
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-border bg-secondary/50 text-sm">
+                              <span className="w-2 h-2 rounded-full bg-accent" />
+                              {getCategoryName(tx.categoryId)}
+                            </span>
+                          </td>
+                          <td className="p-4 text-muted-foreground">
+                            <span className={showValues ? '' : 'blur-sm select-none'}>
+                              {PaymentMethodLabels[tx.paymentMethod] || tx.paymentMethod}
+                            </span>
+                          </td>
+                          <td className="p-4 text-muted-foreground">
+                            {formatDate(tx.date)}
+                          </td>
+                          <td className="p-4">
+                            <span className={`font-medium tabular-nums ${isIncome ? 'text-success' : 'text-destructive'}`}>
+                              {showValues 
+                                ? formatCurrency(tx.amount)
+                                : '••••••'
+                              }
                             </span>
                           </td>
                           <td className="p-4">
