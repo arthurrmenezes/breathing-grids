@@ -7,19 +7,16 @@ import { NewTransactionModal } from '@/components/app/NewTransactionModal';
 import { EditTransactionModal } from '@/components/app/EditTransactionModal';
 import { transactionService } from '@/services/transactionService';
 import { categoryService } from '@/services/categoryService';
+import { Calendar } from '@/components/ui/calendar';
 import { 
   Transaction, 
-  TransactionTypeLabels, 
   PaymentMethodLabels, 
-  PaymentStatusLabels,
   TransactionTypeEnum,
-  PaymentMethodEnum,
-  PaymentStatusEnum,
   FinancialSummary
 } from '@/types/transaction';
 import { Category } from '@/types/category';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { 
   Search, 
@@ -68,6 +65,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 
 const Transacoes = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -97,8 +95,11 @@ const Transacoes = () => {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterMinValue, setFilterMinValue] = useState('');
   const [filterMaxValue, setFilterMaxValue] = useState('');
+  const [filterStartDate, setFilterStartDate] = useState<Date | undefined>();
+  const [filterEndDate, setFilterEndDate] = useState<Date | undefined>();
 
-  // Sort
+  // Sort - default by date desc (most recent first)
+  const [sortField, setSortField] = useState<'date' | 'amount'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   const hasActiveFilters = useMemo(() => {
@@ -108,8 +109,10 @@ const Transacoes = () => {
            filterStatus !== 'all' ||
            filterMinValue !== '' ||
            filterMaxValue !== '' ||
+           filterStartDate !== undefined ||
+           filterEndDate !== undefined ||
            searchQuery !== '';
-  }, [filterType, filterCategory, filterPayment, filterStatus, filterMinValue, filterMaxValue, searchQuery]);
+  }, [filterType, filterCategory, filterPayment, filterStatus, filterMinValue, filterMaxValue, filterStartDate, filterEndDate, searchQuery]);
 
   const fetchCategories = async () => {
     try {
@@ -156,6 +159,8 @@ const Transacoes = () => {
       }
       if (filterMinValue) params.minValue = parseFloat(filterMinValue);
       if (filterMaxValue) params.maxValue = parseFloat(filterMaxValue);
+      if (filterStartDate) params.startDate = format(filterStartDate, 'yyyy-MM-dd');
+      if (filterEndDate) params.endDate = format(filterEndDate, 'yyyy-MM-dd');
 
       const response = await transactionService.getAll(params);
       
@@ -180,7 +185,22 @@ const Transacoes = () => {
 
   useEffect(() => {
     fetchTransactions();
-  }, [currentPage, filterType, filterCategory, filterPayment, filterStatus]);
+  }, [currentPage, filterType, filterCategory, filterPayment, filterStatus, filterStartDate, filterEndDate]);
+
+  // Sort transactions locally
+  const sortedTransactions = useMemo(() => {
+    const sorted = [...transactions];
+    sorted.sort((a, b) => {
+      let comparison = 0;
+      if (sortField === 'date') {
+        comparison = new Date(a.date).getTime() - new Date(b.date).getTime();
+      } else if (sortField === 'amount') {
+        comparison = a.amount - b.amount;
+      }
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+    return sorted;
+  }, [transactions, sortField, sortOrder]);
 
   const handleSearch = () => {
     setCurrentPage(1);
@@ -199,6 +219,8 @@ const Transacoes = () => {
     setFilterStatus('all');
     setFilterMinValue('');
     setFilterMaxValue('');
+    setFilterStartDate(undefined);
+    setFilterEndDate(undefined);
     setSearchQuery('');
     setCurrentPage(1);
   };
@@ -253,7 +275,9 @@ const Transacoes = () => {
 
   const formatDate = (dateString: string) => {
     try {
-      return format(new Date(dateString), "dd/MM/yyyy", { locale: ptBR });
+      // Use parseISO to correctly handle the date without timezone issues
+      const date = parseISO(dateString);
+      return format(date, "dd/MM/yyyy", { locale: ptBR });
     } catch {
       return dateString;
     }
@@ -283,8 +307,19 @@ const Transacoes = () => {
     fetchTransactions();
   };
 
+  const handleSortByValue = () => {
+    if (sortField === 'amount') {
+      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField('amount');
+      setSortOrder('desc');
+    }
+  };
+
   const startItem = (currentPage - 1) * itemsPerPage + 1;
   const endItem = Math.min(currentPage * itemsPerPage, totalItems);
+
+  const hasDateFilter = filterStartDate || filterEndDate;
 
   return (
     <AppLayout>
@@ -310,10 +345,60 @@ const Transacoes = () => {
 
         {/* Filter Dropdowns Bar */}
         <div className="flex flex-wrap items-center gap-3">
+          {/* Date Filter */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className={cn("bg-card border-border", hasDateFilter && "border-accent")}>
+                <CalendarDays className="w-4 h-4 mr-2 text-muted-foreground" />
+                {hasDateFilter ? (
+                  <span className="text-sm">
+                    {filterStartDate ? format(filterStartDate, 'dd/MM/yy') : '...'} - {filterEndDate ? format(filterEndDate, 'dd/MM/yy') : '...'}
+                  </span>
+                ) : (
+                  'Período'
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-4" align="start">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Data inicial</Label>
+                  <Calendar
+                    mode="single"
+                    selected={filterStartDate}
+                    onSelect={setFilterStartDate}
+                    className={cn("p-3 pointer-events-auto rounded-md border")}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Data final</Label>
+                  <Calendar
+                    mode="single"
+                    selected={filterEndDate}
+                    onSelect={setFilterEndDate}
+                    className={cn("p-3 pointer-events-auto rounded-md border")}
+                  />
+                </div>
+                {hasDateFilter && (
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => {
+                      setFilterStartDate(undefined);
+                      setFilterEndDate(undefined);
+                    }}
+                  >
+                    Limpar datas
+                  </Button>
+                )}
+              </div>
+            </PopoverContent>
+          </Popover>
+
           {/* Transaction Type Filter */}
           <Select value={filterType} onValueChange={setFilterType}>
             <SelectTrigger className="w-auto min-w-[180px] bg-card border-border">
-              <CalendarDays className="w-4 h-4 mr-2 text-muted-foreground" />
               <SelectValue placeholder="Todas as transações" />
             </SelectTrigger>
             <SelectContent>
@@ -330,13 +415,16 @@ const Transacoes = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas as formas</SelectItem>
-              <SelectItem value="0">Pix</SelectItem>
-              <SelectItem value="1">Cartão Crédito</SelectItem>
-              <SelectItem value="2">Cartão Débito</SelectItem>
-              <SelectItem value="3">Débito Automático</SelectItem>
-              <SelectItem value="4">Transferência</SelectItem>
-              <SelectItem value="5">Boleto</SelectItem>
-              <SelectItem value="6">Dinheiro</SelectItem>
+              <SelectItem value="0">Cartão Crédito</SelectItem>
+              <SelectItem value="1">Cartão Débito</SelectItem>
+              <SelectItem value="2">Pix</SelectItem>
+              <SelectItem value="3">TED</SelectItem>
+              <SelectItem value="4">Boleto</SelectItem>
+              <SelectItem value="5">Dinheiro</SelectItem>
+              <SelectItem value="6">Cheque</SelectItem>
+              <SelectItem value="7">Crypto Wallet</SelectItem>
+              <SelectItem value="8">Voucher</SelectItem>
+              <SelectItem value="9">Outro</SelectItem>
             </SelectContent>
           </Select>
 
@@ -500,7 +588,7 @@ const Transacoes = () => {
                         Categoria
                       </th>
                       <th className="text-left p-4 font-medium text-muted-foreground text-xs uppercase tracking-wider">
-                        Conta
+                        Forma de Pagamento
                       </th>
                       <th className="text-left p-4 font-medium text-muted-foreground text-xs uppercase tracking-wider">
                         Data
@@ -508,13 +596,17 @@ const Transacoes = () => {
                       <th className="text-left p-4 font-medium text-muted-foreground text-xs uppercase tracking-wider">
                         <button 
                           className="flex items-center gap-1 hover:text-foreground transition-colors"
-                          onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                          onClick={handleSortByValue}
                         >
                           Valor
-                          {sortOrder === 'asc' ? (
-                            <ArrowUp className="w-3 h-3" />
+                          {sortField === 'amount' ? (
+                            sortOrder === 'asc' ? (
+                              <ArrowUp className="w-3 h-3" />
+                            ) : (
+                              <ArrowDown className="w-3 h-3" />
+                            )
                           ) : (
-                            <ArrowDown className="w-3 h-3" />
+                            <ArrowUpDown className="w-3 h-3 opacity-50" />
                           )}
                         </button>
                       </th>
@@ -524,7 +616,7 @@ const Transacoes = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {transactions.map((tx, index) => {
+                    {sortedTransactions.map((tx) => {
                       const isIncome = tx.transactionType === 'Income' || tx.transactionType === 'Receita';
                       
                       return (
@@ -533,13 +625,10 @@ const Transacoes = () => {
                           className="border-b border-border hover:bg-secondary/30 transition-colors"
                         >
                           <td className="p-4">
-                            <div className="flex items-center gap-3">
-                              <Checkbox 
-                                checked={selectedTransactions.includes(tx.id)}
-                                onCheckedChange={() => toggleSelectTransaction(tx.id)}
-                              />
-                              <span className="text-muted-foreground text-sm">{index + 1 + (currentPage - 1) * itemsPerPage}</span>
-                            </div>
+                            <Checkbox 
+                              checked={selectedTransactions.includes(tx.id)}
+                              onCheckedChange={() => toggleSelectTransaction(tx.id)}
+                            />
                           </td>
                           <td className="p-4">
                             <span className={showValues ? '' : 'blur-sm select-none'}>

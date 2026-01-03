@@ -7,7 +7,7 @@ import { categoryService } from "@/services/categoryService";
 import { useAuth } from "@/contexts/AuthContext";
 import { Transaction } from "@/types/transaction";
 import { Category } from "@/types/category";
-import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
+import { format, subMonths, startOfMonth, endOfMonth, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   Select,
@@ -459,7 +459,8 @@ const Dashboard = () => {
                 {recentTransactions.map((tx) => {
                   const isIncome = tx.transactionType === "Income" || tx.transactionType === "Receita";
                   const category = categories.find(c => c.id === tx.categoryId);
-                  const formattedDate = format(new Date(tx.date), "dd MMM", { locale: ptBR });
+                  // Use parseISO to correctly handle the date without timezone issues
+                  const formattedDate = format(parseISO(tx.date), "dd MMM", { locale: ptBR });
                   
                   return (
                     <div
@@ -474,7 +475,7 @@ const Dashboard = () => {
                         <p className={`text-sm text-muted-foreground ${!showValues ? 'blur-sm select-none' : ''}`}>{category?.title || "Sem categoria"}</p>
                       </div>
                       <div className="text-right">
-                        <p className={`font-medium tabular-nums ${isIncome ? "text-success" : ""}`}>
+                        <p className={`font-medium tabular-nums ${isIncome ? "text-success" : "text-destructive"}`}>
                           {showValues
                             ? `${isIncome ? "+" : "-"}${formatCurrency(tx.amount)}`
                             : "••••••"}

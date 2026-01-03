@@ -12,7 +12,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { transactionService } from '@/services/transactionService';
-import { Transaction, TransactionTypeEnum, PaymentMethodEnum, PaymentStatusEnum, TransactionTypeLabels, PaymentMethodLabels, PaymentStatusLabels } from '@/types/transaction';
+import { 
+  Transaction, 
+  TransactionTypeEnum, 
+  PaymentStatusEnum,
+  PaymentMethodEnum,
+  PaymentMethodOptions
+} from '@/types/transaction';
 import { Category } from '@/types/category';
 import {
   Select,
@@ -30,27 +36,21 @@ interface EditTransactionModalProps {
   transaction: Transaction | null;
 }
 
-const paymentMethods = [
-  { label: 'Pix', value: 'Pix' },
-  { label: 'Cartão Crédito', value: 'Cartão Crédito' },
-  { label: 'Cartão Débito', value: 'Cartão Débito' },
-  { label: 'Débito Automático', value: 'Débito Automático' },
-  { label: 'Transferência', value: 'Transferência' },
-  { label: 'Boleto', value: 'Boleto' },
-  { label: 'Dinheiro', value: 'Dinheiro' },
-];
-
-const getPaymentMethodKey = (apiValue: string): string => {
-  const mapping: Record<string, string> = {
-    'Pix': 'Pix',
-    'CreditCard': 'Cartão Crédito',
-    'DebitCard': 'Cartão Débito',
-    'AutomaticDebit': 'Débito Automático',
-    'Transfer': 'Transferência',
-    'BankSlip': 'Boleto',
-    'Cash': 'Dinheiro',
+// Map backend paymentMethod string to enum number
+const getPaymentMethodValue = (apiValue: string): number => {
+  const mapping: Record<string, number> = {
+    'CreditCard': PaymentMethodEnum.CreditCard,
+    'DebitCard': PaymentMethodEnum.DebitCard,
+    'Pix': PaymentMethodEnum.Pix,
+    'TED': PaymentMethodEnum.TED,
+    'Boleto': PaymentMethodEnum.Boleto,
+    'Cash': PaymentMethodEnum.Cash,
+    'Cheque': PaymentMethodEnum.Cheque,
+    'CryptoWallet': PaymentMethodEnum.CryptoWallet,
+    'Voucher': PaymentMethodEnum.Voucher,
+    'Other': PaymentMethodEnum.Other,
   };
-  return mapping[apiValue] || apiValue;
+  return mapping[apiValue] ?? 0;
 };
 
 const getStatusKey = (apiValue: string): string => {
@@ -89,7 +89,7 @@ export const EditTransactionModal = ({ open, onOpenChange, onSuccess, categories
       setDate(transaction.date.split('T')[0]);
       setCategory(transaction.categoryId);
       setType(getTypeKey(transaction.transactionType));
-      setPayment(getPaymentMethodKey(transaction.paymentMethod));
+      setPayment(getPaymentMethodValue(transaction.paymentMethod).toString());
       setStatus(getStatusKey(transaction.status));
       setDestination(transaction.destination || '');
       setDescription(transaction.description || '');
@@ -122,19 +122,22 @@ export const EditTransactionModal = ({ open, onOpenChange, onSuccess, categories
     setLoading(true);
     try {
       const transactionType = type === 'Receita' ? TransactionTypeEnum.Receita : TransactionTypeEnum.Despesa;
-      const paymentMethod = PaymentMethodEnum[payment as keyof typeof PaymentMethodEnum] ?? 0;
+      const paymentMethod = parseInt(payment, 10);
       const paymentStatus = status === 'Pago' 
         ? PaymentStatusEnum.Pago 
         : status === 'Pendente' 
         ? PaymentStatusEnum.Pendente 
         : PaymentStatusEnum.Atrasado;
 
+      // Use the date directly without timezone conversion - send as YYYY-MM-DD with noon time
+      const dateValue = `${date}T12:00:00.000Z`;
+
       const response = await transactionService.update(transaction.id, {
         categoryId: category,
         title,
         description: description || undefined,
         amount: rawValue / 100,
-        date: new Date(date).toISOString(),
+        date: dateValue,
         transactionType,
         paymentMethod,
         status: paymentStatus,
@@ -261,8 +264,10 @@ export const EditTransactionModal = ({ open, onOpenChange, onSuccess, categories
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
                 <SelectContent>
-                  {paymentMethods.map((method) => (
-                    <SelectItem key={method.value} value={method.value}>{method.label}</SelectItem>
+                  {PaymentMethodOptions.map((method) => (
+                    <SelectItem key={method.value} value={method.value.toString()}>
+                      {method.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>

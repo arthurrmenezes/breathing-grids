@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -12,7 +12,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { transactionService } from '@/services/transactionService';
-import { TransactionTypeEnum, PaymentMethodEnum, PaymentStatusEnum } from '@/types/transaction';
+import { 
+  TransactionTypeEnum, 
+  PaymentStatusEnum,
+  PaymentMethodOptions
+} from '@/types/transaction';
 import { Category } from '@/types/category';
 import {
   Select,
@@ -28,16 +32,6 @@ interface NewTransactionModalProps {
   onSuccess?: () => void;
   categories?: Category[];
 }
-
-const paymentMethods = [
-  { label: 'Pix', value: 'Pix' },
-  { label: 'Cartão Crédito', value: 'Cartão Crédito' },
-  { label: 'Cartão Débito', value: 'Cartão Débito' },
-  { label: 'Débito Automático', value: 'Débito Automático' },
-  { label: 'Transferência', value: 'Transferência' },
-  { label: 'Boleto', value: 'Boleto' },
-  { label: 'Dinheiro', value: 'Dinheiro' },
-];
 
 export const NewTransactionModal = ({ open, onOpenChange, onSuccess, categories = [] }: NewTransactionModalProps) => {
   const [title, setTitle] = useState('');
@@ -75,19 +69,22 @@ export const NewTransactionModal = ({ open, onOpenChange, onSuccess, categories 
     setLoading(true);
     try {
       const transactionType = type === 'Receita' ? TransactionTypeEnum.Receita : TransactionTypeEnum.Despesa;
-      const paymentMethod = PaymentMethodEnum[payment as keyof typeof PaymentMethodEnum] ?? 0;
+      const paymentMethod = parseInt(payment, 10);
       const paymentStatus = status === 'Pago' 
         ? PaymentStatusEnum.Pago 
         : status === 'Pendente' 
         ? PaymentStatusEnum.Pendente 
         : PaymentStatusEnum.Atrasado;
 
+      // Use the date directly without timezone conversion - send as YYYY-MM-DD with noon time
+      const dateValue = `${date}T12:00:00.000Z`;
+
       const response = await transactionService.create({
         categoryId: category,
         title,
         description: description || undefined,
         amount: rawValue / 100,
-        date: new Date(date).toISOString(),
+        date: dateValue,
         transactionType,
         paymentMethod,
         status: paymentStatus,
@@ -224,8 +221,10 @@ export const NewTransactionModal = ({ open, onOpenChange, onSuccess, categories 
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
                 <SelectContent>
-                  {paymentMethods.map((method) => (
-                    <SelectItem key={method.value} value={method.value}>{method.label}</SelectItem>
+                  {PaymentMethodOptions.map((method) => (
+                    <SelectItem key={method.value} value={method.value.toString()}>
+                      {method.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
