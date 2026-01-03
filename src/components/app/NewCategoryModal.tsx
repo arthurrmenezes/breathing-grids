@@ -41,15 +41,9 @@ export const NewCategoryModal = ({ open, onOpenChange, onSuccess }: NewCategoryM
 
     setLoading(true);
     try {
-      const typeValue = type === 'Receita' 
-        ? CategoryTypeEnum.Receita 
-        : type === 'Despesa' 
-        ? CategoryTypeEnum.Despesa 
-        : CategoryTypeEnum.Ambos;
-
       const response = await categoryService.create({
         title,
-        type: typeValue,
+        type: parseInt(type),
       });
 
       if (response.error) {
@@ -97,9 +91,9 @@ export const NewCategoryModal = ({ open, onOpenChange, onSuccess }: NewCategoryM
                 <SelectValue placeholder="Selecione o tipo" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Despesa">Despesa</SelectItem>
-                <SelectItem value="Receita">Receita</SelectItem>
-                <SelectItem value="Ambos">Ambos</SelectItem>
+                <SelectItem value="0">Despesa</SelectItem>
+                <SelectItem value="1">Receita</SelectItem>
+                <SelectItem value="2">Ambos</SelectItem>
               </SelectContent>
             </Select>
           </div>
