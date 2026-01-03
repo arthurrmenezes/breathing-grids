@@ -99,20 +99,24 @@ export interface FinancialSummary {
   endDate: string;
 }
 
-// Enums for API
+// Enums for API - Matching backend exactly
 export const TransactionTypeEnum = {
   Receita: 0,
   Despesa: 1,
 } as const;
 
+// Backend PaymentMethod enum - CORRECT ORDER
 export const PaymentMethodEnum = {
-  Pix: 0,
-  'Cartão Crédito': 1,
-  'Cartão Débito': 2,
-  'Débito Automático': 3,
-  Transferência: 4,
-  Boleto: 5,
-  Dinheiro: 6,
+  CreditCard: 0,
+  DebitCard: 1,
+  Pix: 2,
+  TED: 3,
+  Boleto: 4,
+  Cash: 5,
+  Cheque: 6,
+  CryptoWallet: 7,
+  Voucher: 8,
+  Other: 9,
 } as const;
 
 export const PaymentStatusEnum = {
@@ -121,7 +125,7 @@ export const PaymentStatusEnum = {
   Atrasado: 2,
 } as const;
 
-// Labels for display
+// Labels for display - mapping backend values to Portuguese
 export const TransactionTypeLabels: Record<string, string> = {
   'Income': 'Receita',
   'Expense': 'Despesa',
@@ -129,14 +133,18 @@ export const TransactionTypeLabels: Record<string, string> = {
   'Despesa': 'Despesa',
 };
 
+// Mapping backend paymentMethod string to display labels
 export const PaymentMethodLabels: Record<string, string> = {
-  'Pix': 'Pix',
   'CreditCard': 'Cartão Crédito',
   'DebitCard': 'Cartão Débito',
-  'AutomaticDebit': 'Débito Automático',
-  'Transfer': 'Transferência',
-  'BankSlip': 'Boleto',
+  'Pix': 'Pix',
+  'TED': 'TED',
+  'Boleto': 'Boleto',
   'Cash': 'Dinheiro',
+  'Cheque': 'Cheque',
+  'CryptoWallet': 'Crypto Wallet',
+  'Voucher': 'Voucher',
+  'Other': 'Outro',
 };
 
 export const PaymentStatusLabels: Record<string, string> = {
@@ -144,3 +152,17 @@ export const PaymentStatusLabels: Record<string, string> = {
   'Paid': 'Pago',
   'Overdue': 'Atrasado',
 };
+
+// For select options in forms
+export const PaymentMethodOptions = [
+  { label: 'Cartão Crédito', value: PaymentMethodEnum.CreditCard },
+  { label: 'Cartão Débito', value: PaymentMethodEnum.DebitCard },
+  { label: 'Pix', value: PaymentMethodEnum.Pix },
+  { label: 'TED', value: PaymentMethodEnum.TED },
+  { label: 'Boleto', value: PaymentMethodEnum.Boleto },
+  { label: 'Dinheiro', value: PaymentMethodEnum.Cash },
+  { label: 'Cheque', value: PaymentMethodEnum.Cheque },
+  { label: 'Crypto Wallet', value: PaymentMethodEnum.CryptoWallet },
+  { label: 'Voucher', value: PaymentMethodEnum.Voucher },
+  { label: 'Outro', value: PaymentMethodEnum.Other },
+];
