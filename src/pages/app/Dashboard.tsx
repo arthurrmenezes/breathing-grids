@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { AppLayout, useValuesVisibility } from "@/components/app/AppLayout";
-import { TrendingUp, TrendingDown, Wallet, ArrowUpRight, Loader2 } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, Loader2, CalendarDays } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { transactionService } from "@/services/transactionService";
 import { categoryService } from "@/services/categoryService";
@@ -16,6 +16,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 
 type PeriodType = "year" | "6months" | "3months" | "month";
 
@@ -89,6 +97,11 @@ const categoryColors = [
 const Dashboard = () => {
   const { showValues } = useValuesVisibility();
   const { user } = useAuth();
+  
+  // Main date filter for summary cards and category spending (default: current month)
+  const [selectedMonth, setSelectedMonth] = useState<Date>(startOfMonth(new Date()));
+  
+  // Separate period for cash flow chart
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodType>("6months");
   const [loading, setLoading] = useState(true);
   
@@ -100,183 +113,213 @@ const Dashboard = () => {
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
   const [categorySpending, setCategorySpending] = useState<{ category: string; value: number; percentage: number; color: string }[]>([]);
 
-  // Calculate date ranges for the selected period
-  const getDateRanges = (period: PeriodType) => {
+  // Calculate date ranges for cash flow chart
+  const getChartDateRanges = (period: PeriodType) => {
     const now = new Date();
     let startDate: Date;
-    let previousStartDate: Date;
-    let previousEndDate: Date;
     
     switch (period) {
       case "year":
         startDate = subMonths(startOfMonth(now), 11);
-        previousStartDate = subMonths(startDate, 12);
-        previousEndDate = subMonths(startDate, 1);
         break;
       case "6months":
         startDate = subMonths(startOfMonth(now), 5);
-        previousStartDate = subMonths(startDate, 6);
-        previousEndDate = subMonths(startDate, 1);
         break;
       case "3months":
         startDate = subMonths(startOfMonth(now), 2);
-        previousStartDate = subMonths(startDate, 3);
-        previousEndDate = subMonths(startDate, 1);
         break;
       case "month":
       default:
         startDate = startOfMonth(now);
-        previousStartDate = subMonths(startDate, 1);
-        previousEndDate = endOfMonth(previousStartDate);
         break;
     }
     
     return {
-      current: {
-        start: format(startDate, "yyyy-MM-dd"),
-        end: format(endOfMonth(now), "yyyy-MM-dd"),
-      },
-      previous: {
-        start: format(previousStartDate, "yyyy-MM-dd"),
-        end: format(previousEndDate, "yyyy-MM-dd"),
-      },
+      start: format(startDate, "yyyy-MM-dd"),
+      end: format(endOfMonth(now), "yyyy-MM-dd"),
     };
   };
 
-  // Fetch data
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      const dateRanges = getDateRanges(selectedPeriod);
+  // Fetch summary data based on selected month
+  const fetchSummaryData = async () => {
+    const monthStart = format(selectedMonth, "yyyy-MM-dd");
+    const monthEnd = format(endOfMonth(selectedMonth), "yyyy-MM-dd");
+    
+    const previousMonth = subMonths(selectedMonth, 1);
+    const previousMonthStart = format(previousMonth, "yyyy-MM-dd");
+    const previousMonthEnd = format(endOfMonth(previousMonth), "yyyy-MM-dd");
+
+    try {
+      // Fetch current month summary
+      const currentResponse = await transactionService.getFinancialSummary(monthStart, monthEnd);
       
-      try {
-        // Fetch current period summary
-        const currentResponse = await transactionService.getFinancialSummary(
-          dateRanges.current.start,
-          dateRanges.current.end
-        );
-        
-        if (currentResponse.data) {
-          setCurrentSummary({
-            totalIncome: currentResponse.data.totalIncome,
-            totalExpense: currentResponse.data.totalExpense,
-            balance: currentResponse.data.balance,
-          });
-        }
-
-        // Fetch previous period for comparison
-        const previousResponse = await transactionService.getFinancialSummary(
-          dateRanges.previous.start,
-          dateRanges.previous.end
-        );
-        
-        if (previousResponse.data) {
-          setPreviousSummary({
-            totalIncome: previousResponse.data.totalIncome,
-            totalExpense: previousResponse.data.totalExpense,
-            balance: previousResponse.data.balance,
-          });
-        }
-
-        // Fetch recent transactions
-        const transactionsResponse = await transactionService.getAll({
-          pageNumber: 1,
-          pageSize: 5,
+      if (currentResponse.data) {
+        setCurrentSummary({
+          totalIncome: currentResponse.data.totalIncome,
+          totalExpense: currentResponse.data.totalExpense,
+          balance: currentResponse.data.balance,
         });
-        
-        if (transactionsResponse.data) {
-          setRecentTransactions(transactionsResponse.data.transactions);
-        }
-
-        // Fetch categories
-        const categoriesResponse = await categoryService.getAll({ pageSize: 50 });
-        
-        if (categoriesResponse.data) {
-          setCategories(categoriesResponse.data.categories);
-        }
-
-        // Fetch all transactions for chart data and category spending
-        const allTransactionsResponse = await transactionService.getAll({
-          pageNumber: 1,
-          pageSize: 1000,
-          startDate: dateRanges.current.start,
-          endDate: dateRanges.current.end,
-        });
-
-        if (allTransactionsResponse.data) {
-          const transactions = allTransactionsResponse.data.transactions;
-          
-          // Build chart data by month
-          const monthlyData = new Map<string, { income: number; expense: number }>();
-          
-          transactions.forEach((tx) => {
-            const date = new Date(tx.date);
-            const monthKey = format(date, "yyyy-MM");
-            const monthLabel = monthLabels[date.getMonth()];
-            
-            if (!monthlyData.has(monthKey)) {
-              monthlyData.set(monthKey, { income: 0, expense: 0 });
-            }
-            
-            const data = monthlyData.get(monthKey)!;
-            const isIncome = tx.transactionType === "Income" || tx.transactionType === "Receita";
-            
-            if (isIncome) {
-              data.income += tx.amount;
-            } else {
-              data.expense += tx.amount;
-            }
-          });
-
-          // Convert to array sorted by date
-          const sortedEntries = Array.from(monthlyData.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-          const chartDataPoints = sortedEntries.map(([key, data]) => {
-            const date = new Date(key + "-01");
-            return {
-              label: monthLabels[date.getMonth()],
-              income: data.income,
-              expense: data.expense,
-            };
-          });
-          
-          setChartData(chartDataPoints.length > 0 ? chartDataPoints : [{ label: "-", income: 0, expense: 0 }]);
-
-          // Calculate spending by category
-          const categorySpendingMap = new Map<string, number>();
-          
-          transactions.forEach((tx) => {
-            const isExpense = tx.transactionType === "Expense" || tx.transactionType === "Despesa";
-            if (isExpense) {
-              const current = categorySpendingMap.get(tx.categoryId) || 0;
-              categorySpendingMap.set(tx.categoryId, current + tx.amount);
-            }
-          });
-
-          const totalSpending = Array.from(categorySpendingMap.values()).reduce((a, b) => a + b, 0);
-          
-          const spendingData = Array.from(categorySpendingMap.entries())
-            .map(([categoryId, value], index) => {
-              const category = categoriesResponse.data?.categories.find(c => c.id === categoryId);
-              return {
-                category: category?.title || "Outros",
-                value,
-                percentage: totalSpending > 0 ? Math.round((value / totalSpending) * 100) : 0,
-                color: categoryColors[index % categoryColors.length],
-              };
-            })
-            .sort((a, b) => b.value - a.value)
-            .slice(0, 5);
-          
-          setCategorySpending(spendingData);
-        }
-      } catch (error) {
-        console.error("Error fetching dashboard data:", error);
-      } finally {
-        setLoading(false);
       }
-    };
 
-    fetchData();
+      // Fetch previous month for comparison
+      const previousResponse = await transactionService.getFinancialSummary(previousMonthStart, previousMonthEnd);
+      
+      if (previousResponse.data) {
+        setPreviousSummary({
+          totalIncome: previousResponse.data.totalIncome,
+          totalExpense: previousResponse.data.totalExpense,
+          balance: previousResponse.data.balance,
+        });
+      }
+
+      // Fetch categories
+      const categoriesResponse = await categoryService.getAll({ pageSize: 50 });
+      
+      if (categoriesResponse.data) {
+        setCategories(categoriesResponse.data.categories);
+      }
+
+      // Fetch transactions for category spending (for selected month)
+      const transactionsForMonth = await transactionService.getAll({
+        pageNumber: 1,
+        pageSize: 1000,
+        startDate: monthStart,
+        endDate: monthEnd,
+      });
+
+      if (transactionsForMonth.data && categoriesResponse.data) {
+        const transactions = transactionsForMonth.data.transactions;
+        
+        // Calculate spending by category
+        const categorySpendingMap = new Map<string, number>();
+        
+        transactions.forEach((tx) => {
+          const isExpense = tx.transactionType === "Expense" || tx.transactionType === "Despesa";
+          if (isExpense) {
+            const current = categorySpendingMap.get(tx.categoryId) || 0;
+            categorySpendingMap.set(tx.categoryId, current + tx.amount);
+          }
+        });
+
+        const totalSpending = Array.from(categorySpendingMap.values()).reduce((a, b) => a + b, 0);
+        
+        const spendingData = Array.from(categorySpendingMap.entries())
+          .map(([categoryId, value], index) => {
+            const category = categoriesResponse.data?.categories.find(c => c.id === categoryId);
+            return {
+              category: category?.title || "Outros",
+              value,
+              percentage: totalSpending > 0 ? Math.round((value / totalSpending) * 100) : 0,
+              color: categoryColors[index % categoryColors.length],
+            };
+          })
+          .sort((a, b) => b.value - a.value)
+          .slice(0, 5);
+        
+        setCategorySpending(spendingData);
+      }
+    } catch (error) {
+      console.error("Error fetching summary data:", error);
+    }
+  };
+
+  // Fetch chart data based on selected period
+  const fetchChartData = async () => {
+    const dateRanges = getChartDateRanges(selectedPeriod);
+
+    try {
+      const allTransactionsResponse = await transactionService.getAll({
+        pageNumber: 1,
+        pageSize: 1000,
+        startDate: dateRanges.start,
+        endDate: dateRanges.end,
+      });
+
+      if (allTransactionsResponse.data) {
+        const transactions = allTransactionsResponse.data.transactions;
+        
+        // Build chart data by month
+        const monthlyData = new Map<string, { income: number; expense: number }>();
+        
+        transactions.forEach((tx) => {
+          const date = new Date(tx.date);
+          const monthKey = format(date, "yyyy-MM");
+          
+          if (!monthlyData.has(monthKey)) {
+            monthlyData.set(monthKey, { income: 0, expense: 0 });
+          }
+          
+          const data = monthlyData.get(monthKey)!;
+          const isIncome = tx.transactionType === "Income" || tx.transactionType === "Receita";
+          
+          if (isIncome) {
+            data.income += tx.amount;
+          } else {
+            data.expense += tx.amount;
+          }
+        });
+
+        // Convert to array sorted by date
+        const sortedEntries = Array.from(monthlyData.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+        const chartDataPoints = sortedEntries.map(([key]) => {
+          const date = new Date(key + "-01");
+          const data = monthlyData.get(key)!;
+          return {
+            label: monthLabels[date.getMonth()],
+            income: data.income,
+            expense: data.expense,
+          };
+        });
+        
+        setChartData(chartDataPoints.length > 0 ? chartDataPoints : [{ label: "-", income: 0, expense: 0 }]);
+      }
+    } catch (error) {
+      console.error("Error fetching chart data:", error);
+    }
+  };
+
+  // Fetch recent transactions (ordered by date, most recent first)
+  const fetchRecentTransactions = async () => {
+    try {
+      const transactionsResponse = await transactionService.getAll({
+        pageNumber: 1,
+        pageSize: 5,
+      });
+      
+      if (transactionsResponse.data) {
+        // Sort by date descending (most recent first)
+        const sorted = [...transactionsResponse.data.transactions].sort((a, b) => {
+          return new Date(b.date).getTime() - new Date(a.date).getTime();
+        });
+        setRecentTransactions(sorted);
+      }
+    } catch (error) {
+      console.error("Error fetching recent transactions:", error);
+    }
+  };
+
+  // Initial load
+  useEffect(() => {
+    const fetchAll = async () => {
+      setLoading(true);
+      await Promise.all([
+        fetchSummaryData(),
+        fetchChartData(),
+        fetchRecentTransactions(),
+      ]);
+      setLoading(false);
+    };
+    fetchAll();
+  }, []);
+
+  // Update summary and category spending when month changes
+  useEffect(() => {
+    fetchSummaryData();
+  }, [selectedMonth]);
+
+  // Update chart when period changes
+  useEffect(() => {
+    fetchChartData();
   }, [selectedPeriod]);
 
   const yAxisTicks = useMemo(() => {
@@ -318,6 +361,8 @@ const Dashboard = () => {
 
   const totalCategorySpending = categorySpending.reduce((sum, cat) => sum + cat.value, 0);
 
+  const selectedMonthLabel = format(selectedMonth, "MMMM 'de' yyyy", { locale: ptBR });
+
   if (loading) {
     return (
       <AppLayout>
@@ -331,11 +376,32 @@ const Dashboard = () => {
   return (
     <AppLayout>
       <div className="space-y-6">
+        {/* Month Selector */}
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-medium capitalize">{selectedMonthLabel}</h2>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm">
+                <CalendarDays className="w-4 h-4 mr-2" />
+                Alterar mês
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              <Calendar
+                mode="single"
+                selected={selectedMonth}
+                onSelect={(date) => date && setSelectedMonth(startOfMonth(date))}
+                className={cn("p-3 pointer-events-auto")}
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
+
         {/* Summary Cards - Compact */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <SummaryCard 
             title="Saldo disponível" 
-            value={hideValue(formatCurrency(user?.balance || currentSummary?.balance || 0))} 
+            value={hideValue(formatCurrency(currentSummary?.balance || 0))} 
             change={`${balanceChange.percentage >= 0 ? "+" : ""}${balanceChange.percentage}%`}
             changeValue={`${balanceChange.value >= 0 ? "+" : "-"}${formatCurrency(balanceChange.value)}`}
             trend={balanceChange.percentage >= 0 ? "up" : "down"} 

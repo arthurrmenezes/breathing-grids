@@ -636,8 +636,7 @@ const Transacoes = () => {
                             </span>
                           </td>
                           <td className="p-4">
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-border bg-secondary/50 text-sm">
-                              <span className="w-2 h-2 rounded-full bg-accent" />
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-md border border-border bg-secondary/50 text-sm">
                               {getCategoryName(tx.categoryId)}
                             </span>
                           </td>

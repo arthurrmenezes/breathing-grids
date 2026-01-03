@@ -36,10 +36,10 @@ export interface GetCategoriesParams {
   textSearch?: string;
 }
 
-// Category type enum values for API
+// Category type enum values for API (matching backend: Expense=0, Income=1, Both=2)
 export const CategoryTypeEnum = {
-  Receita: 0,
-  Despesa: 1,
+  Despesa: 0,
+  Receita: 1,
   Ambos: 2,
 } as const;
 
