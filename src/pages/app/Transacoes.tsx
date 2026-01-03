@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { NewTransactionModal } from '@/components/app/NewTransactionModal';
+import { EditTransactionModal } from '@/components/app/EditTransactionModal';
 import { transactionService } from '@/services/transactionService';
 import { categoryService } from '@/services/categoryService';
 import { 
@@ -75,6 +76,8 @@ const Transacoes = () => {
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [selectedTransactions, setSelectedTransactions] = useState<string[]>([]);
   const [newTransactionOpen, setNewTransactionOpen] = useState(false);
+  const [editTransactionOpen, setEditTransactionOpen] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -229,6 +232,16 @@ const Transacoes = () => {
   };
 
   const handleTransactionCreated = () => {
+    fetchTransactions();
+    fetchSummary();
+  };
+
+  const handleEdit = (transaction: Transaction) => {
+    setEditingTransaction(transaction);
+    setEditTransactionOpen(true);
+  };
+
+  const handleEditSuccess = () => {
     fetchTransactions();
     fetchSummary();
   };
@@ -563,7 +576,7 @@ const Transacoes = () => {
                                 </button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleEdit(tx)}>
                                   <Pencil className="w-4 h-4 mr-2" />
                                   Editar
                                 </DropdownMenuItem>
@@ -622,6 +635,15 @@ const Transacoes = () => {
         onOpenChange={setNewTransactionOpen}
         onSuccess={handleTransactionCreated}
         categories={categories}
+      />
+
+      {/* Edit Transaction Modal */}
+      <EditTransactionModal
+        open={editTransactionOpen}
+        onOpenChange={setEditTransactionOpen}
+        onSuccess={handleEditSuccess}
+        categories={categories}
+        transaction={editingTransaction}
       />
 
       {/* Delete Confirmation Dialog */}
