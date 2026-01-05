@@ -1,11 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { authService } from '@/services/authService';
+import { googleAuthService, GoogleSignInResponse } from '@/services/googleAuthService';
 import { api } from '@/services/api';
 import type { User, AuthState, LoginRequest, RegisterRequest } from '@/types/auth';
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   register: (firstName: string, lastName: string, email: string, password: string, confirmPassword: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   refreshAuth: () => Promise<boolean>;
@@ -168,6 +169,59 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return { success: false, error: 'Erro ao fazer login' };
   }, []);
 
+  const loginWithGoogle = useCallback(async () => {
+    const result = await googleAuthService.signIn();
+
+    if (!result.success || !result.data) {
+      return { success: false, error: result.error || 'Erro ao autenticar com Google' };
+    }
+
+    const googleData = result.data;
+
+    // Set tokens
+    api.setAccessToken(googleData.accessToken);
+    localStorage.setItem('refreshToken', googleData.refreshToken);
+
+    // Create user from Google response
+    const user: User = {
+      accountId: googleData.accountId,
+      firstName: googleData.firstName || '',
+      lastName: googleData.lastName || '',
+      email: googleData.email,
+      balance: 0, // Will be updated when fetching profile
+    };
+
+    localStorage.setItem('user', JSON.stringify(user));
+
+    setState({
+      user,
+      accessToken: googleData.accessToken,
+      refreshToken: googleData.refreshToken,
+      isAuthenticated: true,
+      isLoading: false,
+    });
+
+    // Try to fetch full profile to get balance
+    try {
+      const profileResponse = await authService.getProfile();
+      if (profileResponse.data) {
+        const fullUser: User = {
+          accountId: profileResponse.data.accountId,
+          firstName: profileResponse.data.firstName,
+          lastName: profileResponse.data.lastName,
+          email: profileResponse.data.email,
+          balance: profileResponse.data.balance,
+        };
+        localStorage.setItem('user', JSON.stringify(fullUser));
+        setState(prev => ({ ...prev, user: fullUser }));
+      }
+    } catch (error) {
+      // Profile fetch is optional, continue with basic user data
+    }
+
+    return { success: true };
+  }, []);
+
   const register = useCallback(async (
     firstName: string,
     lastName: string,
@@ -244,6 +298,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       value={{
         ...state,
         login,
+        loginWithGoogle,
         register,
         logout,
         refreshAuth,
