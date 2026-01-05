@@ -25,6 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from '@/components/ui/switch';
 
 interface NewTransactionModalProps {
   open: boolean;
@@ -44,6 +45,10 @@ export const NewTransactionModal = ({ open, onOpenChange, onSuccess, categories 
   const [destination, setDestination] = useState('');
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
+  
+  // Installment fields
+  const [hasInstallment, setHasInstallment] = useState(false);
+  const [totalInstallments, setTotalInstallments] = useState('');
 
   const formatCurrency = (cents: number) => {
     return (cents / 100).toLocaleString('pt-BR', {
@@ -58,11 +63,30 @@ export const NewTransactionModal = ({ open, onOpenChange, onSuccess, categories 
     setRawValue(numericValue);
   };
 
+  const resetForm = () => {
+    setTitle('');
+    setRawValue(0);
+    setDate('');
+    setCategory('');
+    setType('');
+    setPayment('');
+    setStatus('');
+    setDestination('');
+    setDescription('');
+    setHasInstallment(false);
+    setTotalInstallments('');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!title || !rawValue || !date || !category || !type || !payment || !status) {
       toast.error('Preencha todos os campos obrigatórios');
+      return;
+    }
+
+    if (hasInstallment && (!totalInstallments || parseInt(totalInstallments) < 2)) {
+      toast.error('Número de parcelas deve ser pelo menos 2');
       return;
     }
 
@@ -79,7 +103,7 @@ export const NewTransactionModal = ({ open, onOpenChange, onSuccess, categories 
       // Use the date directly without timezone conversion - send as YYYY-MM-DD with noon time
       const dateValue = `${date}T12:00:00.000Z`;
 
-      const response = await transactionService.create({
+      const payload: any = {
         categoryId: category,
         title,
         description: description || undefined,
@@ -89,22 +113,22 @@ export const NewTransactionModal = ({ open, onOpenChange, onSuccess, categories 
         paymentMethod,
         status: paymentStatus,
         destination: destination || undefined,
-      });
+      };
+
+      // Add installment data if enabled
+      if (hasInstallment && totalInstallments) {
+        payload.hasInstallment = {
+          totalInstallments: parseInt(totalInstallments, 10),
+        };
+      }
+
+      const response = await transactionService.create(payload);
 
       if (response.error) {
         toast.error(response.error);
       } else {
-        toast.success('Transação criada com sucesso');
-        // Reset form
-        setTitle('');
-        setRawValue(0);
-        setDate('');
-        setCategory('');
-        setType('');
-        setPayment('');
-        setStatus('');
-        setDestination('');
-        setDescription('');
+        toast.success(hasInstallment ? 'Transação parcelada criada com sucesso' : 'Transação criada com sucesso');
+        resetForm();
         onOpenChange(false);
         onSuccess?.();
       }
@@ -231,7 +255,44 @@ export const NewTransactionModal = ({ open, onOpenChange, onSuccess, categories 
             </div>
           </div>
 
-          {/* Linha 5 - Destino/Origem */}
+          {/* Linha 5 - Parcelamento */}
+          <div className="space-y-3 p-3 border border-border rounded-lg bg-secondary/30">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="installment-toggle" className="text-sm font-medium">Parcelar transação</Label>
+                <p className="text-xs text-muted-foreground">Dividir em várias parcelas</p>
+              </div>
+              <Switch
+                id="installment-toggle"
+                checked={hasInstallment}
+                onCheckedChange={setHasInstallment}
+                disabled={loading}
+              />
+            </div>
+            
+            {hasInstallment && (
+              <div className="space-y-1.5">
+                <Label htmlFor="installments">Número de parcelas <span className="text-destructive">*</span></Label>
+                <Input
+                  id="installments"
+                  type="number"
+                  min="2"
+                  max="48"
+                  value={totalInstallments}
+                  onChange={(e) => setTotalInstallments(e.target.value)}
+                  placeholder="Ex: 12"
+                  disabled={loading}
+                />
+                {totalInstallments && parseInt(totalInstallments) >= 2 && (
+                  <p className="text-xs text-muted-foreground">
+                    {parseInt(totalInstallments)}x de {formatCurrency(Math.ceil(rawValue / parseInt(totalInstallments)))}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Linha 6 - Destino/Origem */}
           <div className="space-y-1.5">
             <Label htmlFor="destination">
               {type === 'Receita' ? 'Origem' : 'Destino'} (opcional)
@@ -245,7 +306,7 @@ export const NewTransactionModal = ({ open, onOpenChange, onSuccess, categories 
             />
           </div>
 
-          {/* Linha 6 - Descrição */}
+          {/* Linha 7 - Descrição */}
           <div className="space-y-1.5">
             <Label htmlFor="description">Descrição (opcional)</Label>
             <Textarea
@@ -266,7 +327,7 @@ export const NewTransactionModal = ({ open, onOpenChange, onSuccess, categories 
             </Button>
             <Button type="submit" variant="accent" className="flex-1" disabled={loading}>
               {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-              Criar Transação
+              {hasInstallment ? 'Criar Parcelado' : 'Criar Transação'}
             </Button>
           </div>
         </form>

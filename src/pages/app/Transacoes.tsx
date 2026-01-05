@@ -358,7 +358,7 @@ const Transacoes = () => {
           {/* Date Filter */}
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="default" className={cn("bg-card border-border h-10 min-w-[140px]", hasDateFilter && "border-accent")}>
+              <Button variant="outline" size="default" className={cn("bg-card border-border h-10 min-w-[140px] rounded-md", hasDateFilter && "border-accent")}>
                 <CalendarDays className="w-4 h-4 mr-2 text-muted-foreground" />
                 {hasDateFilter ? (
                   <span className="text-sm">
@@ -408,7 +408,7 @@ const Transacoes = () => {
 
           {/* Transaction Type Filter */}
           <Select value={filterType} onValueChange={setFilterType}>
-            <SelectTrigger className="w-auto min-w-[180px] bg-card border-border h-10">
+            <SelectTrigger className="w-auto min-w-[180px] bg-card border-border h-10 rounded-md">
               <SelectValue placeholder="Todas as transações" />
             </SelectTrigger>
             <SelectContent>
@@ -420,7 +420,7 @@ const Transacoes = () => {
 
           {/* Payment Method Filter */}
           <Select value={filterPayment} onValueChange={setFilterPayment}>
-            <SelectTrigger className="w-auto min-w-[180px] bg-card border-border h-10">
+            <SelectTrigger className="w-auto min-w-[180px] bg-card border-border h-10 rounded-md">
               <SelectValue placeholder="Forma de Pagamento" />
             </SelectTrigger>
             <SelectContent>
@@ -440,7 +440,7 @@ const Transacoes = () => {
 
           {/* Status Filter */}
           <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="w-auto min-w-[150px] bg-card border-border h-10">
+            <SelectTrigger className="w-auto min-w-[150px] bg-card border-border h-10 rounded-md">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -453,7 +453,7 @@ const Transacoes = () => {
 
           {/* Category Filter */}
           <Select value={filterCategory} onValueChange={setFilterCategory}>
-            <SelectTrigger className="w-auto min-w-[150px] bg-card border-border h-10">
+            <SelectTrigger className="w-auto min-w-[150px] bg-card border-border h-10 rounded-md">
               <SelectValue placeholder="Categorias" />
             </SelectTrigger>
             <SelectContent>
@@ -467,7 +467,7 @@ const Transacoes = () => {
           {/* Value Filter - Styled like Select */}
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="default" className={cn("bg-card border-border h-10 min-w-[100px]", hasValueFilter && "border-accent")}>
+              <Button variant="outline" size="default" className={cn("bg-card border-border h-10 min-w-[100px] rounded-md", hasValueFilter && "border-accent")}>
                 Valor
                 {hasValueFilter && (
                   <span className="ml-2 text-xs bg-accent text-accent-foreground px-1.5 py-0.5 rounded">
@@ -633,20 +633,18 @@ const Transacoes = () => {
                           className="border-b border-border hover:bg-secondary/30 transition-colors"
                         >
                           <td className="p-4">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => handleView(tx)}
-                              title="Ver detalhes"
-                            >
-                              <Eye className="w-4 h-4 text-muted-foreground" />
-                            </Button>
+                            <Checkbox
+                              checked={selectedTransactions.includes(tx.id)}
+                              onCheckedChange={() => toggleSelectTransaction(tx.id)}
+                            />
                           </td>
                           <td className="p-4">
-                            <span className={showValues ? '' : 'blur-sm select-none'}>
+                            <button
+                              onClick={() => handleView(tx)}
+                              className={`hover:underline text-left ${showValues ? '' : 'blur-sm select-none'}`}
+                            >
                               {tx.title}
-                            </span>
+                            </button>
                           </td>
                           <td className="p-4">
                             <span className="inline-flex items-center px-2.5 py-1 rounded-md border border-border bg-secondary/50 text-sm">
@@ -677,6 +675,10 @@ const Transacoes = () => {
                                 </button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleView(tx)}>
+                                  <Eye className="w-4 h-4 mr-2" />
+                                  Visualizar
+                                </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => handleEdit(tx)}>
                                   <Pencil className="w-4 h-4 mr-2" />
                                   Editar

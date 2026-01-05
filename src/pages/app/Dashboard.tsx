@@ -128,7 +128,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   
   // Data states
-  const [totalBalance, setTotalBalance] = useState<number>(0);
+  const [periodBalance, setPeriodBalance] = useState<number>(0);
   const [currentSummary, setCurrentSummary] = useState<FinancialData | null>(null);
   const [previousSummary, setPreviousSummary] = useState<FinancialData | null>(null);
   const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
@@ -223,15 +223,17 @@ const Dashboard = () => {
     };
   };
 
-  // Fetch total balance (atemporal)
-  const fetchTotalBalance = async () => {
+  // Fetch balance for the selected period (balance at end of period)
+  const fetchPeriodBalance = async () => {
     try {
-      const response = await transactionService.getFinancialSummary();
+      const { end } = getMainDateRange();
+      // Get financial summary up to the end of the selected period
+      const response = await transactionService.getFinancialSummary(undefined, end);
       if (response.data) {
-        setTotalBalance(response.data.balance);
+        setPeriodBalance(response.data.balance);
       }
     } catch (error) {
-      console.error("Error fetching total balance:", error);
+      console.error("Error fetching period balance:", error);
     }
   };
 
@@ -415,7 +417,7 @@ const Dashboard = () => {
     const fetchAll = async () => {
       setLoading(true);
       await Promise.all([
-        fetchTotalBalance(),
+        fetchPeriodBalance(),
         fetchSummaryData(),
         fetchChartData(),
         fetchRecentTransactions(),
@@ -425,8 +427,9 @@ const Dashboard = () => {
     fetchAll();
   }, []);
 
-  // Update summary and category spending when period changes
+  // Update summary, category spending and balance when period changes
   useEffect(() => {
+    fetchPeriodBalance();
     fetchSummaryData();
   }, [mainPeriod, customStartDate, customEndDate]);
 
@@ -555,8 +558,8 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <SummaryCard 
             title="Saldo disponível" 
-            value={hideValue(formatCurrency(totalBalance))} 
-            subtitle="Total acumulado"
+            value={hideValue(formatCurrency(periodBalance))} 
+            subtitle="Saldo até o período"
             icon={Wallet}
             showValues={showValues}
           />
@@ -723,10 +726,9 @@ const Dashboard = () => {
                   <thead>
                     <tr className="text-xs text-muted-foreground border-b border-border">
                       <th className="text-left py-2 font-medium">Categoria</th>
-                      <th className="text-right py-2 font-medium">Atual</th>
-                      <th className="text-right py-2 font-medium">vs Anterior</th>
-                      <th className="text-right py-2 font-medium">Variação</th>
-                      <th className="text-right py-2 font-medium">Anterior</th>
+                      <th className="text-right py-2 font-medium px-3">Atual</th>
+                      <th className="text-right py-2 font-medium px-3">vs Anterior</th>
+                      <th className="text-right py-2 font-medium px-3">Anterior</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -738,23 +740,12 @@ const Dashboard = () => {
                             <span className="text-sm font-medium">{cat.category}</span>
                           </div>
                         </td>
-                        <td className="py-3 text-right">
+                        <td className="py-3 text-right px-3">
                           <span className="text-sm font-medium">
                             {showValues ? formatCurrency(cat.currentValue) : "••••••"}
                           </span>
                         </td>
-                        <td className="py-3 text-right">
-                          <div className="w-16 h-2 bg-secondary rounded-full overflow-hidden ml-auto">
-                            <div 
-                              className="h-full rounded-full" 
-                              style={{ 
-                                backgroundColor: cat.color,
-                                width: `${Math.min(100, cat.previousValue > 0 ? (cat.currentValue / cat.previousValue) * 100 : 100)}%`
-                              }}
-                            />
-                          </div>
-                        </td>
-                        <td className="py-3 text-right">
+                        <td className="py-3 text-right px-3">
                           <span className={`text-xs px-2 py-0.5 rounded ${
                             cat.variation <= 0 
                               ? "bg-success/10 text-success" 
@@ -763,7 +754,7 @@ const Dashboard = () => {
                             {cat.variation >= 0 ? "+" : ""}{cat.variation}%
                           </span>
                         </td>
-                        <td className="py-3 text-right">
+                        <td className="py-3 text-right px-3">
                           <span className="text-sm text-muted-foreground">
                             {showValues ? formatCurrency(cat.previousValue) : "••••••"}
                           </span>
