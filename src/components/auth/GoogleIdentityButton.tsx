@@ -19,6 +19,7 @@ export function GoogleIdentityButton({
   onError,
 }: GoogleIdentityButtonProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const lastWidthRef = useRef<number>(0);
   const [ready, setReady] = useState(false);
 
   const render = useCallback(() => {
@@ -27,7 +28,12 @@ export function GoogleIdentityButton({
 
     if (!el || !google?.accounts?.id) return;
 
-    const width = Math.max(280, Math.round(el.getBoundingClientRect().width));
+    const measured = Math.round(el.getBoundingClientRect().width);
+    // O botão do Google tem limites de largura; clamp evita "sobrar" espaço e evita loops de resize.
+    const width = Math.min(400, Math.max(280, measured));
+
+    if (Math.abs(width - lastWidthRef.current) < 1) return;
+    lastWidthRef.current = width;
 
     el.innerHTML = "";
     google.accounts.id.renderButton(el, {
@@ -99,14 +105,15 @@ export function GoogleIdentityButton({
   return (
     <div
       className={cn(
-        "w-full min-h-12 rounded-full overflow-hidden border border-foreground/20 bg-background shadow-sm transition-colors hover:border-foreground/30",
+        // 400px é o máximo que o botão do Google suporta sem "sobrar" espaço.
+        "w-full max-w-[400px] mx-auto h-11 rounded-full overflow-hidden border border-foreground/25 bg-background shadow-sm transition-colors hover:border-foreground/35",
         "focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
         disabled && "pointer-events-none opacity-60",
         className,
       )}
       aria-busy={disabled || !ready}
     >
-      <div ref={containerRef} className="w-full" />
+      <div ref={containerRef} className="w-full h-full flex items-center justify-center" />
     </div>
   );
 }
