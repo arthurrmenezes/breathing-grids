@@ -585,12 +585,6 @@ const Transacoes = () => {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-border">
-                      <th className="p-4 w-12">
-                        <Checkbox 
-                          checked={selectedTransactions.length === transactions.length && transactions.length > 0}
-                          onCheckedChange={toggleSelectAll}
-                        />
-                      </th>
                       <th className="text-left p-4 font-medium text-muted-foreground text-xs uppercase tracking-wider">
                         Descrição
                       </th>
@@ -632,12 +626,6 @@ const Transacoes = () => {
                           key={tx.id} 
                           className="border-b border-border hover:bg-secondary/30 transition-colors"
                         >
-                          <td className="p-4">
-                            <Checkbox
-                              checked={selectedTransactions.includes(tx.id)}
-                              onCheckedChange={() => toggleSelectTransaction(tx.id)}
-                            />
-                          </td>
                           <td className="p-4">
                             <button
                               onClick={() => handleView(tx)}

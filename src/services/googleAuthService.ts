@@ -15,44 +15,28 @@ export interface GoogleSignInResponse {
   createdAt: string | null;
 }
 
-// Google Client ID - will be fetched from backend or configured
-let GOOGLE_CLIENT_ID = '';
+// Google Client ID - ADD YOUR CLIENT ID HERE
+// This is a PUBLIC key (safe to include in frontend code)
+// Get it from: https://console.cloud.google.com/apis/credentials
+const GOOGLE_CLIENT_ID = ''; // TODO: Add your Google Client ID here
 
 // Initialize Google Identity Services
 let googleInitialized = false;
 let googleInitPromise: Promise<void> | null = null;
 
-// Fetch Google Client ID from backend config endpoint
-const fetchGoogleClientId = async (): Promise<string> => {
-  try {
-    const response = await api.get<{ googleClientId: string }>('/auth/config');
-    if (response.data?.googleClientId) {
-      return response.data.googleClientId;
-    }
-  } catch (error) {
-    console.warn('Could not fetch Google Client ID from backend');
-  }
-  return '';
-};
-
-export const initializeGoogleAuth = async (): Promise<void> => {
+export const initializeGoogleAuth = (): Promise<void> => {
   if (googleInitPromise) {
     return googleInitPromise;
   }
 
-  googleInitPromise = new Promise(async (resolve, reject) => {
+  googleInitPromise = new Promise((resolve, reject) => {
     if (googleInitialized) {
       resolve();
       return;
     }
 
-    // Fetch client ID if not already set
     if (!GOOGLE_CLIENT_ID) {
-      GOOGLE_CLIENT_ID = await fetchGoogleClientId();
-    }
-
-    if (!GOOGLE_CLIENT_ID) {
-      reject(new Error('Google Client ID não disponível'));
+      reject(new Error('Google Client ID não configurado. Adicione seu Client ID em src/services/googleAuthService.ts'));
       return;
     }
 

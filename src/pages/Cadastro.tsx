@@ -247,7 +247,7 @@ const Cadastro = () => {
           type="button" 
           variant="outline" 
           size="lg" 
-          className="w-full"
+          className="w-full border-border/50 dark:border-border hover:bg-secondary/50"
           onClick={handleGoogleSignUp}
           disabled={isGoogleLoading}
         >

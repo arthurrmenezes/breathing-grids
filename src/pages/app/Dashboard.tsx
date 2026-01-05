@@ -223,14 +223,16 @@ const Dashboard = () => {
     };
   };
 
-  // Fetch balance for the selected period (balance at end of period)
+  // Fetch balance for the selected period (income - expenses for that period)
   const fetchPeriodBalance = async () => {
     try {
-      const { end } = getMainDateRange();
-      // Get financial summary up to the end of the selected period
-      const response = await transactionService.getFinancialSummary(undefined, end);
+      const { start, end } = getMainDateRange();
+      // Get financial summary for the selected period (not cumulative)
+      const response = await transactionService.getFinancialSummary(start, end);
       if (response.data) {
-        setPeriodBalance(response.data.balance);
+        // Calculate balance as income - expenses for the period
+        const periodBalance = response.data.totalIncome - response.data.totalExpense;
+        setPeriodBalance(periodBalance);
       }
     } catch (error) {
       console.error("Error fetching period balance:", error);
