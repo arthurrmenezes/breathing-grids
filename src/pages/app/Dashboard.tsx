@@ -1,13 +1,13 @@
 import { useState, useMemo, useEffect } from "react";
 import { AppLayout, useValuesVisibility } from "@/components/app/AppLayout";
-import { TrendingUp, TrendingDown, Wallet, Loader2, CalendarDays } from "lucide-react";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { TrendingUp, TrendingDown, Wallet, Loader2, CalendarDays, ChevronDown } from "lucide-react";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { transactionService } from "@/services/transactionService";
 import { categoryService } from "@/services/categoryService";
 import { useAuth } from "@/contexts/AuthContext";
 import { Transaction } from "@/types/transaction";
 import { Category } from "@/types/category";
-import { format, subMonths, startOfMonth, endOfMonth, parseISO } from "date-fns";
+import { format, subMonths, startOfMonth, endOfMonth, parseISO, startOfQuarter, startOfYear, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   Select,
@@ -24,14 +24,26 @@ import {
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
+import { Label } from "@/components/ui/label";
 
 type PeriodType = "year" | "6months" | "3months" | "month";
+type MainPeriodType = "current-month" | "last-month" | "current-quarter" | "current-year" | "last-6-months" | "last-12-months" | "custom";
 
 const periodLabels: Record<PeriodType, string> = {
   year: "Último ano",
   "6months": "Últimos 6 meses",
   "3months": "Últimos 3 meses",
   month: "Este mês",
+};
+
+const mainPeriodLabels: Record<MainPeriodType, string> = {
+  "current-month": "Mês atual",
+  "last-month": "Mês passado",
+  "current-quarter": "Trimestre atual",
+  "current-year": "Ano atual",
+  "last-6-months": "Últimos 6 meses",
+  "last-12-months": "Últimos 12 meses",
+  "custom": "Personalizado",
 };
 
 // Helper function to calculate nice Y-axis ticks based on max value
@@ -87,6 +99,14 @@ interface ChartDataPoint {
   expense: number;
 }
 
+interface CategorySpendingItem {
+  category: string;
+  currentValue: number;
+  previousValue: number;
+  variation: number;
+  color: string;
+}
+
 // Color palette for categories
 const categoryColors = [
   "hsl(160 84% 39%)", "hsl(200 84% 45%)", "hsl(280 84% 50%)", 
@@ -98,20 +118,83 @@ const Dashboard = () => {
   const { showValues } = useValuesVisibility();
   const { user } = useAuth();
   
-  // Main date filter for summary cards and category spending (default: current month)
-  const [selectedMonth, setSelectedMonth] = useState<Date>(startOfMonth(new Date()));
+  // Main period filter
+  const [mainPeriod, setMainPeriod] = useState<MainPeriodType>("current-month");
+  const [customStartDate, setCustomStartDate] = useState<Date | undefined>();
+  const [customEndDate, setCustomEndDate] = useState<Date | undefined>();
   
   // Separate period for cash flow chart
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodType>("6months");
   const [loading, setLoading] = useState(true);
   
   // Data states
+  const [totalBalance, setTotalBalance] = useState<number>(0);
   const [currentSummary, setCurrentSummary] = useState<FinancialData | null>(null);
   const [previousSummary, setPreviousSummary] = useState<FinancialData | null>(null);
   const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
-  const [categorySpending, setCategorySpending] = useState<{ category: string; value: number; percentage: number; color: string }[]>([]);
+  const [categorySpending, setCategorySpending] = useState<CategorySpendingItem[]>([]);
+
+  // Calculate date ranges based on main period
+  const getMainDateRange = () => {
+    const now = new Date();
+    let startDate: Date;
+    let endDate = endOfMonth(now);
+    
+    switch (mainPeriod) {
+      case "current-month":
+        startDate = startOfMonth(now);
+        endDate = endOfMonth(now);
+        break;
+      case "last-month":
+        startDate = startOfMonth(subMonths(now, 1));
+        endDate = endOfMonth(subMonths(now, 1));
+        break;
+      case "current-quarter":
+        startDate = startOfQuarter(now);
+        endDate = endOfMonth(now);
+        break;
+      case "current-year":
+        startDate = startOfYear(now);
+        endDate = endOfMonth(now);
+        break;
+      case "last-6-months":
+        startDate = startOfMonth(subMonths(now, 5));
+        endDate = endOfMonth(now);
+        break;
+      case "last-12-months":
+        startDate = startOfMonth(subMonths(now, 11));
+        endDate = endOfMonth(now);
+        break;
+      case "custom":
+        startDate = customStartDate || startOfMonth(now);
+        endDate = customEndDate || endOfMonth(now);
+        break;
+      default:
+        startDate = startOfMonth(now);
+    }
+    
+    return {
+      start: format(startDate, "yyyy-MM-dd"),
+      end: format(endDate, "yyyy-MM-dd"),
+      startDate,
+      endDate,
+    };
+  };
+
+  // Calculate previous period for comparison
+  const getPreviousDateRange = () => {
+    const { startDate, endDate } = getMainDateRange();
+    const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+    const previousStart = subDays(startDate, daysDiff);
+    const previousEnd = subDays(startDate, 1);
+    
+    return {
+      start: format(previousStart, "yyyy-MM-dd"),
+      end: format(previousEnd, "yyyy-MM-dd"),
+    };
+  };
 
   // Calculate date ranges for cash flow chart
   const getChartDateRanges = (period: PeriodType) => {
@@ -140,17 +223,25 @@ const Dashboard = () => {
     };
   };
 
-  // Fetch summary data based on selected month
+  // Fetch total balance (atemporal)
+  const fetchTotalBalance = async () => {
+    try {
+      const response = await transactionService.getFinancialSummary();
+      if (response.data) {
+        setTotalBalance(response.data.balance);
+      }
+    } catch (error) {
+      console.error("Error fetching total balance:", error);
+    }
+  };
+
+  // Fetch summary data based on selected period
   const fetchSummaryData = async () => {
-    const monthStart = format(selectedMonth, "yyyy-MM-dd");
-    const monthEnd = format(endOfMonth(selectedMonth), "yyyy-MM-dd");
-    
-    const previousMonth = subMonths(selectedMonth, 1);
-    const previousMonthStart = format(previousMonth, "yyyy-MM-dd");
-    const previousMonthEnd = format(endOfMonth(previousMonth), "yyyy-MM-dd");
+    const { start: monthStart, end: monthEnd } = getMainDateRange();
+    const { start: previousMonthStart, end: previousMonthEnd } = getPreviousDateRange();
 
     try {
-      // Fetch current month summary
+      // Fetch current period summary
       const currentResponse = await transactionService.getFinancialSummary(monthStart, monthEnd);
       
       if (currentResponse.data) {
@@ -161,7 +252,7 @@ const Dashboard = () => {
         });
       }
 
-      // Fetch previous month for comparison
+      // Fetch previous period for comparison
       const previousResponse = await transactionService.getFinancialSummary(previousMonthStart, previousMonthEnd);
       
       if (previousResponse.data) {
@@ -179,41 +270,62 @@ const Dashboard = () => {
         setCategories(categoriesResponse.data.categories);
       }
 
-      // Fetch transactions for category spending (for selected month)
-      const transactionsForMonth = await transactionService.getAll({
+      // Fetch transactions for category spending (current period)
+      const transactionsForPeriod = await transactionService.getAll({
         pageNumber: 1,
         pageSize: 1000,
         startDate: monthStart,
         endDate: monthEnd,
       });
 
-      if (transactionsForMonth.data && categoriesResponse.data) {
-        const transactions = transactionsForMonth.data.transactions;
+      // Fetch transactions for previous period
+      const transactionsForPrevious = await transactionService.getAll({
+        pageNumber: 1,
+        pageSize: 1000,
+        startDate: previousMonthStart,
+        endDate: previousMonthEnd,
+      });
+
+      if (transactionsForPeriod.data && transactionsForPrevious.data && categoriesResponse.data) {
+        const currentTransactions = transactionsForPeriod.data.transactions;
+        const previousTransactions = transactionsForPrevious.data.transactions;
         
-        // Calculate spending by category
-        const categorySpendingMap = new Map<string, number>();
-        
-        transactions.forEach((tx) => {
+        // Calculate spending by category for current period
+        const currentCategoryMap = new Map<string, number>();
+        currentTransactions.forEach((tx) => {
           const isExpense = tx.transactionType === "Expense" || tx.transactionType === "Despesa";
           if (isExpense) {
-            const current = categorySpendingMap.get(tx.categoryId) || 0;
-            categorySpendingMap.set(tx.categoryId, current + tx.amount);
+            const current = currentCategoryMap.get(tx.categoryId) || 0;
+            currentCategoryMap.set(tx.categoryId, current + tx.amount);
           }
         });
 
-        const totalSpending = Array.from(categorySpendingMap.values()).reduce((a, b) => a + b, 0);
-        
-        const spendingData = Array.from(categorySpendingMap.entries())
-          .map(([categoryId, value], index) => {
+        // Calculate spending by category for previous period
+        const previousCategoryMap = new Map<string, number>();
+        previousTransactions.forEach((tx) => {
+          const isExpense = tx.transactionType === "Expense" || tx.transactionType === "Despesa";
+          if (isExpense) {
+            const current = previousCategoryMap.get(tx.categoryId) || 0;
+            previousCategoryMap.set(tx.categoryId, current + tx.amount);
+          }
+        });
+
+        const spendingData: CategorySpendingItem[] = Array.from(currentCategoryMap.entries())
+          .map(([categoryId, currentValue], index) => {
             const category = categoriesResponse.data?.categories.find(c => c.id === categoryId);
+            const previousValue = previousCategoryMap.get(categoryId) || 0;
+            const variation = previousValue > 0 
+              ? Math.round(((currentValue - previousValue) / previousValue) * 100) 
+              : 0;
             return {
               category: category?.title || "Outros",
-              value,
-              percentage: totalSpending > 0 ? Math.round((value / totalSpending) * 100) : 0,
+              currentValue,
+              previousValue,
+              variation,
               color: categoryColors[index % categoryColors.length],
             };
           })
-          .sort((a, b) => b.value - a.value)
+          .sort((a, b) => b.currentValue - a.currentValue)
           .slice(0, 5);
         
         setCategorySpending(spendingData);
@@ -303,6 +415,7 @@ const Dashboard = () => {
     const fetchAll = async () => {
       setLoading(true);
       await Promise.all([
+        fetchTotalBalance(),
         fetchSummaryData(),
         fetchChartData(),
         fetchRecentTransactions(),
@@ -312,10 +425,10 @@ const Dashboard = () => {
     fetchAll();
   }, []);
 
-  // Update summary and category spending when month changes
+  // Update summary and category spending when period changes
   useEffect(() => {
     fetchSummaryData();
-  }, [selectedMonth]);
+  }, [mainPeriod, customStartDate, customEndDate]);
 
   // Update chart when period changes
   useEffect(() => {
@@ -344,10 +457,6 @@ const Dashboard = () => {
     return { percentage, value };
   };
 
-  const balanceChange = currentSummary && previousSummary
-    ? calculateChange(currentSummary.balance, previousSummary.balance)
-    : { percentage: 0, value: 0 };
-
   const incomeChange = currentSummary && previousSummary
     ? calculateChange(currentSummary.totalIncome, previousSummary.totalIncome)
     : { percentage: 0, value: 0 };
@@ -359,9 +468,12 @@ const Dashboard = () => {
   const formatCurrency = (value: number) => 
     `R$ ${Math.abs(value).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
 
-  const totalCategorySpending = categorySpending.reduce((sum, cat) => sum + cat.value, 0);
-
-  const selectedMonthLabel = format(selectedMonth, "MMMM 'de' yyyy", { locale: ptBR });
+  const getPeriodLabel = () => {
+    if (mainPeriod === "custom" && customStartDate && customEndDate) {
+      return `${format(customStartDate, "dd/MM/yy")} - ${format(customEndDate, "dd/MM/yy")}`;
+    }
+    return mainPeriodLabels[mainPeriod];
+  };
 
   if (loading) {
     return (
@@ -376,23 +488,65 @@ const Dashboard = () => {
   return (
     <AppLayout>
       <div className="space-y-6">
-        {/* Month Selector */}
+        {/* Period Selector */}
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-medium capitalize">{selectedMonthLabel}</h2>
+          <h2 className="text-lg font-medium">{getPeriodLabel()}</h2>
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm">
                 <CalendarDays className="w-4 h-4 mr-2" />
-                Alterar mês
+                Alterar período
+                <ChevronDown className="w-4 h-4 ml-2" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="end">
-              <Calendar
-                mode="single"
-                selected={selectedMonth}
-                onSelect={(date) => date && setSelectedMonth(startOfMonth(date))}
-                className={cn("p-3 pointer-events-auto")}
-              />
+            <PopoverContent className="w-auto p-4" align="end">
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-2">
+                  {(Object.keys(mainPeriodLabels) as MainPeriodType[]).filter(k => k !== 'custom').map((key) => (
+                    <Button
+                      key={key}
+                      variant={mainPeriod === key ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setMainPeriod(key)}
+                      className="justify-start"
+                    >
+                      {mainPeriodLabels[key]}
+                    </Button>
+                  ))}
+                </div>
+                <div className="border-t border-border pt-4">
+                  <Button
+                    variant={mainPeriod === "custom" ? "default" : "outline"}
+                    size="sm"
+                    className="w-full mb-3"
+                    onClick={() => setMainPeriod("custom")}
+                  >
+                    Personalizado
+                  </Button>
+                  {mainPeriod === "custom" && (
+                    <div className="space-y-3">
+                      <div className="space-y-2">
+                        <Label className="text-xs">Data inicial</Label>
+                        <Calendar
+                          mode="single"
+                          selected={customStartDate}
+                          onSelect={setCustomStartDate}
+                          className={cn("p-2 pointer-events-auto rounded-md border text-sm")}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs">Data final</Label>
+                        <Calendar
+                          mode="single"
+                          selected={customEndDate}
+                          onSelect={setCustomEndDate}
+                          className={cn("p-2 pointer-events-auto rounded-md border text-sm")}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </PopoverContent>
           </Popover>
         </div>
@@ -401,10 +555,8 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <SummaryCard 
             title="Saldo disponível" 
-            value={hideValue(formatCurrency(currentSummary?.balance || 0))} 
-            change={`${balanceChange.percentage >= 0 ? "+" : ""}${balanceChange.percentage}%`}
-            changeValue={`${balanceChange.value >= 0 ? "+" : "-"}${formatCurrency(balanceChange.value)}`}
-            trend={balanceChange.percentage >= 0 ? "up" : "down"} 
+            value={hideValue(formatCurrency(totalBalance))} 
+            subtitle="Total acumulado"
             icon={Wallet}
             showValues={showValues}
           />
@@ -508,11 +660,11 @@ const Dashboard = () => {
           </ResponsiveContainer>
         </div>
 
-        {/* Middle Row - Transactions and Category Chart */}
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        {/* Middle Row - Transactions and Category Breakdown 50/50 */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Recent Transactions */}
-          <div className="lg:col-span-3 bg-card rounded-2xl border border-border p-6">
-            <div className="flex items-center justify-between mb-6">
+          <div className="bg-card rounded-2xl border border-border p-6">
+            <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium">Transações Recentes</h3>
               <a href="/app/transacoes" className="text-sm text-accent hover:underline">
                 Ver todas
@@ -521,32 +673,31 @@ const Dashboard = () => {
             {recentTransactions.length === 0 ? (
               <p className="text-muted-foreground text-center py-8">Nenhuma transação encontrada</p>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {recentTransactions.map((tx) => {
                   const isIncome = tx.transactionType === "Income" || tx.transactionType === "Receita";
                   const category = categories.find(c => c.id === tx.categoryId);
-                  // Use parseISO to correctly handle the date without timezone issues
                   const formattedDate = format(parseISO(tx.date), "dd MMM", { locale: ptBR });
                   
                   return (
                     <div
                       key={tx.id}
-                      className="flex items-center gap-4 p-3 rounded-xl hover:bg-secondary/50 transition-colors"
+                      className="flex items-center gap-3 p-2 rounded-lg hover:bg-secondary/50 transition-colors"
                     >
-                      <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-lg">
+                      <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-sm">
                         {isIncome ? "💰" : "💸"}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className={`font-medium truncate ${!showValues ? 'blur-sm select-none' : ''}`}>{tx.title}</p>
-                        <p className={`text-sm text-muted-foreground ${!showValues ? 'blur-sm select-none' : ''}`}>{category?.title || "Sem categoria"}</p>
+                        <p className={`text-sm font-medium truncate ${!showValues ? 'blur-sm select-none' : ''}`}>{tx.title}</p>
+                        <p className={`text-xs text-muted-foreground ${!showValues ? 'blur-sm select-none' : ''}`}>{category?.title || "Sem categoria"}</p>
                       </div>
                       <div className="text-right">
-                        <p className={`font-medium tabular-nums ${isIncome ? "text-success" : "text-destructive"}`}>
+                        <p className={`text-sm font-medium tabular-nums ${isIncome ? "text-success" : "text-destructive"}`}>
                           {showValues
                             ? `${isIncome ? "+" : "-"}${formatCurrency(tx.amount)}`
                             : "••••••"}
                         </p>
-                        <p className="text-sm text-muted-foreground">{formattedDate}</p>
+                        <p className="text-xs text-muted-foreground">{formattedDate}</p>
                       </div>
                     </div>
                   );
@@ -555,63 +706,73 @@ const Dashboard = () => {
             )}
           </div>
 
-        {/* Category Breakdown with Donut Chart */}
-          <div className="lg:col-span-2 bg-card rounded-2xl border border-border p-6">
+          {/* Category Breakdown - Table Format */}
+          <div className="bg-card rounded-2xl border border-border p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium">Gastos por Categoria</h3>
+              <h3 className="text-lg font-medium">Principais Categorias</h3>
               <a href="/app/categorias" className="text-sm text-accent hover:underline">
-                Ver todas
+                Ver mais
               </a>
             </div>
             
             {categorySpending.length === 0 ? (
               <p className="text-muted-foreground text-center py-8">Nenhum gasto no período</p>
             ) : (
-              <>
-                {/* Donut Chart */}
-                <div className="relative mb-4">
-                  <ResponsiveContainer width="100%" height={200}>
-                    <PieChart>
-                      <Pie
-                        data={categorySpending}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={85}
-                        paddingAngle={2}
-                        dataKey="value"
-                      >
-                        {categorySpending.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
-                  {/* Center Text */}
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="text-center">
-                      <p className="text-sm font-semibold">{showValues ? formatCurrency(totalCategorySpending) : "••••••"}</p>
-                      <p className="text-xs text-muted-foreground">Total</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Category List with percentages */}
-                <div className="space-y-3">
-                  {categorySpending.map((cat) => (
-                    <div key={cat.category} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: cat.color }} />
-                        <span className="text-sm">{cat.category}</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm font-medium">{showValues ? formatCurrency(cat.value) : "••••••"}</span>
-                        <span className="text-xs text-muted-foreground w-8 text-right">{cat.percentage}%</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="text-xs text-muted-foreground border-b border-border">
+                      <th className="text-left py-2 font-medium">Categoria</th>
+                      <th className="text-right py-2 font-medium">Atual</th>
+                      <th className="text-right py-2 font-medium">vs Anterior</th>
+                      <th className="text-right py-2 font-medium">Variação</th>
+                      <th className="text-right py-2 font-medium">Anterior</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {categorySpending.map((cat) => (
+                      <tr key={cat.category} className="border-b border-border/50 last:border-0">
+                        <td className="py-3">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cat.color }} />
+                            <span className="text-sm font-medium">{cat.category}</span>
+                          </div>
+                        </td>
+                        <td className="py-3 text-right">
+                          <span className="text-sm font-medium">
+                            {showValues ? formatCurrency(cat.currentValue) : "••••••"}
+                          </span>
+                        </td>
+                        <td className="py-3 text-right">
+                          <div className="w-16 h-2 bg-secondary rounded-full overflow-hidden ml-auto">
+                            <div 
+                              className="h-full rounded-full" 
+                              style={{ 
+                                backgroundColor: cat.color,
+                                width: `${Math.min(100, cat.previousValue > 0 ? (cat.currentValue / cat.previousValue) * 100 : 100)}%`
+                              }}
+                            />
+                          </div>
+                        </td>
+                        <td className="py-3 text-right">
+                          <span className={`text-xs px-2 py-0.5 rounded ${
+                            cat.variation <= 0 
+                              ? "bg-success/10 text-success" 
+                              : "bg-destructive/10 text-destructive"
+                          }`}>
+                            {cat.variation >= 0 ? "+" : ""}{cat.variation}%
+                          </span>
+                        </td>
+                        <td className="py-3 text-right">
+                          <span className="text-sm text-muted-foreground">
+                            {showValues ? formatCurrency(cat.previousValue) : "••••••"}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         </div>
@@ -626,14 +787,16 @@ const SummaryCard = ({
   change,
   changeValue,
   trend,
+  subtitle,
   icon: Icon,
   showValues,
 }: {
   title: string;
   value: string;
-  change: string;
-  changeValue: string;
-  trend: "up" | "down";
+  change?: string;
+  changeValue?: string;
+  trend?: "up" | "down";
+  subtitle?: string;
   icon: React.ComponentType<{ className?: string }>;
   showValues: boolean;
 }) => (
@@ -642,20 +805,24 @@ const SummaryCard = ({
       <div className="flex-1">
         <p className="text-sm text-muted-foreground mb-1">{title}</p>
         <p className="text-xl font-semibold tabular-nums">{value}</p>
-        <div className="flex items-center gap-2 mt-1">
-          <span className={`text-sm ${trend === "up" ? "text-success" : "text-destructive"}`}>
-            {showValues ? `${changeValue} vs mês anterior` : "•••••••"}
-          </span>
-          {showValues && (
-            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-              trend === "up" 
-                ? "bg-success/10 text-success" 
-                : "bg-destructive/10 text-destructive"
-            }`}>
-              {change}
+        {subtitle ? (
+          <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>
+        ) : (
+          <div className="flex items-center gap-2 mt-1">
+            <span className={`text-sm ${trend === "up" ? "text-success" : "text-destructive"}`}>
+              {showValues ? `${changeValue} vs período anterior` : "•••••••"}
             </span>
-          )}
-        </div>
+            {showValues && change && (
+              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                trend === "up" 
+                  ? "bg-success/10 text-success" 
+                  : "bg-destructive/10 text-destructive"
+              }`}>
+                {change}
+              </span>
+            )}
+          </div>
+        )}
       </div>
       <div className="p-2 rounded-xl bg-accent/10">
         <Icon className="w-5 h-5 text-accent" />
