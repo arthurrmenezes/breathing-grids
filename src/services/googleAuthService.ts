@@ -15,21 +15,44 @@ export interface GoogleSignInResponse {
   createdAt: string | null;
 }
 
-// Google Client ID - this is a public/client-side key, safe to include in frontend
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+// Google Client ID - will be fetched from backend or configured
+let GOOGLE_CLIENT_ID = '';
 
 // Initialize Google Identity Services
 let googleInitialized = false;
 let googleInitPromise: Promise<void> | null = null;
 
-export const initializeGoogleAuth = (): Promise<void> => {
+// Fetch Google Client ID from backend config endpoint
+const fetchGoogleClientId = async (): Promise<string> => {
+  try {
+    const response = await api.get<{ googleClientId: string }>('/auth/config');
+    if (response.data?.googleClientId) {
+      return response.data.googleClientId;
+    }
+  } catch (error) {
+    console.warn('Could not fetch Google Client ID from backend');
+  }
+  return '';
+};
+
+export const initializeGoogleAuth = async (): Promise<void> => {
   if (googleInitPromise) {
     return googleInitPromise;
   }
 
-  googleInitPromise = new Promise((resolve, reject) => {
+  googleInitPromise = new Promise(async (resolve, reject) => {
     if (googleInitialized) {
       resolve();
+      return;
+    }
+
+    // Fetch client ID if not already set
+    if (!GOOGLE_CLIENT_ID) {
+      GOOGLE_CLIENT_ID = await fetchGoogleClientId();
+    }
+
+    if (!GOOGLE_CLIENT_ID) {
+      reject(new Error('Google Client ID não disponível'));
       return;
     }
 
@@ -122,7 +145,6 @@ export const signInWithGoogle = async (): Promise<{ success: boolean; data?: Goo
       google.accounts.id.prompt((notification: any) => {
         if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
           // Fallback to button click if One Tap is not available
-          // Create a temporary button to trigger the popup
           const buttonDiv = document.createElement('div');
           buttonDiv.style.display = 'none';
           document.body.appendChild(buttonDiv);
@@ -140,7 +162,9 @@ export const signInWithGoogle = async (): Promise<{ success: boolean; data?: Goo
 
           // Clean up after a delay
           setTimeout(() => {
-            document.body.removeChild(buttonDiv);
+            if (buttonDiv.parentNode) {
+              document.body.removeChild(buttonDiv);
+            }
           }, 100);
         }
       });
