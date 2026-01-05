@@ -7,6 +7,7 @@ import type { User, AuthState, LoginRequest, RegisterRequest } from '@/types/aut
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
+  loginWithGoogleCredential: (credential: string) => Promise<{ success: boolean; error?: string }>;
   register: (firstName: string, lastName: string, email: string, password: string, confirmPassword: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   refreshAuth: () => Promise<boolean>;
@@ -169,15 +170,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return { success: false, error: 'Erro ao fazer login' };
   }, []);
 
-  const loginWithGoogle = useCallback(async () => {
-    const result = await googleAuthService.signIn();
-
-    if (!result.success || !result.data) {
-      return { success: false, error: result.error || 'Erro ao autenticar com Google' };
-    }
-
-    const googleData = result.data;
-
+  const applyGoogleAuth = useCallback(async (googleData: GoogleSignInResponse) => {
     // Set tokens
     api.setAccessToken(googleData.accessToken);
     localStorage.setItem('refreshToken', googleData.refreshToken);
@@ -215,12 +208,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         localStorage.setItem('user', JSON.stringify(fullUser));
         setState(prev => ({ ...prev, user: fullUser }));
       }
-    } catch (error) {
-      // Profile fetch is optional, continue with basic user data
+    } catch {
+      // Profile fetch is optional
+    }
+  }, []);
+
+  const loginWithGoogle = useCallback(async () => {
+    const result = await googleAuthService.signIn();
+
+    if (!result.success || !result.data) {
+      return { success: false, error: result.error || 'Erro ao autenticar com Google' };
     }
 
+    await applyGoogleAuth(result.data);
     return { success: true };
-  }, []);
+  }, [applyGoogleAuth]);
+
+  const loginWithGoogleCredential = useCallback(async (credential: string) => {
+    const result = await googleAuthService.exchangeCredential(credential);
+
+    if (!result.success || !result.data) {
+      return { success: false, error: result.error || 'Erro ao autenticar com Google' };
+    }
+
+    await applyGoogleAuth(result.data);
+    return { success: true };
+  }, [applyGoogleAuth]);
 
   const register = useCallback(async (
     firstName: string,
@@ -299,6 +312,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         ...state,
         login,
         loginWithGoogle,
+        loginWithGoogleCredential,
         register,
         logout,
         refreshAuth,

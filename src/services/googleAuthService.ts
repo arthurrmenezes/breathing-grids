@@ -18,7 +18,7 @@ export interface GoogleSignInResponse {
 // Google Client ID - ADD YOUR CLIENT ID HERE
 // This is a PUBLIC key (safe to include in frontend code)
 // Get it from: https://console.cloud.google.com/apis/credentials
-const GOOGLE_CLIENT_ID = ''; // TODO: Add your Google Client ID here
+export const GOOGLE_CLIENT_ID = ''; // TODO: Add your Google Client ID here
 
 // Initialize Google Identity Services
 let googleInitialized = false;
@@ -77,6 +77,28 @@ export const initializeGoogleAuth = (): Promise<void> => {
   return googleInitPromise;
 };
 
+export const exchangeGoogleCredential = async (
+  credential: string,
+): Promise<{ success: boolean; data?: GoogleSignInResponse; error?: string }> => {
+  try {
+    const apiResponse = await api.post<GoogleSignInResponse>('/auth/signin-google', {
+      GoogleToken: credential,
+    });
+
+    if (apiResponse.error) {
+      return { success: false, error: apiResponse.error };
+    }
+
+    if (apiResponse.data) {
+      return { success: true, data: apiResponse.data };
+    }
+
+    return { success: false, error: 'Erro ao autenticar com Google' };
+  } catch {
+    return { success: false, error: 'Erro ao processar autenticação Google' };
+  }
+};
+
 export const signInWithGoogle = async (): Promise<{ success: boolean; data?: GoogleSignInResponse; error?: string }> => {
   try {
     await initializeGoogleAuth();
@@ -101,55 +123,21 @@ export const signInWithGoogle = async (): Promise<{ success: boolean; data?: Goo
             return;
           }
 
-          try {
-            // Send ID token to backend
-            const apiResponse = await api.post<GoogleSignInResponse>('/auth/signin-google', {
-              GoogleToken: response.credential,
-            });
-
-            if (apiResponse.error) {
-              resolve({ success: false, error: apiResponse.error });
-              return;
-            }
-
-            if (apiResponse.data) {
-              resolve({ success: true, data: apiResponse.data });
-            } else {
-              resolve({ success: false, error: 'Erro ao autenticar com Google' });
-            }
-          } catch (error) {
-            resolve({ success: false, error: 'Erro ao processar autenticação Google' });
-          }
+          const exchangeResult = await exchangeGoogleCredential(response.credential);
+          resolve(exchangeResult);
         },
         auto_select: false,
         cancel_on_tap_outside: true,
       });
 
-      // Trigger the One Tap prompt
+      // Trigger the One Tap prompt (if unavailable, return a helpful error)
       google.accounts.id.prompt((notification: any) => {
-        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-          // Fallback to button click if One Tap is not available
-          const buttonDiv = document.createElement('div');
-          buttonDiv.style.display = 'none';
-          document.body.appendChild(buttonDiv);
-
-          google.accounts.id.renderButton(buttonDiv, {
-            type: 'standard',
-            size: 'large',
+        if (notification.isNotDisplayed?.() || notification.isSkippedMoment?.()) {
+          resolve({
+            success: false,
+            error:
+              'O Google não exibiu o prompt. Verifique bloqueador de popups/terceiros e as "Authorized JavaScript origins" no Google Cloud (inclua http://localhost e http://localhost:5173).',
           });
-
-          // Programmatically click the rendered button
-          const button = buttonDiv.querySelector('div[role="button"]');
-          if (button) {
-            (button as HTMLElement).click();
-          }
-
-          // Clean up after a delay
-          setTimeout(() => {
-            if (buttonDiv.parentNode) {
-              document.body.removeChild(buttonDiv);
-            }
-          }, 100);
         }
       });
     });
@@ -161,4 +149,5 @@ export const signInWithGoogle = async (): Promise<{ success: boolean; data?: Goo
 export const googleAuthService = {
   initialize: initializeGoogleAuth,
   signIn: signInWithGoogle,
+  exchangeCredential: exchangeGoogleCredential,
 };
