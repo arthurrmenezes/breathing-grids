@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { NewTransactionModal } from '@/components/app/NewTransactionModal';
 import { EditTransactionModal } from '@/components/app/EditTransactionModal';
+import { ViewTransactionModal } from '@/components/app/ViewTransactionModal';
 import { transactionService } from '@/services/transactionService';
 import { categoryService } from '@/services/categoryService';
 import { Calendar } from '@/components/ui/calendar';
@@ -67,6 +68,8 @@ import {
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 
+type SortState = 'date' | 'amount-desc' | 'amount-asc';
+
 const Transacoes = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const { showValues, setShowValues } = useValuesVisibility();
@@ -76,6 +79,8 @@ const Transacoes = () => {
   const [newTransactionOpen, setNewTransactionOpen] = useState(false);
   const [editTransactionOpen, setEditTransactionOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [viewTransactionOpen, setViewTransactionOpen] = useState(false);
+  const [viewingTransaction, setViewingTransaction] = useState<Transaction | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -98,9 +103,8 @@ const Transacoes = () => {
   const [filterStartDate, setFilterStartDate] = useState<Date | undefined>();
   const [filterEndDate, setFilterEndDate] = useState<Date | undefined>();
 
-  // Sort - default by date desc (most recent first)
-  const [sortField, setSortField] = useState<'date' | 'amount'>('date');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  // Sort - 3 states: date (default), amount-desc, amount-asc
+  const [sortState, setSortState] = useState<SortState>('date');
 
   const hasActiveFilters = useMemo(() => {
     return filterType !== 'all' || 
@@ -191,16 +195,16 @@ const Transacoes = () => {
   const sortedTransactions = useMemo(() => {
     const sorted = [...transactions];
     sorted.sort((a, b) => {
-      let comparison = 0;
-      if (sortField === 'date') {
-        comparison = new Date(a.date).getTime() - new Date(b.date).getTime();
-      } else if (sortField === 'amount') {
-        comparison = a.amount - b.amount;
+      if (sortState === 'date') {
+        return new Date(b.date).getTime() - new Date(a.date).getTime();
+      } else if (sortState === 'amount-desc') {
+        return b.amount - a.amount;
+      } else {
+        return a.amount - b.amount;
       }
-      return sortOrder === 'asc' ? comparison : -comparison;
     });
     return sorted;
-  }, [transactions, sortField, sortOrder]);
+  }, [transactions, sortState]);
 
   const handleSearch = () => {
     setCurrentPage(1);
@@ -263,6 +267,11 @@ const Transacoes = () => {
     setEditTransactionOpen(true);
   };
 
+  const handleView = (transaction: Transaction) => {
+    setViewingTransaction(transaction);
+    setViewTransactionOpen(true);
+  };
+
   const handleEditSuccess = () => {
     fetchTransactions();
     fetchSummary();
@@ -275,7 +284,6 @@ const Transacoes = () => {
 
   const formatDate = (dateString: string) => {
     try {
-      // Use parseISO to correctly handle the date without timezone issues
       const date = parseISO(dateString);
       return format(date, "dd/MM/yyyy", { locale: ptBR });
     } catch {
@@ -308,11 +316,12 @@ const Transacoes = () => {
   };
 
   const handleSortByValue = () => {
-    if (sortField === 'amount') {
-      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    if (sortState === 'date') {
+      setSortState('amount-desc');
+    } else if (sortState === 'amount-desc') {
+      setSortState('amount-asc');
     } else {
-      setSortField('amount');
-      setSortOrder('desc');
+      setSortState('date');
     }
   };
 
@@ -320,6 +329,7 @@ const Transacoes = () => {
   const endItem = Math.min(currentPage * itemsPerPage, totalItems);
 
   const hasDateFilter = filterStartDate || filterEndDate;
+  const hasValueFilter = filterMinValue !== '' || filterMaxValue !== '';
 
   return (
     <AppLayout>
@@ -348,7 +358,7 @@ const Transacoes = () => {
           {/* Date Filter */}
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" className={cn("bg-card border-border", hasDateFilter && "border-accent")}>
+              <Button variant="outline" size="default" className={cn("bg-card border-border h-10 min-w-[140px]", hasDateFilter && "border-accent")}>
                 <CalendarDays className="w-4 h-4 mr-2 text-muted-foreground" />
                 {hasDateFilter ? (
                   <span className="text-sm">
@@ -398,7 +408,7 @@ const Transacoes = () => {
 
           {/* Transaction Type Filter */}
           <Select value={filterType} onValueChange={setFilterType}>
-            <SelectTrigger className="w-auto min-w-[180px] bg-card border-border">
+            <SelectTrigger className="w-auto min-w-[180px] bg-card border-border h-10">
               <SelectValue placeholder="Todas as transações" />
             </SelectTrigger>
             <SelectContent>
@@ -410,7 +420,7 @@ const Transacoes = () => {
 
           {/* Payment Method Filter */}
           <Select value={filterPayment} onValueChange={setFilterPayment}>
-            <SelectTrigger className="w-auto min-w-[180px] bg-card border-border">
+            <SelectTrigger className="w-auto min-w-[180px] bg-card border-border h-10">
               <SelectValue placeholder="Forma de Pagamento" />
             </SelectTrigger>
             <SelectContent>
@@ -430,7 +440,7 @@ const Transacoes = () => {
 
           {/* Status Filter */}
           <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="w-auto min-w-[150px] bg-card border-border">
+            <SelectTrigger className="w-auto min-w-[150px] bg-card border-border h-10">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -443,7 +453,7 @@ const Transacoes = () => {
 
           {/* Category Filter */}
           <Select value={filterCategory} onValueChange={setFilterCategory}>
-            <SelectTrigger className="w-auto min-w-[150px] bg-card border-border">
+            <SelectTrigger className="w-auto min-w-[150px] bg-card border-border h-10">
               <SelectValue placeholder="Categorias" />
             </SelectTrigger>
             <SelectContent>
@@ -454,12 +464,12 @@ const Transacoes = () => {
             </SelectContent>
           </Select>
 
-          {/* Value Filter */}
+          {/* Value Filter - Styled like Select */}
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" className="bg-card border-border">
+              <Button variant="outline" size="default" className={cn("bg-card border-border h-10 min-w-[100px]", hasValueFilter && "border-accent")}>
                 Valor
-                {(filterMinValue || filterMaxValue) && (
+                {hasValueFilter && (
                   <span className="ml-2 text-xs bg-accent text-accent-foreground px-1.5 py-0.5 rounded">
                     Filtrado
                   </span>
@@ -599,12 +609,10 @@ const Transacoes = () => {
                           onClick={handleSortByValue}
                         >
                           Valor
-                          {sortField === 'amount' ? (
-                            sortOrder === 'asc' ? (
-                              <ArrowUp className="w-3 h-3" />
-                            ) : (
-                              <ArrowDown className="w-3 h-3" />
-                            )
+                          {sortState === 'amount-desc' ? (
+                            <ArrowDown className="w-3 h-3" />
+                          ) : sortState === 'amount-asc' ? (
+                            <ArrowUp className="w-3 h-3" />
                           ) : (
                             <ArrowUpDown className="w-3 h-3 opacity-50" />
                           )}
@@ -625,10 +633,15 @@ const Transacoes = () => {
                           className="border-b border-border hover:bg-secondary/30 transition-colors"
                         >
                           <td className="p-4">
-                            <Checkbox 
-                              checked={selectedTransactions.includes(tx.id)}
-                              onCheckedChange={() => toggleSelectTransaction(tx.id)}
-                            />
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => handleView(tx)}
+                              title="Ver detalhes"
+                            >
+                              <Eye className="w-4 h-4 text-muted-foreground" />
+                            </Button>
                           </td>
                           <td className="p-4">
                             <span className={showValues ? '' : 'blur-sm select-none'}>
@@ -732,6 +745,14 @@ const Transacoes = () => {
         onSuccess={handleEditSuccess}
         categories={categories}
         transaction={editingTransaction}
+      />
+
+      {/* View Transaction Modal */}
+      <ViewTransactionModal
+        open={viewTransactionOpen}
+        onOpenChange={setViewTransactionOpen}
+        transaction={viewingTransaction}
+        categories={categories}
       />
 
       {/* Delete Confirmation Dialog */}
