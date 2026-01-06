@@ -536,9 +536,21 @@ const Dashboard = () => {
       if (allTransactionsResponse.data) {
         const transactions = allTransactionsResponse.data.transactions;
         
-        // Build chart data by month
+        // Build chart data by month - first create all months in range with 0 values
         const monthlyData = new Map<string, { income: number; expense: number }>();
         
+        // Generate all months in the range
+        const startDate = new Date(dateRanges.start);
+        const endDate = new Date(dateRanges.end);
+        let currentDate = startOfMonth(startDate);
+        
+        while (currentDate <= endDate) {
+          const monthKey = format(currentDate, "yyyy-MM");
+          monthlyData.set(monthKey, { income: 0, expense: 0 });
+          currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
+        }
+        
+        // Now add transaction data
         transactions.forEach((tx) => {
           const date = new Date(tx.date);
           const monthKey = format(date, "yyyy-MM");
