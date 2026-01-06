@@ -1,13 +1,18 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { AppLayout, useValuesVisibility } from '@/components/app/AppLayout';
 import { Button } from '@/components/ui/button';
-import { Plus, CreditCard, Lock, Unlock, Eye, EyeOff, MoreHorizontal, ArrowUpRight } from 'lucide-react';
+import { Plus, CreditCard, Eye, EyeOff, MoreHorizontal, ArrowUpRight, BarChart3, TrendingUp, TrendingDown } from 'lucide-react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { cn } from '@/lib/utils';
+import { format, subMonths, startOfMonth, endOfMonth, startOfYear, subWeeks } from 'date-fns';
+
+type ContasPeriodType = "1W" | "1M" | "YTD" | "3M" | "1Y" | "ALL";
 
 const cards = [
   {
     id: 1,
-    name: 'Nubank',
-    lastDigits: '4829',
+    bank: 'Nubank',
     brand: 'Mastercard',
     type: 'credit',
     limit: 12000,
@@ -16,12 +21,10 @@ const cards = [
     closingDate: 15,
     dueDate: 22,
     color: 'from-purple-500 to-purple-700',
-    frozen: false,
   },
   {
     id: 2,
-    name: 'Itaú Platinum',
-    lastDigits: '7192',
+    bank: 'Itaú',
     brand: 'Visa',
     type: 'credit',
     limit: 25000,
@@ -30,22 +33,18 @@ const cards = [
     closingDate: 10,
     dueDate: 17,
     color: 'from-orange-500 to-orange-700',
-    frozen: false,
   },
   {
     id: 3,
-    name: 'Inter',
-    lastDigits: '3344',
+    bank: 'Inter',
     brand: 'Mastercard',
     type: 'debit',
     balance: 4523.50,
     color: 'from-orange-400 to-red-500',
-    frozen: false,
   },
   {
     id: 4,
-    name: 'C6 Bank',
-    lastDigits: '9981',
+    bank: 'C6 Bank',
     brand: 'Mastercard',
     type: 'credit',
     limit: 8000,
@@ -54,23 +53,96 @@ const cards = [
     closingDate: 5,
     dueDate: 12,
     color: 'from-gray-800 to-gray-900',
-    frozen: true,
+  },
+  {
+    id: 5,
+    bank: 'Sodexo',
+    brand: 'Visa',
+    type: 'vr',
+    balance: 850.00,
+    color: 'from-green-500 to-green-700',
   },
 ];
 
 const recentCardTransactions = [
-  { id: 1, card: 'Nubank', name: 'iFood', amount: -45.90, date: '24 Dez' },
-  { id: 2, card: 'Nubank', name: 'Amazon', amount: -189.90, date: '23 Dez' },
-  { id: 3, card: 'Itaú', name: 'Posto Shell', amount: -250.00, date: '23 Dez' },
-  { id: 4, card: 'Nubank', name: 'Uber', amount: -28.50, date: '22 Dez' },
+  { id: 1, card: 'Nubank', name: 'iFood', amount: -45.90, date: '24 Dez', status: 'paid' },
+  { id: 2, card: 'Nubank', name: 'Amazon', amount: -189.90, date: '23 Dez', status: 'paid' },
+  { id: 3, card: 'Itaú', name: 'Posto Shell', amount: -250.00, date: '23 Dez', status: 'pending' },
+  { id: 4, card: 'Nubank', name: 'Uber', amount: -28.50, date: '22 Dez', status: 'paid' },
 ];
+
+const pendingTransactions = [
+  { id: 1, card: 'Itaú', name: 'Mercado Livre', amount: -320.00, dueDate: '10 Jan', status: 'pending' },
+  { id: 2, card: 'Nubank', name: 'Netflix', amount: -55.90, dueDate: '15 Jan', status: 'pending' },
+  { id: 3, card: 'C6 Bank', name: 'Spotify', amount: -21.90, dueDate: '12 Jan', status: 'pending' },
+];
+
+// Mock data for the Contas chart
+const generateContasData = (period: ContasPeriodType) => {
+  const now = new Date();
+  const data: { label: string; receitas: number; despesas: number }[] = [];
+  
+  let numPoints = 30;
+  switch (period) {
+    case "1W": numPoints = 7; break;
+    case "1M": numPoints = 30; break;
+    case "3M": numPoints = 12; break;
+    case "YTD": numPoints = new Date().getMonth() + 1; break;
+    case "1Y": numPoints = 12; break;
+    case "ALL": numPoints = 24; break;
+  }
+  
+  for (let i = 0; i < numPoints; i++) {
+    const label = period === "1W" || period === "1M" 
+      ? format(new Date(now.getTime() - (numPoints - 1 - i) * 24 * 60 * 60 * 1000), 'dd/MM')
+      : format(new Date(now.getFullYear(), now.getMonth() - (numPoints - 1 - i), 1), 'MMM');
+    
+    data.push({
+      label,
+      receitas: Math.floor(Math.random() * 3000) + 2000,
+      despesas: Math.floor(Math.random() * 2000) + 1000,
+    });
+  }
+  
+  return data;
+};
 
 const Cartoes = () => {
   const [selectedCard, setSelectedCard] = useState(cards[0]);
   const { showValues, setShowValues } = useValuesVisibility();
+  const [contasPeriod, setContasPeriod] = useState<ContasPeriodType>("1M");
 
   const totalLimit = cards.filter(c => c.type === 'credit').reduce((sum, c) => sum + (c.limit || 0), 0);
   const totalUsed = cards.filter(c => c.type === 'credit').reduce((sum, c) => sum + (c.used || 0), 0);
+  const totalAvailable = totalLimit - totalUsed;
+
+  // Payment status ring chart data
+  const totalPaid = recentCardTransactions.filter(t => t.status === 'paid').reduce((sum, t) => sum + Math.abs(t.amount), 0);
+  const totalPending = pendingTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+  const totalPayments = totalPaid + totalPending;
+  const paidPercentage = totalPayments > 0 ? (totalPaid / totalPayments) * 100 : 0;
+
+  const paymentStatusData = [
+    { name: 'Pago', value: totalPaid, color: 'hsl(var(--accent))' },
+    { name: 'Falta pagar', value: totalPending, color: 'hsl(var(--muted))' },
+  ];
+
+  // Contas chart data
+  const contasData = useMemo(() => generateContasData(contasPeriod), [contasPeriod]);
+  const totalReceitas = contasData.reduce((sum, d) => sum + d.receitas, 0);
+  const totalDespesas = contasData.reduce((sum, d) => sum + d.despesas, 0);
+
+  const formatCurrency = (value: number) => 
+    `R$ ${Math.abs(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+
+  const getCardTypeLabel = (type: string) => {
+    switch (type) {
+      case 'credit': return 'Crédito';
+      case 'debit': return 'Débito';
+      case 'vr': return 'Vale Refeição';
+      default: return type;
+    }
+  };
 
   return (
     <AppLayout>
@@ -92,48 +164,6 @@ const Cartoes = () => {
           </div>
         </div>
 
-        {/* Summary */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-card rounded-xl border border-border p-5">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 rounded-lg bg-accent/10">
-                <CreditCard className="w-4 h-4 text-accent" />
-              </div>
-              <span className="text-sm text-muted-foreground">Limite Total</span>
-            </div>
-            <p className="text-2xl font-semibold">
-              {showValues ? `R$ ${totalLimit.toLocaleString('pt-BR')}` : '••••••'}
-            </p>
-          </div>
-          
-          <div className="bg-card rounded-xl border border-border p-5">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 rounded-lg bg-destructive/10">
-                <ArrowUpRight className="w-4 h-4 text-destructive" />
-              </div>
-              <span className="text-sm text-muted-foreground">Utilizado</span>
-            </div>
-            <p className="text-2xl font-semibold">
-              {showValues ? `R$ ${totalUsed.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '••••••'}
-            </p>
-            <p className="text-sm text-muted-foreground mt-1">
-              {((totalUsed / totalLimit) * 100).toFixed(1)}% do limite
-            </p>
-          </div>
-          
-          <div className="bg-card rounded-xl border border-border p-5">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 rounded-lg bg-success/10">
-                <CreditCard className="w-4 h-4 text-success" />
-              </div>
-              <span className="text-sm text-muted-foreground">Disponível</span>
-            </div>
-            <p className="text-2xl font-semibold text-success">
-              {showValues ? `R$ ${(totalLimit - totalUsed).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '••••••'}
-            </p>
-          </div>
-        </div>
-
         {/* Cards Carousel */}
         <div className="space-y-4">
           <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
@@ -145,45 +175,42 @@ const Cartoes = () => {
                 key={card.id}
                 onClick={() => setSelectedCard(card)}
                 className={`
-                  flex-shrink-0 w-72 h-44 rounded-2xl p-5 cursor-pointer
+                  flex-shrink-0 w-64 h-36 rounded-2xl p-4 cursor-pointer
                   bg-gradient-to-br ${card.color} text-white
                   transition-all duration-300
                   ${selectedCard.id === card.id ? 'ring-2 ring-accent ring-offset-2 ring-offset-background scale-105' : 'hover:scale-102'}
-                  ${card.frozen ? 'opacity-60 grayscale' : ''}
                 `}
               >
                 <div className="flex flex-col h-full justify-between">
                   <div className="flex justify-between items-start">
                     <div>
-                      <p className="text-sm opacity-80">{card.name}</p>
-                      <p className="text-xs opacity-60">{card.type === 'credit' ? 'Crédito' : 'Débito'}</p>
+                      <p className="text-sm font-medium opacity-90">{card.bank}</p>
+                      <p className="text-xs opacity-70">{getCardTypeLabel(card.type)}</p>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {card.frozen && <Lock className="w-4 h-4" />}
-                      <span className="text-xs font-medium">{card.brand}</span>
-                    </div>
+                    <span className="text-xs font-medium opacity-80">{card.brand}</span>
                   </div>
                   
-                  <div className="space-y-2">
-                    <p className="text-lg tracking-widest">•••• •••• •••• {card.lastDigits}</p>
+                  <div className="space-y-1">
                     {card.type === 'credit' ? (
-                      <div className="flex justify-between items-end">
-                        <div>
-                          <p className="text-xs opacity-60">Disponível</p>
-                          <p className="text-sm font-medium">
-                            {showValues ? `R$ ${card.available?.toLocaleString('pt-BR')}` : '••••'}
-                          </p>
+                      <>
+                        <div className="flex justify-between items-end">
+                          <div>
+                            <p className="text-xs opacity-60">Disponível</p>
+                            <p className="text-sm font-medium">
+                              {showValues ? formatCurrency(card.available || 0) : '••••'}
+                            </p>
+                          </div>
+                          <div className="text-right text-xs opacity-70">
+                            <p>Fecha {card.closingDate}</p>
+                            <p>Vence {card.dueDate}</p>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className="text-xs opacity-60">Fecha dia {card.closingDate}</p>
-                          <p className="text-xs opacity-60">Vence dia {card.dueDate}</p>
-                        </div>
-                      </div>
+                      </>
                     ) : (
                       <div>
                         <p className="text-xs opacity-60">Saldo</p>
                         <p className="text-sm font-medium">
-                          {showValues ? `R$ ${card.balance?.toLocaleString('pt-BR')}` : '••••'}
+                          {showValues ? formatCurrency(card.balance || 0) : '••••'}
                         </p>
                       </div>
                     )}
@@ -194,56 +221,231 @@ const Cartoes = () => {
           </div>
         </div>
 
-        {/* Selected Card Details */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Card Info */}
-          <div className="bg-card rounded-2xl border border-border p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-medium">Detalhes do Cartão</h3>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm">
-                  {selectedCard.frozen ? <Unlock className="w-4 h-4 mr-2" /> : <Lock className="w-4 h-4 mr-2" />}
-                  {selectedCard.frozen ? 'Desbloquear' : 'Bloquear'}
-                </Button>
-                <button className="p-2 rounded-lg hover:bg-secondary transition-colors">
-                  <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
-                </button>
+        {/* Contas Chart */}
+        <div className="bg-card rounded-2xl border border-border p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-muted-foreground" />
+              <h3 className="text-lg font-medium">Contas</h3>
+            </div>
+            <Button variant="ghost" size="icon">
+              <Eye className="w-4 h-4 text-muted-foreground" />
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-2 gap-6 mb-6">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-2 h-2 rounded-full bg-accent" />
+                <span className="text-sm text-muted-foreground">Receitas</span>
+              </div>
+              <p className="text-2xl font-bold">
+                {showValues ? formatCurrency(totalReceitas) : '••••••'}
+              </p>
+              <div className="flex items-center gap-1 mt-1">
+                <TrendingUp className="w-3 h-3 text-success" />
+                <span className="text-xs text-success">+12.5%</span>
               </div>
             </div>
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-2 h-2 rounded-full bg-destructive" />
+                <span className="text-sm text-muted-foreground">Despesas</span>
+              </div>
+              <p className="text-2xl font-bold">
+                {showValues ? formatCurrency(totalDespesas) : '••••••'}
+              </p>
+              <div className="flex items-center gap-1 mt-1">
+                <TrendingDown className="w-3 h-3 text-destructive" />
+                <span className="text-xs text-muted-foreground">-3.2%</span>
+              </div>
+            </div>
+          </div>
+
+          <ResponsiveContainer width="100%" height={200}>
+            <AreaChart data={contasData}>
+              <defs>
+                <linearGradient id="receitasGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="hsl(var(--accent))" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="hsl(var(--accent))" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="despesasGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="hsl(var(--destructive))" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="hsl(var(--destructive))" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+              <XAxis
+                dataKey="label"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
+                interval="preserveStartEnd"
+              />
+              <YAxis
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
+                tickFormatter={(value) => value >= 1000 ? `R$ ${(value / 1000).toFixed(0)}k` : `R$ ${value}`}
+                width={60}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "hsl(var(--card))",
+                  border: "1px solid hsl(var(--border))",
+                  borderRadius: "8px",
+                  color: "hsl(var(--foreground))",
+                }}
+                formatter={(value: number, name: string) => [
+                  showValues ? formatCurrency(value) : "••••••",
+                  name === "receitas" ? "Receitas" : "Despesas"
+                ]}
+              />
+              <Area
+                type="monotone"
+                dataKey="receitas"
+                stroke="hsl(var(--accent))"
+                strokeWidth={2}
+                fill="url(#receitasGradient)"
+              />
+              <Area
+                type="monotone"
+                dataKey="despesas"
+                stroke="hsl(var(--destructive))"
+                strokeWidth={2}
+                fill="url(#despesasGradient)"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+
+          {/* Period buttons */}
+          <div className="flex items-center justify-center gap-1 mt-4">
+            {(["1W", "1M", "YTD", "3M", "1Y", "ALL"] as ContasPeriodType[]).map((period) => (
+              <button
+                key={period}
+                onClick={() => setContasPeriod(period)}
+                className={cn(
+                  "px-3 py-1 text-xs rounded-md transition-colors",
+                  contasPeriod === period
+                    ? "bg-accent text-accent-foreground"
+                    : "text-muted-foreground hover:bg-secondary"
+                )}
+              >
+                {period}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="bg-card rounded-xl border border-border p-4">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 rounded-lg bg-accent/10">
+                <CreditCard className="w-4 h-4 text-accent" />
+              </div>
+              <span className="text-sm text-muted-foreground">Limite Total</span>
+            </div>
+            <p className="text-xl font-semibold">
+              {showValues ? formatCurrency(totalLimit) : '••••••'}
+            </p>
+          </div>
+          
+          <div className="bg-card rounded-xl border border-border p-4">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 rounded-lg bg-destructive/10">
+                <ArrowUpRight className="w-4 h-4 text-destructive" />
+              </div>
+              <span className="text-sm text-muted-foreground">Utilizado</span>
+            </div>
+            <p className="text-xl font-semibold">
+              {showValues ? formatCurrency(totalUsed) : '••••••'}
+            </p>
+            <p className="text-sm text-muted-foreground mt-1">
+              {((totalUsed / totalLimit) * 100).toFixed(1)}% do limite
+            </p>
+          </div>
+          
+          <div className="bg-card rounded-xl border border-border p-4">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 rounded-lg bg-success/10">
+                <CreditCard className="w-4 h-4 text-success" />
+              </div>
+              <span className="text-sm text-muted-foreground">Disponível</span>
+            </div>
+            <p className="text-xl font-semibold text-success">
+              {showValues ? formatCurrency(totalAvailable) : '••••••'}
+            </p>
+          </div>
+        </div>
+
+        {/* Payment Status Ring */}
+        <div className="bg-card rounded-2xl border border-border p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <p className="text-2xl font-bold">
+                {showValues ? formatCurrency(totalPending) : 'R$ ••••••'}
+              </p>
+              <p className="text-sm text-muted-foreground">Falta pagar</p>
+            </div>
+
+            <div className="w-24 h-24 relative">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={paymentStatusData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={30}
+                    outerRadius={40}
+                    startAngle={90}
+                    endAngle={-270}
+                    dataKey="value"
+                  >
+                    {paymentStatusData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-2 h-2 rounded-full bg-accent" />
+              </div>
+            </div>
+
+            <div className="flex-1 text-right">
+              <p className="text-2xl font-bold">
+                {showValues ? formatCurrency(totalPaid) : 'R$ ••••••'}
+              </p>
+              <p className="text-sm text-muted-foreground">Pago até agora</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Pending Transactions + Recent Transactions */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Pending Transactions */}
+          <div className="bg-card rounded-2xl border border-border p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-medium">Transações Pendentes</h3>
+              <span className="text-sm text-muted-foreground">{pendingTransactions.length} pendentes</span>
+            </div>
             
-            <div className="space-y-4">
-              <div className="flex justify-between py-3 border-b border-border">
-                <span className="text-muted-foreground">Nome</span>
-                <span className="font-medium">{selectedCard.name}</span>
-              </div>
-              <div className="flex justify-between py-3 border-b border-border">
-                <span className="text-muted-foreground">Bandeira</span>
-                <span className="font-medium">{selectedCard.brand}</span>
-              </div>
-              <div className="flex justify-between py-3 border-b border-border">
-                <span className="text-muted-foreground">Tipo</span>
-                <span className="font-medium">{selectedCard.type === 'credit' ? 'Crédito' : 'Débito'}</span>
-              </div>
-              {selectedCard.type === 'credit' && (
-                <>
-                  <div className="flex justify-between py-3 border-b border-border">
-                    <span className="text-muted-foreground">Limite</span>
-                    <span className="font-medium">
-                      {showValues ? `R$ ${selectedCard.limit?.toLocaleString('pt-BR')}` : '••••••'}
-                    </span>
+            <div className="space-y-3">
+              {pendingTransactions.map((tx) => (
+                <div 
+                  key={tx.id}
+                  className="flex items-center justify-between p-3 rounded-xl hover:bg-secondary/50 transition-colors"
+                >
+                  <div>
+                    <p className="font-medium">{tx.name}</p>
+                    <p className="text-sm text-muted-foreground">{tx.card} • Vence {tx.dueDate}</p>
                   </div>
-                  <div className="flex justify-between py-3 border-b border-border">
-                    <span className="text-muted-foreground">Fatura Atual</span>
-                    <span className="font-medium">
-                      {showValues ? `R$ ${selectedCard.used?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '••••••'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between py-3">
-                    <span className="text-muted-foreground">Melhor Dia de Compra</span>
-                    <span className="font-medium text-accent">Dia {selectedCard.closingDate! + 1}</span>
-                  </div>
-                </>
-              )}
+                  <span className="font-medium tabular-nums text-destructive">
+                    {showValues ? formatCurrency(tx.amount) : '••••••'}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -251,9 +453,9 @@ const Cartoes = () => {
           <div className="bg-card rounded-2xl border border-border p-6">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-medium">Últimas Transações</h3>
-              <a href="/app/transacoes" className="text-sm text-accent hover:underline">
+              <Link to="/app/transacoes" className="text-sm text-accent hover:underline">
                 Ver todas
-              </a>
+              </Link>
             </div>
             
             <div className="space-y-3">
@@ -267,11 +469,68 @@ const Cartoes = () => {
                     <p className="text-sm text-muted-foreground">{tx.card} • {tx.date}</p>
                   </div>
                   <span className="font-medium tabular-nums">
-                    R$ {Math.abs(tx.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    {showValues ? formatCurrency(tx.amount) : '••••••'}
                   </span>
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+
+        {/* Selected Card Details */}
+        <div className="bg-card rounded-2xl border border-border p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-medium">Detalhes do Cartão</h3>
+            <button className="p-2 rounded-lg hover:bg-secondary transition-colors">
+              <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
+            </button>
+          </div>
+          
+          <div className="space-y-4">
+            <div className="flex justify-between py-3 border-b border-border">
+              <span className="text-muted-foreground">Banco</span>
+              <span className="font-medium">{selectedCard.bank}</span>
+            </div>
+            <div className="flex justify-between py-3 border-b border-border">
+              <span className="text-muted-foreground">Bandeira</span>
+              <span className="font-medium">{selectedCard.brand}</span>
+            </div>
+            <div className="flex justify-between py-3 border-b border-border">
+              <span className="text-muted-foreground">Tipo</span>
+              <span className="font-medium">{getCardTypeLabel(selectedCard.type)}</span>
+            </div>
+            {selectedCard.type === 'credit' && (
+              <>
+                <div className="flex justify-between py-3 border-b border-border">
+                  <span className="text-muted-foreground">Limite</span>
+                  <span className="font-medium">
+                    {showValues ? formatCurrency(selectedCard.limit || 0) : '••••••'}
+                  </span>
+                </div>
+                <div className="flex justify-between py-3 border-b border-border">
+                  <span className="text-muted-foreground">Fatura Atual</span>
+                  <span className="font-medium">
+                    {showValues ? formatCurrency(selectedCard.used || 0) : '••••••'}
+                  </span>
+                </div>
+                <div className="flex justify-between py-3 border-b border-border">
+                  <span className="text-muted-foreground">Data de Fechamento</span>
+                  <span className="font-medium">Dia {selectedCard.closingDate}</span>
+                </div>
+                <div className="flex justify-between py-3">
+                  <span className="text-muted-foreground">Data de Vencimento</span>
+                  <span className="font-medium">Dia {selectedCard.dueDate}</span>
+                </div>
+              </>
+            )}
+            {(selectedCard.type === 'debit' || selectedCard.type === 'vr') && (
+              <div className="flex justify-between py-3">
+                <span className="text-muted-foreground">Saldo Atual</span>
+                <span className="font-medium text-success">
+                  {showValues ? formatCurrency(selectedCard.balance || 0) : '••••••'}
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </div>
