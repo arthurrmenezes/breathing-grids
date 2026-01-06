@@ -18,6 +18,7 @@ const cards = [
     limit: 12000,
     used: 3450.80,
     available: 8549.20,
+    previousAvailable: 7800.00,
     closingDate: 15,
     dueDate: 22,
     color: 'from-purple-500 to-purple-700',
@@ -30,6 +31,7 @@ const cards = [
     limit: 25000,
     used: 8750.00,
     available: 16250.00,
+    previousAvailable: 17500.00,
     closingDate: 10,
     dueDate: 17,
     color: 'from-orange-500 to-orange-700',
@@ -40,6 +42,7 @@ const cards = [
     brand: 'Mastercard',
     type: 'debit',
     balance: 4523.50,
+    previousBalance: 4100.00,
     color: 'from-orange-400 to-red-500',
   },
   {
@@ -50,6 +53,7 @@ const cards = [
     limit: 8000,
     used: 2100.00,
     available: 5900.00,
+    previousAvailable: 5500.00,
     closingDate: 5,
     dueDate: 12,
     color: 'from-gray-800 to-gray-900',
@@ -60,6 +64,7 @@ const cards = [
     brand: 'Visa',
     type: 'vr',
     balance: 850.00,
+    previousBalance: 1200.00,
     color: 'from-green-500 to-green-700',
   },
 ];
@@ -115,16 +120,23 @@ const Cartoes = () => {
   const totalLimit = cards.filter(c => c.type === 'credit').reduce((sum, c) => sum + (c.limit || 0), 0);
   const totalUsed = cards.filter(c => c.type === 'credit').reduce((sum, c) => sum + (c.used || 0), 0);
   const totalAvailable = totalLimit - totalUsed;
+  
+  // Calculate previous month available for comparison
+  const previousTotalAvailable = cards.filter(c => c.type === 'credit').reduce((sum, c) => sum + ((c as any).previousAvailable || 0), 0);
+  const availableChange = previousTotalAvailable > 0 
+    ? ((totalAvailable - previousTotalAvailable) / previousTotalAvailable) * 100 
+    : 0;
 
   // Payment status ring chart data
   const totalPaid = recentCardTransactions.filter(t => t.status === 'paid').reduce((sum, t) => sum + Math.abs(t.amount), 0);
   const totalPending = pendingTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0);
   const totalPayments = totalPaid + totalPending;
   const paidPercentage = totalPayments > 0 ? (totalPaid / totalPayments) * 100 : 0;
+  const pendingPercentage = totalPayments > 0 ? (totalPending / totalPayments) * 100 : 0;
 
   const paymentStatusData = [
-    { name: 'Pago', value: totalPaid, color: 'hsl(var(--accent))' },
-    { name: 'Falta pagar', value: totalPending, color: 'hsl(var(--muted))' },
+    { name: 'Pago', value: totalPaid, color: 'hsl(var(--accent))', percentage: paidPercentage },
+    { name: 'Falta pagar', value: totalPending, color: 'hsl(var(--muted))', percentage: pendingPercentage },
   ];
 
   // Contas chart data
@@ -142,6 +154,23 @@ const Cartoes = () => {
       case 'vr': return 'Vale Refeição';
       default: return type;
     }
+  };
+
+  // Custom tooltip for ring chart
+  const CustomRingTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      return (
+        <div className="bg-card border border-border rounded-lg p-2 shadow-lg">
+          <p className="text-sm font-medium">{data.name}</p>
+          <p className="text-sm text-muted-foreground">
+            {showValues ? formatCurrency(data.value) : '••••••'}
+          </p>
+          <p className="text-sm font-medium text-accent">{data.percentage.toFixed(1)}%</p>
+        </div>
+      );
+    }
+    return null;
   };
 
   return (
@@ -296,10 +325,10 @@ const Cartoes = () => {
                   borderRadius: "8px",
                   color: "hsl(var(--foreground))",
                 }}
-                  formatter={(value: number, name: string) => [
-                    showValues ? formatCurrency(value) : "••••••",
-                    name === "receitas" ? "Receitas:" : "Despesas:"
-                  ]}
+                formatter={(value: number, name: string) => [
+                  showValues ? formatCurrency(value) : "••••••",
+                  name === "receitas" ? "Receitas:" : "Despesas:"
+                ]}
               />
               <Area
                 type="monotone"
@@ -376,6 +405,19 @@ const Cartoes = () => {
             <p className="text-xl font-semibold text-success">
               {showValues ? formatCurrency(totalAvailable) : '••••••'}
             </p>
+            <div className="flex items-center gap-1 mt-1">
+              {availableChange >= 0 ? (
+                <TrendingUp className="w-3 h-3 text-success" />
+              ) : (
+                <TrendingDown className="w-3 h-3 text-destructive" />
+              )}
+              <span className={cn(
+                "text-sm",
+                availableChange >= 0 ? "text-success" : "text-destructive"
+              )}>
+                {availableChange >= 0 ? '+' : ''}{availableChange.toFixed(1)}% vs mês anterior
+              </span>
+            </div>
           </div>
         </div>
 
@@ -387,6 +429,7 @@ const Cartoes = () => {
                 {showValues ? formatCurrency(totalPending) : 'R$ ••••••'}
               </p>
               <p className="text-sm text-muted-foreground">Falta pagar</p>
+              <p className="text-xs text-muted-foreground mt-1">{pendingPercentage.toFixed(1)}%</p>
             </div>
 
             <div className="w-24 h-24 relative">
@@ -406,6 +449,7 @@ const Cartoes = () => {
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
+                  <Tooltip content={<CustomRingTooltip />} />
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute inset-0 flex items-center justify-center">
@@ -418,11 +462,12 @@ const Cartoes = () => {
                 {showValues ? formatCurrency(totalPaid) : 'R$ ••••••'}
               </p>
               <p className="text-sm text-muted-foreground">Pago até agora</p>
+              <p className="text-xs text-muted-foreground mt-1">{paidPercentage.toFixed(1)}%</p>
             </div>
           </div>
         </div>
 
-        {/* Pending Transactions + Recent Transactions */}
+        {/* Pending Transactions + Recent Transactions + Card Details */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Pending Transactions */}
           <div className="bg-card rounded-2xl border border-border p-6">
@@ -449,88 +494,93 @@ const Cartoes = () => {
             </div>
           </div>
 
-          {/* Recent Transactions */}
+          {/* Selected Card Details */}
           <div className="bg-card rounded-2xl border border-border p-6">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-medium">Últimas Transações</h3>
-              <Link to="/app/transacoes" className="text-sm text-accent hover:underline">
-                Ver todas
-              </Link>
+              <h3 className="text-lg font-medium">Detalhes do Cartão</h3>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  {pendingTransactions.filter(t => t.card === selectedCard.bank).length} transações pendentes
+                </span>
+                <button className="p-2 rounded-lg hover:bg-secondary transition-colors">
+                  <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
+                </button>
+              </div>
             </div>
             
-            <div className="space-y-3">
-              {recentCardTransactions.map((tx) => (
-                <div 
-                  key={tx.id}
-                  className="flex items-center justify-between p-3 rounded-xl hover:bg-secondary/50 transition-colors"
-                >
-                  <div>
-                    <p className="font-medium">{tx.name}</p>
-                    <p className="text-sm text-muted-foreground">{tx.card} • {tx.date}</p>
+            <div className="space-y-4">
+              <div className="flex justify-between py-3 border-b border-border">
+                <span className="text-muted-foreground">Banco</span>
+                <span className="font-medium">{selectedCard.bank}</span>
+              </div>
+              <div className="flex justify-between py-3 border-b border-border">
+                <span className="text-muted-foreground">Bandeira</span>
+                <span className="font-medium">{selectedCard.brand}</span>
+              </div>
+              <div className="flex justify-between py-3 border-b border-border">
+                <span className="text-muted-foreground">Tipo</span>
+                <span className="font-medium">{getCardTypeLabel(selectedCard.type)}</span>
+              </div>
+              {selectedCard.type === 'credit' && (
+                <>
+                  <div className="flex justify-between py-3 border-b border-border">
+                    <span className="text-muted-foreground">Limite</span>
+                    <span className="font-medium">
+                      {showValues ? formatCurrency(selectedCard.limit || 0) : '••••••'}
+                    </span>
                   </div>
-                  <span className="font-medium tabular-nums">
-                    {showValues ? formatCurrency(tx.amount) : '••••••'}
+                  <div className="flex justify-between py-3 border-b border-border">
+                    <span className="text-muted-foreground">Fatura Atual</span>
+                    <span className="font-medium">
+                      {showValues ? formatCurrency(selectedCard.used || 0) : '••••••'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between py-3 border-b border-border">
+                    <span className="text-muted-foreground">Data de Fechamento</span>
+                    <span className="font-medium">Dia {selectedCard.closingDate}</span>
+                  </div>
+                  <div className="flex justify-between py-3">
+                    <span className="text-muted-foreground">Data de Vencimento</span>
+                    <span className="font-medium">Dia {selectedCard.dueDate}</span>
+                  </div>
+                </>
+              )}
+              {(selectedCard.type === 'debit' || selectedCard.type === 'vr') && (
+                <div className="flex justify-between py-3">
+                  <span className="text-muted-foreground">Saldo Atual</span>
+                  <span className="font-medium text-success">
+                    {showValues ? formatCurrency(selectedCard.balance || 0) : '••••••'}
                   </span>
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </div>
 
-        {/* Selected Card Details */}
+        {/* Recent Transactions */}
         <div className="bg-card rounded-2xl border border-border p-6">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-medium">Detalhes do Cartão</h3>
-            <button className="p-2 rounded-lg hover:bg-secondary transition-colors">
-              <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
-            </button>
+            <h3 className="text-lg font-medium">Últimas Transações</h3>
+            <Link to="/app/transacoes" className="text-sm text-accent hover:underline">
+              Ver todas
+            </Link>
           </div>
           
-          <div className="space-y-4">
-            <div className="flex justify-between py-3 border-b border-border">
-              <span className="text-muted-foreground">Banco</span>
-              <span className="font-medium">{selectedCard.bank}</span>
-            </div>
-            <div className="flex justify-between py-3 border-b border-border">
-              <span className="text-muted-foreground">Bandeira</span>
-              <span className="font-medium">{selectedCard.brand}</span>
-            </div>
-            <div className="flex justify-between py-3 border-b border-border">
-              <span className="text-muted-foreground">Tipo</span>
-              <span className="font-medium">{getCardTypeLabel(selectedCard.type)}</span>
-            </div>
-            {selectedCard.type === 'credit' && (
-              <>
-                <div className="flex justify-between py-3 border-b border-border">
-                  <span className="text-muted-foreground">Limite</span>
-                  <span className="font-medium">
-                    {showValues ? formatCurrency(selectedCard.limit || 0) : '••••••'}
-                  </span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {recentCardTransactions.map((tx) => (
+              <div 
+                key={tx.id}
+                className="flex items-center justify-between p-3 rounded-xl hover:bg-secondary/50 transition-colors"
+              >
+                <div>
+                  <p className="font-medium">{tx.name}</p>
+                  <p className="text-sm text-muted-foreground">{tx.card} • {tx.date}</p>
                 </div>
-                <div className="flex justify-between py-3 border-b border-border">
-                  <span className="text-muted-foreground">Fatura Atual</span>
-                  <span className="font-medium">
-                    {showValues ? formatCurrency(selectedCard.used || 0) : '••••••'}
-                  </span>
-                </div>
-                <div className="flex justify-between py-3 border-b border-border">
-                  <span className="text-muted-foreground">Data de Fechamento</span>
-                  <span className="font-medium">Dia {selectedCard.closingDate}</span>
-                </div>
-                <div className="flex justify-between py-3">
-                  <span className="text-muted-foreground">Data de Vencimento</span>
-                  <span className="font-medium">Dia {selectedCard.dueDate}</span>
-                </div>
-              </>
-            )}
-            {(selectedCard.type === 'debit' || selectedCard.type === 'vr') && (
-              <div className="flex justify-between py-3">
-                <span className="text-muted-foreground">Saldo Atual</span>
-                <span className="font-medium text-success">
-                  {showValues ? formatCurrency(selectedCard.balance || 0) : '••••••'}
+                <span className="font-medium tabular-nums">
+                  {showValues ? formatCurrency(tx.amount) : '••••••'}
                 </span>
               </div>
-            )}
+            ))}
           </div>
         </div>
       </div>
