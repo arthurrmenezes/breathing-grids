@@ -296,10 +296,10 @@ const Cartoes = () => {
                   borderRadius: "8px",
                   color: "hsl(var(--foreground))",
                 }}
-                formatter={(value: number, name: string) => [
-                  showValues ? formatCurrency(value) : "••••••",
-                  name === "receitas" ? "Receitas" : "Despesas"
-                ]}
+                  formatter={(value: number, name: string) => [
+                    showValues ? formatCurrency(value) : "••••••",
+                    name === "receitas" ? "Receitas:" : "Despesas:"
+                  ]}
               />
               <Area
                 type="monotone"

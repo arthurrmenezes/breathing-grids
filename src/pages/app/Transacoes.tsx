@@ -574,11 +574,11 @@ const Transacoes = () => {
 
           {/* Transaction Type Filter */}
           <Select value={filterType} onValueChange={setFilterType}>
-            <SelectTrigger className="w-auto min-w-[180px] bg-card border-border h-10 rounded-md">
+            <SelectTrigger className="w-auto min-w-[180px] bg-card border-border h-10 rounded-md justify-center">
               <SelectValue placeholder="Todas as transações" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todas as transações</SelectItem>
+              <SelectItem value="all"><span className="font-semibold">Todas as transações</span></SelectItem>
               <SelectItem value="income">Receitas</SelectItem>
               <SelectItem value="expense">Despesas</SelectItem>
             </SelectContent>
@@ -599,29 +599,27 @@ const Transacoes = () => {
             </PopoverTrigger>
             <PopoverContent className="w-64 p-3" align="start">
               <div className="space-y-3">
-                <div 
+                <label 
                   className="flex items-center gap-2 cursor-pointer hover:bg-secondary/50 p-2 rounded-md"
-                  onClick={toggleAllPaymentMethods}
                 >
                   <Checkbox 
                     checked={filterPayments.length === 0}
                     onCheckedChange={toggleAllPaymentMethods}
                   />
-                  <span className="text-sm font-medium">Todas as formas</span>
-                </div>
+                  <span className="text-sm font-semibold">Todas as formas</span>
+                </label>
                 <div className="border-t border-border pt-2 space-y-1">
                   {paymentMethods.map((method) => (
-                    <div 
+                    <label 
                       key={method.value}
                       className="flex items-center gap-2 cursor-pointer hover:bg-secondary/50 p-2 rounded-md"
-                      onClick={() => togglePaymentMethod(method.value)}
                     >
                       <Checkbox 
                         checked={filterPayments.includes(method.value)}
                         onCheckedChange={() => togglePaymentMethod(method.value)}
                       />
                       <span className="text-sm">{method.label}</span>
-                    </div>
+                    </label>
                   ))}
                 </div>
               </div>
@@ -643,29 +641,27 @@ const Transacoes = () => {
             </PopoverTrigger>
             <PopoverContent className="w-56 p-3" align="start">
               <div className="space-y-3">
-                <div 
+                <label 
                   className="flex items-center gap-2 cursor-pointer hover:bg-secondary/50 p-2 rounded-md"
-                  onClick={toggleAllStatuses}
                 >
                   <Checkbox 
                     checked={filterStatuses.length === 0}
                     onCheckedChange={toggleAllStatuses}
                   />
-                  <span className="text-sm font-medium">Todos os status</span>
-                </div>
+                  <span className="text-sm font-semibold">Todos os status</span>
+                </label>
                 <div className="border-t border-border pt-2 space-y-1">
                   {paymentStatuses.map((status) => (
-                    <div 
+                    <label 
                       key={status.value}
                       className="flex items-center gap-2 cursor-pointer hover:bg-secondary/50 p-2 rounded-md"
-                      onClick={() => toggleStatus(status.value)}
                     >
                       <Checkbox 
                         checked={filterStatuses.includes(status.value)}
                         onCheckedChange={() => toggleStatus(status.value)}
                       />
                       <span className="text-sm">{status.label}</span>
-                    </div>
+                    </label>
                   ))}
                 </div>
               </div>
@@ -687,29 +683,27 @@ const Transacoes = () => {
             </PopoverTrigger>
             <PopoverContent className="w-64 p-3 max-h-80 overflow-y-auto" align="start">
               <div className="space-y-3">
-                <div 
+                <label 
                   className="flex items-center gap-2 cursor-pointer hover:bg-secondary/50 p-2 rounded-md"
-                  onClick={toggleAllCategories}
                 >
                   <Checkbox 
                     checked={filterCategories.length === 0}
                     onCheckedChange={toggleAllCategories}
                   />
-                  <span className="text-sm font-medium">Todas as categorias</span>
-                </div>
+                  <span className="text-sm font-semibold">Todas as categorias</span>
+                </label>
                 <div className="border-t border-border pt-2 space-y-1">
                   {categories.map((cat) => (
-                    <div 
+                    <label 
                       key={cat.id}
                       className="flex items-center gap-2 cursor-pointer hover:bg-secondary/50 p-2 rounded-md"
-                      onClick={() => toggleCategory(cat.id)}
                     >
                       <Checkbox 
                         checked={filterCategories.includes(cat.id)}
                         onCheckedChange={() => toggleCategory(cat.id)}
                       />
                       <span className="text-sm">{cat.title}</span>
-                    </div>
+                    </label>
                   ))}
                 </div>
               </div>

@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { AppLayout, useValuesVisibility } from "@/components/app/AppLayout";
-import { TrendingUp, TrendingDown, Wallet, Loader2, CalendarDays, ChevronDown, Info, ExternalLink } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, Loader2, CalendarDays, ChevronDown } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
 import { transactionService } from "@/services/transactionService";
 import { categoryService } from "@/services/categoryService";
@@ -815,16 +815,12 @@ const Dashboard = () => {
           {/* Spending Pace Chart */}
           <div className="bg-card rounded-2xl border border-border p-6">
             <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Ritmo de Gastos</h3>
-                <Info className="w-4 h-4 text-muted-foreground" />
-              </div>
+              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Ritmo de Gastos</h3>
               <button 
                 onClick={handleViewExpenses}
-                className="text-sm text-accent hover:underline flex items-center gap-1"
+                className="text-sm text-accent hover:underline"
               >
-                Ver todas
-                <ExternalLink className="w-3 h-3" />
+                Ver mais
               </button>
             </div>
             
@@ -923,10 +919,9 @@ const Dashboard = () => {
               <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Patrimônio</h3>
               <button 
                 onClick={handleViewIncomes}
-                className="text-sm text-accent hover:underline flex items-center gap-1"
+                className="text-sm text-accent hover:underline"
               >
-                Ver todas
-                <ExternalLink className="w-3 h-3" />
+                Ver mais
               </button>
             </div>
             
