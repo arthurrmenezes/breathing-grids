@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { AppLayout, useValuesVisibility } from '@/components/app/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Plus, Pencil, Trash2, Eye, EyeOff, Filter, Loader2 } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, TooltipProps } from 'recharts';
 import { NewCategoryModal } from '@/components/app/NewCategoryModal';
 import { EditCategoryModal } from '@/components/app/EditCategoryModal';
 import { categoryService } from '@/services/categoryService';
@@ -34,6 +34,19 @@ const categoryColors = [
 ];
 
 const getCategoryColor = (index: number) => categoryColors[index % categoryColors.length];
+
+// Custom tooltip component for dark mode support
+const CustomTooltip = ({ active, payload }: TooltipProps<number, string>) => {
+  if (active && payload && payload.length) {
+    const data = payload[0];
+    return (
+      <div className="bg-card text-foreground border border-border rounded-lg px-3 py-2 shadow-lg">
+        <p className="text-sm font-medium">{data.name}</p>
+      </div>
+    );
+  }
+  return null;
+};
 
 const Categorias = () => {
   const { showValues, setShowValues } = useValuesVisibility();
@@ -199,14 +212,7 @@ const Categorias = () => {
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip 
-                    formatter={(value: number, name: string) => [name, '']}
-                    contentStyle={{ 
-                      backgroundColor: 'hsl(var(--card))', 
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px'
-                    }}
-                  />
+                  <Tooltip content={<CustomTooltip />} />
                 </PieChart>
               </ResponsiveContainer>
               <div className="text-center mt-4">

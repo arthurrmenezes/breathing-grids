@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { AppLayout, useValuesVisibility } from '@/components/app/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,7 +14,9 @@ import {
   Transaction, 
   PaymentMethodLabels, 
   TransactionTypeEnum,
-  FinancialSummary
+  FinancialSummary,
+  PaymentMethodEnum,
+  PaymentStatusEnum,
 } from '@/types/transaction';
 import { Category } from '@/types/category';
 import { toast } from 'sonner';
@@ -70,7 +73,29 @@ import { cn } from '@/lib/utils';
 
 type SortState = 'date' | 'amount-desc' | 'amount-asc';
 
+// Payment methods list
+const paymentMethods = [
+  { value: 0, label: 'Cartão Crédito' },
+  { value: 1, label: 'Cartão Débito' },
+  { value: 2, label: 'Pix' },
+  { value: 3, label: 'TED' },
+  { value: 4, label: 'Boleto' },
+  { value: 5, label: 'Dinheiro' },
+  { value: 6, label: 'Cheque' },
+  { value: 7, label: 'Crypto Wallet' },
+  { value: 8, label: 'Voucher' },
+  { value: 9, label: 'Outro' },
+];
+
+// Payment statuses list
+const paymentStatuses = [
+  { value: 0, label: 'Pendente' },
+  { value: 1, label: 'Pago' },
+  { value: 2, label: 'Atrasado' },
+];
+
 const Transacoes = () => {
+  const [searchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const { showValues, setShowValues } = useValuesVisibility();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -95,9 +120,9 @@ const Transacoes = () => {
   
   // Filter states
   const [filterType, setFilterType] = useState<string>('all');
-  const [filterCategory, setFilterCategory] = useState<string>('all');
-  const [filterPayment, setFilterPayment] = useState<string>('all');
-  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [filterCategories, setFilterCategories] = useState<string[]>([]);
+  const [filterPayments, setFilterPayments] = useState<number[]>([]);
+  const [filterStatuses, setFilterStatuses] = useState<number[]>([]);
   const [filterMinValue, setFilterMinValue] = useState('');
   const [filterMaxValue, setFilterMaxValue] = useState('');
   const [filterStartDate, setFilterStartDate] = useState<Date | undefined>();
@@ -106,17 +131,37 @@ const Transacoes = () => {
   // Sort - 3 states: date (default), amount-desc, amount-asc
   const [sortState, setSortState] = useState<SortState>('date');
 
+  // Initialize filters from URL params
+  useEffect(() => {
+    const typeParam = searchParams.get('type');
+    const startDateParam = searchParams.get('startDate');
+    const endDateParam = searchParams.get('endDate');
+    
+    if (typeParam === 'expense') {
+      setFilterType('expense');
+    } else if (typeParam === 'income') {
+      setFilterType('income');
+    }
+    
+    if (startDateParam) {
+      setFilterStartDate(parseISO(startDateParam));
+    }
+    if (endDateParam) {
+      setFilterEndDate(parseISO(endDateParam));
+    }
+  }, [searchParams]);
+
   const hasActiveFilters = useMemo(() => {
     return filterType !== 'all' || 
-           filterCategory !== 'all' || 
-           filterPayment !== 'all' || 
-           filterStatus !== 'all' ||
+           filterCategories.length > 0 || 
+           filterPayments.length > 0 || 
+           filterStatuses.length > 0 ||
            filterMinValue !== '' ||
            filterMaxValue !== '' ||
            filterStartDate !== undefined ||
            filterEndDate !== undefined ||
            searchQuery !== '';
-  }, [filterType, filterCategory, filterPayment, filterStatus, filterMinValue, filterMaxValue, filterStartDate, filterEndDate, searchQuery]);
+  }, [filterType, filterCategories, filterPayments, filterStatuses, filterMinValue, filterMaxValue, filterStartDate, filterEndDate, searchQuery]);
 
   const fetchCategories = async () => {
     try {
@@ -152,14 +197,15 @@ const Transacoes = () => {
       if (filterType !== 'all') {
         params.transactionType = filterType === 'income' ? TransactionTypeEnum.Receita : TransactionTypeEnum.Despesa;
       }
-      if (filterCategory !== 'all') {
-        params.categoryId = filterCategory;
+      // For multi-select, we'll send the first one (backend might need adjustment for multiple)
+      if (filterCategories.length === 1) {
+        params.categoryId = filterCategories[0];
       }
-      if (filterPayment !== 'all') {
-        params.paymentMethod = parseInt(filterPayment);
+      if (filterPayments.length === 1) {
+        params.paymentMethod = filterPayments[0];
       }
-      if (filterStatus !== 'all') {
-        params.paymentStatus = parseInt(filterStatus);
+      if (filterStatuses.length === 1) {
+        params.paymentStatus = filterStatuses[0];
       }
       if (filterMinValue) params.minValue = parseFloat(filterMinValue);
       if (filterMaxValue) params.maxValue = parseFloat(filterMaxValue);
@@ -171,7 +217,39 @@ const Transacoes = () => {
       if (response.error) {
         toast.error(response.error);
       } else if (response.data) {
-        setTransactions(response.data.transactions);
+        let txs = response.data.transactions;
+        
+        // Client-side filtering for multiple selections
+        if (filterCategories.length > 1) {
+          txs = txs.filter(tx => filterCategories.includes(tx.categoryId));
+        }
+        if (filterPayments.length > 1) {
+          const paymentLabels = filterPayments.map(p => {
+            const method = paymentMethods.find(m => m.value === p);
+            return method?.label;
+          });
+          txs = txs.filter(tx => {
+            const txLabel = PaymentMethodLabels[tx.paymentMethod] || tx.paymentMethod;
+            return paymentLabels.includes(txLabel);
+          });
+        }
+        if (filterStatuses.length > 1) {
+          const statusLabels = filterStatuses.map(s => {
+            const status = paymentStatuses.find(st => st.value === s);
+            return status?.label;
+          });
+          txs = txs.filter(tx => {
+            const statusMap: Record<string, string> = {
+              'Pending': 'Pendente',
+              'Paid': 'Pago',
+              'Overdue': 'Atrasado',
+            };
+            const txLabel = statusMap[tx.status] || tx.status;
+            return statusLabels.includes(txLabel);
+          });
+        }
+        
+        setTransactions(txs);
         setTotalPages(response.data.totalPages);
         setTotalItems(response.data.totalTransactions);
       }
@@ -189,7 +267,7 @@ const Transacoes = () => {
 
   useEffect(() => {
     fetchTransactions();
-  }, [currentPage, filterType, filterCategory, filterPayment, filterStatus, filterStartDate, filterEndDate]);
+  }, [currentPage, filterType, filterCategories, filterPayments, filterStatuses, filterStartDate, filterEndDate]);
 
   // Sort transactions locally
   const sortedTransactions = useMemo(() => {
@@ -212,15 +290,24 @@ const Transacoes = () => {
   };
 
   const applyValueFilter = () => {
+    // Validate min/max values
+    const min = filterMinValue ? parseFloat(filterMinValue) : null;
+    const max = filterMaxValue ? parseFloat(filterMaxValue) : null;
+    
+    if (min !== null && max !== null && min > max) {
+      toast.error('Valor mínimo não pode ser maior que o máximo');
+      return;
+    }
+    
     setCurrentPage(1);
     fetchTransactions();
   };
 
   const clearFilters = () => {
     setFilterType('all');
-    setFilterCategory('all');
-    setFilterPayment('all');
-    setFilterStatus('all');
+    setFilterCategories([]);
+    setFilterPayments([]);
+    setFilterStatuses([]);
     setFilterMinValue('');
     setFilterMaxValue('');
     setFilterStartDate(undefined);
@@ -325,11 +412,88 @@ const Transacoes = () => {
     }
   };
 
+  // Handle date selection with validation
+  const handleStartDateSelect = (date: Date | undefined) => {
+    if (date && filterEndDate && date > filterEndDate) {
+      toast.error('Data inicial não pode ser depois da data final');
+      return;
+    }
+    setFilterStartDate(date);
+  };
+
+  const handleEndDateSelect = (date: Date | undefined) => {
+    if (date && filterStartDate && date < filterStartDate) {
+      toast.error('Data final não pode ser antes da data inicial');
+      return;
+    }
+    setFilterEndDate(date);
+  };
+
+  // Handle min/max value changes with validation
+  const handleMinValueChange = (value: string) => {
+    setFilterMinValue(value);
+  };
+
+  const handleMaxValueChange = (value: string) => {
+    setFilterMaxValue(value);
+  };
+
+  // Toggle payment method selection
+  const togglePaymentMethod = (value: number) => {
+    setFilterPayments(prev => 
+      prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]
+    );
+  };
+
+  // Toggle all payment methods
+  const toggleAllPaymentMethods = () => {
+    if (filterPayments.length === paymentMethods.length) {
+      setFilterPayments([]);
+    } else {
+      setFilterPayments([]);
+    }
+  };
+
+  // Toggle status selection
+  const toggleStatus = (value: number) => {
+    setFilterStatuses(prev => 
+      prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]
+    );
+  };
+
+  // Toggle all statuses
+  const toggleAllStatuses = () => {
+    if (filterStatuses.length === paymentStatuses.length) {
+      setFilterStatuses([]);
+    } else {
+      setFilterStatuses([]);
+    }
+  };
+
+  // Toggle category selection
+  const toggleCategory = (categoryId: string) => {
+    setFilterCategories(prev => 
+      prev.includes(categoryId) ? prev.filter(v => v !== categoryId) : [...prev, categoryId]
+    );
+  };
+
+  // Toggle all categories
+  const toggleAllCategories = () => {
+    if (filterCategories.length === categories.length) {
+      setFilterCategories([]);
+    } else {
+      setFilterCategories([]);
+    }
+  };
+
   const startItem = (currentPage - 1) * itemsPerPage + 1;
   const endItem = Math.min(currentPage * itemsPerPage, totalItems);
 
   const hasDateFilter = filterStartDate || filterEndDate;
   const hasValueFilter = filterMinValue !== '' || filterMaxValue !== '';
+  const hasPaymentFilter = filterPayments.length > 0;
+  const hasStatusFilter = filterStatuses.length > 0;
+  const hasCategoryFilter = filterCategories.length > 0;
 
   return (
     <AppLayout>
@@ -376,7 +540,8 @@ const Transacoes = () => {
                   <Calendar
                     mode="single"
                     selected={filterStartDate}
-                    onSelect={setFilterStartDate}
+                    onSelect={handleStartDateSelect}
+                    disabled={(date) => filterEndDate ? date > filterEndDate : false}
                     className={cn("p-3 pointer-events-auto rounded-md border")}
                   />
                 </div>
@@ -385,7 +550,8 @@ const Transacoes = () => {
                   <Calendar
                     mode="single"
                     selected={filterEndDate}
-                    onSelect={setFilterEndDate}
+                    onSelect={handleEndDateSelect}
+                    disabled={(date) => filterStartDate ? date < filterStartDate : false}
                     className={cn("p-3 pointer-events-auto rounded-md border")}
                   />
                 </div>
@@ -418,51 +584,137 @@ const Transacoes = () => {
             </SelectContent>
           </Select>
 
-          {/* Payment Method Filter */}
-          <Select value={filterPayment} onValueChange={setFilterPayment}>
-            <SelectTrigger className="w-auto min-w-[180px] bg-card border-border h-10 rounded-md">
-              <SelectValue placeholder="Forma de Pagamento" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas as formas</SelectItem>
-              <SelectItem value="0">Cartão Crédito</SelectItem>
-              <SelectItem value="1">Cartão Débito</SelectItem>
-              <SelectItem value="2">Pix</SelectItem>
-              <SelectItem value="3">TED</SelectItem>
-              <SelectItem value="4">Boleto</SelectItem>
-              <SelectItem value="5">Dinheiro</SelectItem>
-              <SelectItem value="6">Cheque</SelectItem>
-              <SelectItem value="7">Crypto Wallet</SelectItem>
-              <SelectItem value="8">Voucher</SelectItem>
-              <SelectItem value="9">Outro</SelectItem>
-            </SelectContent>
-          </Select>
+          {/* Payment Method Filter - Multi Select */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="default" className={cn("bg-card border-border h-10 min-w-[180px] rounded-md justify-start", hasPaymentFilter && "border-accent")}>
+                {hasPaymentFilter ? (
+                  <span className="text-sm">
+                    {filterPayments.length} forma{filterPayments.length > 1 ? 's' : ''} selecionada{filterPayments.length > 1 ? 's' : ''}
+                  </span>
+                ) : (
+                  'Forma de Pagamento'
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64 p-3" align="start">
+              <div className="space-y-3">
+                <div 
+                  className="flex items-center gap-2 cursor-pointer hover:bg-secondary/50 p-2 rounded-md"
+                  onClick={toggleAllPaymentMethods}
+                >
+                  <Checkbox 
+                    checked={filterPayments.length === 0}
+                    onCheckedChange={toggleAllPaymentMethods}
+                  />
+                  <span className="text-sm font-medium">Todas as formas</span>
+                </div>
+                <div className="border-t border-border pt-2 space-y-1">
+                  {paymentMethods.map((method) => (
+                    <div 
+                      key={method.value}
+                      className="flex items-center gap-2 cursor-pointer hover:bg-secondary/50 p-2 rounded-md"
+                      onClick={() => togglePaymentMethod(method.value)}
+                    >
+                      <Checkbox 
+                        checked={filterPayments.includes(method.value)}
+                        onCheckedChange={() => togglePaymentMethod(method.value)}
+                      />
+                      <span className="text-sm">{method.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
 
-          {/* Status Filter */}
-          <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="w-auto min-w-[150px] bg-card border-border h-10 rounded-md">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os status</SelectItem>
-              <SelectItem value="0">Pendente</SelectItem>
-              <SelectItem value="1">Pago</SelectItem>
-              <SelectItem value="2">Atrasado</SelectItem>
-            </SelectContent>
-          </Select>
+          {/* Status Filter - Multi Select */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="default" className={cn("bg-card border-border h-10 min-w-[150px] rounded-md justify-start", hasStatusFilter && "border-accent")}>
+                {hasStatusFilter ? (
+                  <span className="text-sm">
+                    {filterStatuses.length} status selecionado{filterStatuses.length > 1 ? 's' : ''}
+                  </span>
+                ) : (
+                  'Status'
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-56 p-3" align="start">
+              <div className="space-y-3">
+                <div 
+                  className="flex items-center gap-2 cursor-pointer hover:bg-secondary/50 p-2 rounded-md"
+                  onClick={toggleAllStatuses}
+                >
+                  <Checkbox 
+                    checked={filterStatuses.length === 0}
+                    onCheckedChange={toggleAllStatuses}
+                  />
+                  <span className="text-sm font-medium">Todos os status</span>
+                </div>
+                <div className="border-t border-border pt-2 space-y-1">
+                  {paymentStatuses.map((status) => (
+                    <div 
+                      key={status.value}
+                      className="flex items-center gap-2 cursor-pointer hover:bg-secondary/50 p-2 rounded-md"
+                      onClick={() => toggleStatus(status.value)}
+                    >
+                      <Checkbox 
+                        checked={filterStatuses.includes(status.value)}
+                        onCheckedChange={() => toggleStatus(status.value)}
+                      />
+                      <span className="text-sm">{status.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
 
-          {/* Category Filter */}
-          <Select value={filterCategory} onValueChange={setFilterCategory}>
-            <SelectTrigger className="w-auto min-w-[150px] bg-card border-border h-10 rounded-md">
-              <SelectValue placeholder="Categorias" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas categorias</SelectItem>
-              {categories.map((cat) => (
-                <SelectItem key={cat.id} value={cat.id}>{cat.title}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {/* Category Filter - Multi Select */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="default" className={cn("bg-card border-border h-10 min-w-[150px] rounded-md justify-start", hasCategoryFilter && "border-accent")}>
+                {hasCategoryFilter ? (
+                  <span className="text-sm">
+                    {filterCategories.length} categoria{filterCategories.length > 1 ? 's' : ''} selecionada{filterCategories.length > 1 ? 's' : ''}
+                  </span>
+                ) : (
+                  'Categorias'
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64 p-3 max-h-80 overflow-y-auto" align="start">
+              <div className="space-y-3">
+                <div 
+                  className="flex items-center gap-2 cursor-pointer hover:bg-secondary/50 p-2 rounded-md"
+                  onClick={toggleAllCategories}
+                >
+                  <Checkbox 
+                    checked={filterCategories.length === 0}
+                    onCheckedChange={toggleAllCategories}
+                  />
+                  <span className="text-sm font-medium">Todas as categorias</span>
+                </div>
+                <div className="border-t border-border pt-2 space-y-1">
+                  {categories.map((cat) => (
+                    <div 
+                      key={cat.id}
+                      className="flex items-center gap-2 cursor-pointer hover:bg-secondary/50 p-2 rounded-md"
+                      onClick={() => toggleCategory(cat.id)}
+                    >
+                      <Checkbox 
+                        checked={filterCategories.includes(cat.id)}
+                        onCheckedChange={() => toggleCategory(cat.id)}
+                      />
+                      <span className="text-sm">{cat.title}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
 
           {/* Value Filter - Styled like Select */}
           <Popover>
@@ -484,7 +736,7 @@ const Transacoes = () => {
                     type="number"
                     placeholder="R$ 0,00"
                     value={filterMinValue}
-                    onChange={(e) => setFilterMinValue(e.target.value)}
+                    onChange={(e) => handleMinValueChange(e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
@@ -493,7 +745,7 @@ const Transacoes = () => {
                     type="number"
                     placeholder="R$ 10.000,00"
                     value={filterMaxValue}
-                    onChange={(e) => setFilterMaxValue(e.target.value)}
+                    onChange={(e) => handleMaxValueChange(e.target.value)}
                   />
                 </div>
                 <Button size="sm" className="w-full" onClick={applyValueFilter}>
