@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
@@ -32,10 +32,13 @@ const App = () => (
             {/* Public Routes */}
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
-            <Route path="/cadastro" element={<Cadastro />} />
+            <Route path="/signup" element={<Cadastro />} />
+            <Route path="/cadastro" element={<Navigate to="/signup" replace />} />
             <Route path="/esqueci-senha" element={<EsqueciSenha />} />
-            <Route path="/resetar-senha" element={<ResetarSenha />} />
-            <Route path="/confirmar-email" element={<ConfirmarEmail />} />
+            <Route path="/reset-password" element={<ResetarSenha />} />
+            <Route path="/resetar-senha" element={<Navigate to="/reset-password" replace />} />
+            <Route path="/confirm-email" element={<ConfirmarEmail />} />
+            <Route path="/confirmar-email" element={<Navigate to="/confirm-email" replace />} />
             
             {/* App Routes (No Protection) */}
             <Route path="/app" element={<Dashboard />} />

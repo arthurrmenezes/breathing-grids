@@ -21,6 +21,19 @@ export const Navbar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  const handleSmoothScroll = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    e.preventDefault();
+    const targetId = href.replace('#', '');
+    const element = document.getElementById(targetId);
+    if (element) {
+      element.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }
+    setIsMobileMenuOpen(false);
+  };
+
   return (
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
@@ -45,6 +58,7 @@ export const Navbar = () => {
                 <a
                   key={link.label}
                   href={link.href}
+                  onClick={(e) => handleSmoothScroll(e, link.href)}
                   className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground rounded-full hover:bg-secondary transition-all duration-200"
                 >
                   {link.label}
@@ -57,7 +71,7 @@ export const Navbar = () => {
             <Link to="/login" className="text-sm font-medium text-foreground hover:text-accent transition-colors">
               Entrar
             </Link>
-            <Link to="/cadastro">
+            <Link to="/signup">
               <Button variant="default" size="default">
                 Criar conta
               </Button>
@@ -79,8 +93,8 @@ export const Navbar = () => {
                 <a
                   key={link.label}
                   href={link.href}
+                  onClick={(e) => handleSmoothScroll(e, link.href)}
                   className="px-4 py-3 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-all"
-                  onClick={() => setIsMobileMenuOpen(false)}
                 >
                   {link.label}
                 </a>
@@ -89,7 +103,7 @@ export const Navbar = () => {
                 <Link to="/login" className="px-4 py-3 text-sm font-medium text-foreground">
                   Entrar
                 </Link>
-                <Link to="/cadastro" className="mx-4">
+                <Link to="/signup" className="mx-4">
                   <Button variant="default" className="w-full">
                     Começar grátis
                   </Button>
