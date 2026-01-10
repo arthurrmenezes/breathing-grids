@@ -17,6 +17,7 @@ const Cadastro = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const navigate = useNavigate();
@@ -30,9 +31,11 @@ const Cadastro = () => {
   useUnsavedChangesWarning(hasUnsavedChanges);
 
   const passwordStrength = {
-    hasMinLength: password.length >= 8,
+    hasMinLength: password.length >= 6,
     hasUppercase: /[A-Z]/.test(password),
+    hasLowercase: /[a-z]/.test(password),
     hasNumber: /\d/.test(password),
+    hasSpecialChar: /[^a-zA-Z0-9]/.test(password),
   };
 
   const isPasswordStrong = Object.values(passwordStrength).every(Boolean);
@@ -80,7 +83,7 @@ const Cadastro = () => {
       });
       // Store email for confirmation page
       sessionStorage.setItem('pendingConfirmationEmail', email);
-      navigate('/confirmar-email');
+      navigate('/confirm-email');
     } else {
       toast({
         title: "Erro ao criar conta",
@@ -197,17 +200,25 @@ const Cadastro = () => {
               <div className="flex gap-1">
                 <div className={`h-1 flex-1 rounded-full transition-colors ${passwordStrength.hasMinLength ? 'bg-success' : 'bg-border'}`} />
                 <div className={`h-1 flex-1 rounded-full transition-colors ${passwordStrength.hasUppercase ? 'bg-success' : 'bg-border'}`} />
+                <div className={`h-1 flex-1 rounded-full transition-colors ${passwordStrength.hasLowercase ? 'bg-success' : 'bg-border'}`} />
                 <div className={`h-1 flex-1 rounded-full transition-colors ${passwordStrength.hasNumber ? 'bg-success' : 'bg-border'}`} />
+                <div className={`h-1 flex-1 rounded-full transition-colors ${passwordStrength.hasSpecialChar ? 'bg-success' : 'bg-border'}`} />
               </div>
               <ul className="space-y-1 text-xs">
                 <li className={`flex items-center gap-2 ${passwordStrength.hasMinLength ? 'text-success' : 'text-muted-foreground'}`}>
-                  <Check className="w-3 h-3" /> Mínimo 8 caracteres
+                  <Check className="w-3 h-3" /> Mínimo 6 caracteres
                 </li>
                 <li className={`flex items-center gap-2 ${passwordStrength.hasUppercase ? 'text-success' : 'text-muted-foreground'}`}>
                   <Check className="w-3 h-3" /> Uma letra maiúscula
                 </li>
+                <li className={`flex items-center gap-2 ${passwordStrength.hasLowercase ? 'text-success' : 'text-muted-foreground'}`}>
+                  <Check className="w-3 h-3" /> Uma letra minúscula
+                </li>
                 <li className={`flex items-center gap-2 ${passwordStrength.hasNumber ? 'text-success' : 'text-muted-foreground'}`}>
                   <Check className="w-3 h-3" /> Um número
+                </li>
+                <li className={`flex items-center gap-2 ${passwordStrength.hasSpecialChar ? 'text-success' : 'text-muted-foreground'}`}>
+                  <Check className="w-3 h-3" /> Um caractere especial (!@#$%...)
                 </li>
               </ul>
             </div>
@@ -216,14 +227,23 @@ const Cadastro = () => {
         
         <div className="space-y-2">
           <Label htmlFor="confirmPassword">Confirmar senha</Label>
-          <Input
-            id="confirmPassword"
-            type="password"
-            placeholder="••••••••"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            className="h-12"
-          />
+          <div className="relative">
+            <Input
+              id="confirmPassword"
+              type={showConfirmPassword ? 'text' : 'password'}
+              placeholder="••••••••"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="h-12 pr-12"
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+            </button>
+          </div>
         </div>
         
         <Button 

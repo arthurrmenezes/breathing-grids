@@ -1,21 +1,5 @@
 // Transaction Types
 
-export interface Transaction {
-  id: string;
-  accountId: string;
-  categoryId: string;
-  title: string;
-  description?: string;
-  amount: number;
-  date: string;
-  transactionType: string;
-  paymentMethod: string;
-  status: string;
-  destination?: string;
-  updatedAt?: string;
-  createdAt: string;
-}
-
 export interface TransactionInstallmentItem {
   id: string;
   number: number;
@@ -31,7 +15,25 @@ export interface TransactionInstallment {
   id: string;
   totalInstallments: number;
   totalAmount: number;
-  items: TransactionInstallmentItem[];
+  firstPaymentDate: string;
+  status: string;
+  installments: TransactionInstallmentItem[];
+}
+
+export interface Transaction {
+  id: string;
+  accountId: string;
+  categoryId: string;
+  title: string;
+  description?: string;
+  amount: number;
+  date: string;
+  transactionType: string;
+  paymentMethod: string;
+  status: string;
+  destination?: string;
+  installment?: TransactionInstallment;
+  installments?: TransactionInstallment[];
   updatedAt?: string;
   createdAt: string;
 }

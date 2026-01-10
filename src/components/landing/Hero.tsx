@@ -86,7 +86,7 @@ export const Hero = () => {
 
           {/* CTA Button */}
           <div className="flex justify-center mb-16 animate-fade-up" style={{ animationDelay: "300ms" }}>
-            <Link to="/cadastro">
+            <Link to="/signup">
               <Button variant="hero" size="lg" className="h-14 px-8 text-base">
                 Começar agora
                 <ArrowRight className="w-5 h-5" />
@@ -146,7 +146,7 @@ export const Hero = () => {
                         <span className="text-xs text-muted-foreground uppercase tracking-wider">Próximos</span>
                         <div className="mt-2 space-y-2">
                           <UpcomingItem name="Netflix" date="Amanhã" amount="R$ 44,90" />
-                          <UpcomingItem name="Academia" date={getNextGymDate()} amount="R$ 149,90" />
+                          <UpcomingItem name="Pizza" date={getNextGymDate()} amount="R$ 149,90" />
                         </div>
                       </div>
                     </div>
