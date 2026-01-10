@@ -2,6 +2,7 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import { ThemeProvider } from "./components/ThemeProvider";
+import "./lib/firebase"; // Initialize Firebase Analytics
 
 // Evita spam no console causado por scripts de extensões (ex.: SES/lockdown) durante o desenvolvimento.
 if (import.meta.env.DEV) {
