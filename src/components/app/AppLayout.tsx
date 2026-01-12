@@ -1,4 +1,4 @@
-import { ReactNode, useState, createContext, useContext } from "react";
+import { ReactNode, useState, createContext, useContext, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -15,10 +15,12 @@ import {
   EyeOff,
   ChevronLeft,
   ChevronRight,
+  User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/contexts/AuthContext";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -28,11 +30,13 @@ interface AppLayoutProps {
 interface ValuesVisibilityContextType {
   showValues: boolean;
   setShowValues: (show: boolean) => void;
+  toggleShowValues: () => void;
 }
 
 const ValuesVisibilityContext = createContext<ValuesVisibilityContextType>({
   showValues: true,
   setShowValues: () => {},
+  toggleShowValues: () => {},
 });
 
 export const useValuesVisibility = () => useContext(ValuesVisibilityContext);
@@ -54,7 +58,22 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
   const { user, logout } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [showValues, setShowValues] = useState(true);
+  
+  // Initialize showValues from localStorage
+  const [showValues, setShowValuesState] = useState(() => {
+    const saved = localStorage.getItem('tmoney_show_values');
+    return saved !== null ? saved === 'true' : true;
+  });
+
+  // Persist showValues to localStorage
+  const setShowValues = (show: boolean) => {
+    setShowValuesState(show);
+    localStorage.setItem('tmoney_show_values', String(show));
+  };
+
+  const toggleShowValues = () => {
+    setShowValues(!showValues);
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -67,9 +86,10 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
   // Get user display name
   const userName = user ? `${user.firstName} ${user.lastName}` : "";
   const userEmail = user?.email || "";
+  const userInitials = user ? `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}`.toUpperCase() : "U";
 
   return (
-    <ValuesVisibilityContext.Provider value={{ showValues, setShowValues }}>
+    <ValuesVisibilityContext.Provider value={{ showValues, setShowValues, toggleShowValues }}>
       <div className="min-h-screen bg-background flex w-full">
         {/* Sidebar - Always fixed */}
         <aside
@@ -147,11 +167,28 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
 
           {/* Bottom Navigation - Always Fixed at Bottom */}
           <div className="px-2 py-4 border-t border-sidebar-border space-y-1 shrink-0 mt-auto">
-          {/* User Profile */}
-            {!isSidebarCollapsed && (
-              <div className="flex flex-col items-center text-center p-2 rounded-lg mb-2">
-                <p className="text-sm font-medium truncate">{userName}</p>
-                <p className="text-xs text-muted-foreground truncate">{userEmail}</p>
+            {/* User Profile with Avatar */}
+            {!isSidebarCollapsed ? (
+              <div className="flex items-center gap-3 p-2 rounded-lg mb-2">
+                <Avatar className="w-10 h-10 shrink-0">
+                  <AvatarImage src="" alt={userName} />
+                  <AvatarFallback className="bg-secondary text-muted-foreground">
+                    {userInitials || <User className="w-5 h-5" />}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col min-w-0">
+                  <p className="text-sm font-medium truncate">{userName}</p>
+                  <p className="text-xs text-muted-foreground truncate">{userEmail}</p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex justify-center mb-2">
+                <Avatar className="w-8 h-8">
+                  <AvatarImage src="" alt={userName} />
+                  <AvatarFallback className="bg-secondary text-muted-foreground text-xs">
+                    {userInitials || <User className="w-4 h-4" />}
+                  </AvatarFallback>
+                </Avatar>
               </div>
             )}
 
@@ -215,7 +252,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
               </div>
               {showHeader && (
                 <div className="hidden lg:flex items-center gap-2">
-                  <Button variant="ghost" size="icon" onClick={() => setShowValues(!showValues)}>
+                  <Button variant="ghost" size="icon" onClick={toggleShowValues} title={showValues ? "Ocultar valores" : "Mostrar valores"}>
                     {showValues ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
                   </Button>
                   <ThemeToggle />

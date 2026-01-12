@@ -1,4 +1,4 @@
-import { TrendingUp, Layers, Calendar, CreditCard, Bell } from "lucide-react";
+import { TrendingUp, Layers, Calendar, CreditCard, Bell, PieChart, TrendingDown } from "lucide-react";
 
 // Helper function to get next month's date for bill reminders
 const getNextBillDate = (day: number): string => {
@@ -53,6 +53,31 @@ export const BentoGrid = () => {
               <div className="flex-1 relative rounded-xl bg-secondary/50 overflow-hidden min-h-[180px]">
                 <AnimatedChart />
               </div>
+
+              {/* Dashboard Preview Mini Cards */}
+              <div className="grid grid-cols-3 gap-3 mt-4">
+                <div className="bg-secondary/50 rounded-lg p-3 border border-border/50">
+                  <div className="flex items-center gap-2 mb-1">
+                    <TrendingUp className="w-3 h-3 text-success" />
+                    <span className="text-[10px] text-muted-foreground uppercase">Receitas</span>
+                  </div>
+                  <p className="text-sm font-semibold text-success">R$ 8.500</p>
+                </div>
+                <div className="bg-secondary/50 rounded-lg p-3 border border-border/50">
+                  <div className="flex items-center gap-2 mb-1">
+                    <TrendingDown className="w-3 h-3 text-destructive" />
+                    <span className="text-[10px] text-muted-foreground uppercase">Despesas</span>
+                  </div>
+                  <p className="text-sm font-semibold text-destructive">R$ 4.250</p>
+                </div>
+                <div className="bg-secondary/50 rounded-lg p-3 border border-border/50">
+                  <div className="flex items-center gap-2 mb-1">
+                    <PieChart className="w-3 h-3 text-accent" />
+                    <span className="text-[10px] text-muted-foreground uppercase">Saldo</span>
+                  </div>
+                  <p className="text-sm font-semibold text-accent">R$ 4.250</p>
+                </div>
+              </div>
             </BentoCard>
           </div>
 
@@ -72,7 +97,7 @@ export const BentoGrid = () => {
               </p>
 
               <div className="space-y-2">
-                <TransactionRow icon="🍕" name="Pizza Hut" category="Alimentação" />
+                <TransactionRow icon="🍕" name="Pizza" category="Alimentação" />
                 <TransactionRow icon="🚗" name="Uber" category="Transporte" />
                 <TransactionRow icon="🎬" name="Netflix" category="Entretenimento" />
               </div>
