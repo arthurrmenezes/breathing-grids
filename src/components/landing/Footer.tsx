@@ -1,4 +1,3 @@
-import { Twitter, Linkedin, Instagram } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const footerLinks = {
@@ -12,15 +11,9 @@ const footerLinks = {
   ],
 };
 
-const socialLinks = [
-  { icon: Linkedin, href: "#linkedin", label: "LinkedIn" },
-  { icon: Twitter, href: "#twitter", label: "Twitter" },
-  { icon: Instagram, href: "#instagram", label: "Instagram" },
-];
-
 export const Footer = () => {
   return (
-    <footer className="py-16 lg:py-24 border-t border-border">
+    <footer className="py-12 lg:py-16 border-t border-border">
       <div className="container mx-auto px-6 lg:px-8">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 lg:gap-12">
           {/* Logo & Description */}
@@ -31,22 +24,9 @@ export const Footer = () => {
               </div>
               <span className="font-semibold text-lg tracking-tight">tMoney</span>
             </Link>
-            <p className="text-sm text-muted-foreground mb-6 max-w-xs">
-              Clareza financeira para todos. Tome controle do seu dinheiro com ferramentas inteligentes projetadas para
-              a era moderna.
+            <p className="text-sm text-muted-foreground mb-4 max-w-sm">
+              Clareza financeira para todos. Tome controle do seu dinheiro com ferramentas inteligentes.
             </p>
-            <div className="flex items-center gap-3">
-              {socialLinks.map((social) => (
-                <a
-                  key={social.label}
-                  href={social.href}
-                  className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors"
-                  aria-label={social.label}
-                >
-                  <social.icon className="w-4 h-4" />
-                </a>
-              ))}
-            </div>
           </div>
 
           {/* Product */}
@@ -80,8 +60,8 @@ export const Footer = () => {
         </div>
 
         {/* Bottom Bar */}
-        <div className="mt-16 pt-8 border-t border-border flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-muted-foreground">© 2026 tMoney. Todos os direitos reservados.</p>
+        <div className="mt-8 pt-6 border-t border-border">
+          <p className="text-sm text-muted-foreground text-center">© 2026 tMoney. Todos os direitos reservados.</p>
         </div>
       </div>
     </footer>

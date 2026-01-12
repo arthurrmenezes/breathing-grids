@@ -59,6 +59,10 @@ export interface CreateTransactionInput {
   hasInstallment?: CreateTransactionInstallmentInput;
 }
 
+export interface UpdateTransactionInstallmentInput {
+  totalInstallments?: number;
+}
+
 export interface UpdateTransactionInput {
   categoryId?: string;
   title?: string;
@@ -69,6 +73,7 @@ export interface UpdateTransactionInput {
   paymentMethod?: number;
   status?: number;
   destination?: string;
+  installment?: UpdateTransactionInstallmentInput;
 }
 
 export interface TransactionsListResponse {

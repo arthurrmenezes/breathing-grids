@@ -50,7 +50,7 @@ export const AuthLayout = ({ children, title, subtitle }: AuthLayoutProps) => {
           <div className="grid-pattern" style={{ backgroundSize: '32px 32px' }} />
         </div>
         
-        <div className="relative z-10 flex flex-col justify-between p-12 text-accent-foreground h-full">
+        <div className="relative z-10 flex flex-col justify-between p-12 text-accent-foreground h-full w-full">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group">
             <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center transition-transform group-hover:scale-110">
@@ -59,9 +59,9 @@ export const AuthLayout = ({ children, title, subtitle }: AuthLayoutProps) => {
             <span className="font-semibold text-xl">tMoney</span>
           </Link>
           
-          {/* Main Content - Centered */}
+          {/* Main Content - Centered horizontally and vertically */}
           <div className="flex-1 flex items-center justify-center">
-            <div className="max-w-md space-y-8">
+            <div className="max-w-md space-y-8 w-full">
               <div className="opacity-0 animate-[fade-in_0.6s_ease-out_forwards] text-center">
                 <h2 className="text-3xl font-bold">Você está quase lá!</h2>
               </div>
