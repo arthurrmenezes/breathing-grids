@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -17,7 +17,7 @@ import {
   PaymentStatusEnum,
   PaymentMethodOptions
 } from '@/types/transaction';
-import { Category } from '@/types/category';
+import { Category, CategoryTypeLabels } from '@/types/category';
 import {
   Select,
   SelectContent,
@@ -49,6 +49,38 @@ export const NewTransactionModal = ({ open, onOpenChange, onSuccess, categories 
   // Installment fields
   const [hasInstallment, setHasInstallment] = useState(false);
   const [totalInstallments, setTotalInstallments] = useState('');
+
+  // Filter categories based on transaction type
+  const filteredCategories = useMemo(() => {
+    if (!type) return categories;
+    
+    return categories.filter(cat => {
+      const catType = CategoryTypeLabels[cat.type] || cat.type;
+      // Ambos = can be used for both
+      if (catType === 'Ambos' || cat.type === 'Both') return true;
+      // Match type
+      if (type === 'Receita' && (catType === 'Receita' || cat.type === 'Income')) return true;
+      if (type === 'Despesa' && (catType === 'Despesa' || cat.type === 'Expense')) return true;
+      return false;
+    });
+  }, [categories, type]);
+
+  // Reset category when type changes if current category doesn't match
+  useEffect(() => {
+    if (type && category) {
+      const currentCat = categories.find(c => c.id === category);
+      if (currentCat) {
+        const catType = CategoryTypeLabels[currentCat.type] || currentCat.type;
+        const isCompatible = catType === 'Ambos' || currentCat.type === 'Both' ||
+          (type === 'Receita' && (catType === 'Receita' || currentCat.type === 'Income')) ||
+          (type === 'Despesa' && (catType === 'Despesa' || currentCat.type === 'Expense'));
+        
+        if (!isCompatible) {
+          setCategory('');
+        }
+      }
+    }
+  }, [type, category, categories]);
 
   const formatCurrency = (cents: number) => {
     return (cents / 100).toLocaleString('pt-BR', {
@@ -226,12 +258,12 @@ export const NewTransactionModal = ({ open, onOpenChange, onSuccess, categories 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Categoria <span className="text-destructive">*</span></Label>
-              <Select value={category} onValueChange={setCategory} required disabled={loading}>
+              <Select value={category} onValueChange={setCategory} required disabled={loading || !type}>
                 <SelectTrigger className="text-sm">
-                  <SelectValue placeholder="Selecione" />
+                  <SelectValue placeholder={type ? "Selecione" : "Selecione o tipo primeiro"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {categories.map((cat) => (
+                  {filteredCategories.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id}>{cat.title}</SelectItem>
                   ))}
                 </SelectContent>

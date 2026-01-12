@@ -783,17 +783,11 @@ const Transacoes = () => {
               )}
             </div>
 
-            {/* Summary Stats */}
-            <div className="flex items-center gap-6 ml-auto text-sm">
+            {/* Summary Stats - Reordered: Total, Income, Expense, Balance */}
+            <div className="flex flex-wrap items-center gap-4 sm:gap-6 ml-auto text-sm">
               <div className="flex items-center gap-2">
                 <FileText className="w-4 h-4 text-muted-foreground" />
                 <span className="font-medium">{totalItems}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <ArrowDown className="w-4 h-4 text-destructive" />
-                <span className={`font-medium ${showValues ? 'text-destructive' : ''}`}>
-                  {showValues ? formatCurrency(summary?.totalExpense || 0) : '••••••'}
-                </span>
               </div>
               <div className="flex items-center gap-2">
                 <ArrowUp className="w-4 h-4 text-success" />
@@ -802,9 +796,18 @@ const Transacoes = () => {
                 </span>
               </div>
               <div className="flex items-center gap-2">
+                <ArrowDown className="w-4 h-4 text-destructive" />
+                <span className={`font-medium ${showValues ? 'text-destructive' : ''}`}>
+                  {showValues ? formatCurrency(summary?.totalExpense || 0) : '••••••'}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
                 <ArrowUpDown className="w-4 h-4 text-accent" />
-                <span className={`font-medium ${showValues ? 'text-accent' : ''}`}>
-                  {showValues ? formatCurrency(summary?.balance || 0) : '••••••'}
+                <span className={`font-medium ${showValues ? ((summary?.balance || 0) < 0 ? 'text-destructive' : 'text-accent') : ''}`}>
+                  {showValues 
+                    ? `${(summary?.balance || 0) < 0 ? '-' : ''}${formatCurrency(summary?.balance || 0)}`
+                    : '••••••'
+                  }
                 </span>
               </div>
             </div>

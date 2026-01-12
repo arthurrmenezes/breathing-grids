@@ -19,7 +19,8 @@ import {
   Smartphone,
   Loader2,
   Eye,
-  EyeOff
+  EyeOff,
+  Download
 } from 'lucide-react';
 import {
   Dialog,
@@ -35,6 +36,7 @@ const settingsSections = [
   { id: 'notifications', label: 'Notificações', icon: Bell },
   { id: 'security', label: 'Segurança', icon: Lock },
   { id: 'appearance', label: 'Aparência', icon: Palette },
+  { id: 'download', label: 'Download', icon: Download },
   { id: 'help', label: 'Ajuda', icon: HelpCircle },
 ];
 
@@ -306,6 +308,55 @@ const Configuracoes = () => {
                       <span className="text-sm font-medium">Sistema</span>
                     </button>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {activeSection === 'download' && (
+              <div className="bg-card rounded-2xl border border-border p-6 space-y-6">
+                <div>
+                  <h3 className="text-lg font-medium mb-1">Instalar tMoney</h3>
+                  <p className="text-sm text-muted-foreground">
+                    O tMoney é um PWA (Progressive Web App), o que significa que você pode instalá-lo 
+                    na tela inicial do seu celular ou computador como se fosse um aplicativo nativo.
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="p-4 rounded-xl border border-border bg-secondary/30">
+                    <div className="flex items-center gap-3 mb-3">
+                      <Smartphone className="w-5 h-5 text-accent" />
+                      <h4 className="font-medium">No celular</h4>
+                    </div>
+                    <ol className="space-y-2 text-sm text-muted-foreground ml-8">
+                      <li>1. Abra o tMoney no navegador do seu celular</li>
+                      <li>2. Toque no menu do navegador (⋮ ou ···)</li>
+                      <li>3. Selecione <strong className="text-foreground">"Adicionar à tela inicial"</strong> ou <strong className="text-foreground">"Instalar aplicativo"</strong></li>
+                      <li>4. Confirme a instalação</li>
+                      <li>5. Pronto! O ícone do tMoney aparecerá na sua tela inicial</li>
+                    </ol>
+                  </div>
+
+                  <div className="p-4 rounded-xl border border-border bg-secondary/30">
+                    <div className="flex items-center gap-3 mb-3">
+                      <Download className="w-5 h-5 text-accent" />
+                      <h4 className="font-medium">No computador</h4>
+                    </div>
+                    <ol className="space-y-2 text-sm text-muted-foreground ml-8">
+                      <li>1. Abra o tMoney no navegador Chrome, Edge ou outro compatível</li>
+                      <li>2. Clique no ícone de instalação (⊕) na barra de endereços</li>
+                      <li>3. Ou acesse o menu do navegador e clique em <strong className="text-foreground">"Instalar tMoney"</strong></li>
+                      <li>4. Confirme a instalação</li>
+                      <li>5. O tMoney será instalado e poderá ser acessado como um app</li>
+                    </ol>
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-xl bg-accent/10 border border-accent/20">
+                  <p className="text-sm">
+                    <strong className="text-accent">Vantagens do PWA:</strong> Acesso offline, carregamento rápido, 
+                    notificações push e uma experiência semelhante a um app nativo sem precisar baixar da loja de aplicativos.
+                  </p>
                 </div>
               </div>
             )}

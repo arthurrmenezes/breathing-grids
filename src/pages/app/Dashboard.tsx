@@ -1,13 +1,13 @@
 import { useState, useMemo, useEffect } from "react";
 import { AppLayout, useValuesVisibility } from "@/components/app/AppLayout";
-import { TrendingUp, TrendingDown, Wallet, Loader2, CalendarDays, ChevronDown } from "lucide-react";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
+import { TrendingUp, TrendingDown, Wallet, Loader2, CalendarDays, ChevronDown, Plus } from "lucide-react";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, BarChart, Bar } from "recharts";
 import { transactionService } from "@/services/transactionService";
 import { categoryService } from "@/services/categoryService";
 import { useAuth } from "@/contexts/AuthContext";
 import { Transaction } from "@/types/transaction";
 import { Category } from "@/types/category";
-import { format, subMonths, startOfMonth, endOfMonth, parseISO, startOfQuarter, startOfYear, subDays, getDaysInMonth, getDate, subWeeks, subYears } from "date-fns";
+import { format, subMonths, startOfMonth, endOfMonth, parseISO, startOfQuarter, startOfYear, subDays, getDaysInMonth, getDate, subWeeks, subYears, addMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -23,19 +23,19 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
-import { Label } from "@/components/ui/label";
+import { NewTransactionModal } from "@/components/app/NewTransactionModal";
 
-type PeriodType = "year" | "6months" | "3months" | "month";
-type MainPeriodType = "current-month" | "last-month" | "current-quarter" | "current-year" | "last-6-months" | "last-12-months" | "custom";
+type PeriodType = "year" | "6months" | "3months";
+type MainPeriodType = "current-month" | "last-month" | "current-quarter" | "current-year" | "last-6-months" | "last-12-months";
 type PatrimonioPeriodType = "1D" | "1W" | "1M" | "3M" | "YTD" | "1Y" | "ALL";
+type AccumulatedPeriodType = "3months" | "6months" | "year";
+type TransactionFilterType = "all" | "income" | "expense";
 
 const periodLabels: Record<PeriodType, string> = {
   year: "Último ano",
   "6months": "Últimos 6 meses",
   "3months": "Últimos 3 meses",
-  month: "Este mês",
 };
 
 const mainPeriodLabels: Record<MainPeriodType, string> = {
@@ -45,7 +45,6 @@ const mainPeriodLabels: Record<MainPeriodType, string> = {
   "current-year": "Ano atual",
   "last-6-months": "Últimos 6 meses",
   "last-12-months": "Últimos 12 meses",
-  "custom": "Personalizado",
 };
 
 // Helper function to calculate nice Y-axis ticks based on max value
@@ -134,16 +133,24 @@ const Dashboard = () => {
   
   // Main period filter
   const [mainPeriod, setMainPeriod] = useState<MainPeriodType>("current-month");
-  const [customStartDate, setCustomStartDate] = useState<Date | undefined>();
-  const [customEndDate, setCustomEndDate] = useState<Date | undefined>();
   
   // Separate period for cash flow chart
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodType>("6months");
+  
+  // Accumulated balance period
+  const [accumulatedPeriod, setAccumulatedPeriod] = useState<AccumulatedPeriodType>("6months");
+  
+  // Transaction and category filters
+  const [recentTxFilter, setRecentTxFilter] = useState<TransactionFilterType>("all");
+  const [categoryFilter, setCategoryFilter] = useState<TransactionFilterType>("all");
   
   // Patrimonio period
   const [patrimonioPeriod, setPatrimonioPeriod] = useState<PatrimonioPeriodType>("1M");
   
   const [loading, setLoading] = useState(true);
+  
+  // New transaction modal
+  const [newTransactionOpen, setNewTransactionOpen] = useState(false);
   
   // Data states
   const [periodBalance, setPeriodBalance] = useState<number>(0);
@@ -195,10 +202,6 @@ const Dashboard = () => {
         startDate = startOfMonth(subMonths(now, 11));
         endDate = endOfMonth(now);
         break;
-      case "custom":
-        startDate = customStartDate || startOfMonth(now);
-        endDate = customEndDate || endOfMonth(now);
-        break;
       default:
         startDate = startOfMonth(now);
     }
@@ -239,9 +242,8 @@ const Dashboard = () => {
       case "3months":
         startDate = subMonths(startOfMonth(now), 2);
         break;
-      case "month":
       default:
-        startDate = startOfMonth(now);
+        startDate = subMonths(startOfMonth(now), 2);
         break;
     }
     
@@ -630,7 +632,7 @@ const Dashboard = () => {
     fetchPeriodBalance();
     fetchSummaryData();
     fetchSpendingPaceData();
-  }, [mainPeriod, customStartDate, customEndDate]);
+  }, [mainPeriod]);
 
   // Update chart when period changes
   useEffect(() => {
