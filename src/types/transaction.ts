@@ -99,8 +99,8 @@ export interface GetTransactionsParams {
 }
 
 export interface FinancialSummary {
-  totalIncome: number;
-  totalExpense: number;
+  periodIncome: number;
+  periodExpense: number;
   balance: number;
   startDate: string;
   endDate: string;
