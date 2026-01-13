@@ -1,13 +1,38 @@
 // API Service for Backend Integration
 
-// const API_BASE_URL = 'https://localhost:7159/api/v1';
-const API_BASE_URL = "https://tmoney.onrender.com/api/v1";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://tmoney.onrender.com/api/v1";
 
 interface ApiResponse<T> {
   data?: T;
   error?: string;
   status: number;
 }
+
+// Map backend errors to safe user-friendly messages
+const sanitizeErrorMessage = (error: unknown): string => {
+  if (typeof error === 'string') {
+    const lowerError = error.toLowerCase();
+    if (lowerError.includes('unauthorized') || lowerError.includes('401')) {
+      return 'Acesso não autorizado. Faça login novamente.';
+    }
+    if (lowerError.includes('forbidden') || lowerError.includes('403')) {
+      return 'Você não tem permissão para esta ação.';
+    }
+    if (lowerError.includes('not found') || lowerError.includes('404')) {
+      return 'Recurso não encontrado.';
+    }
+    if (lowerError.includes('validation') || lowerError.includes('invalid')) {
+      return 'Dados inválidos. Verifique as informações.';
+    }
+    if (lowerError.includes('conflict') || lowerError.includes('409')) {
+      return 'Este registro já existe.';
+    }
+    if (lowerError.includes('server') || lowerError.includes('500')) {
+      return 'Erro interno. Tente novamente mais tarde.';
+    }
+  }
+  return 'Erro ao processar requisição.';
+};
 
 class ApiService {
   private accessToken: string | null = null;
@@ -65,15 +90,17 @@ class ApiService {
       }
 
       if (!response.ok) {
-        const errorMessage = (data as any)?.message || (data as any)?.title || "Erro na requisição";
+        // Sanitize error messages to prevent information leakage
+        const rawError = (data as any)?.message || (data as any)?.title || "";
+        const errorMessage = sanitizeErrorMessage(rawError);
         return { error: errorMessage, status: response.status };
       }
 
       return { data, status: response.status };
-    } catch (error) {
-      console.error("API request error:", error);
+    } catch {
+      // Generic connection error - don't expose technical details
       return {
-        error: "Erro de conexão. Verifique se o servidor está rodando.",
+        error: "Erro de conexão. Verifique sua internet e tente novamente.",
         status: 0,
       };
     }

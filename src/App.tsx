@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
@@ -40,14 +41,14 @@ const App = () => (
             <Route path="/confirm-email" element={<ConfirmarEmail />} />
             <Route path="/confirmar-email" element={<Navigate to="/confirm-email" replace />} />
             
-            {/* App Routes (No Protection) */}
-            <Route path="/app" element={<Dashboard />} />
-            <Route path="/app/transacoes" element={<Transacoes />} />
-            <Route path="/app/categorias" element={<Categorias />} />
-            <Route path="/app/lembretes" element={<Lembretes />} />
-            <Route path="/app/recorrentes" element={<Recorrentes />} />
-            <Route path="/app/cartoes" element={<Cartoes />} />
-            <Route path="/app/configuracoes" element={<Configuracoes />} />
+            {/* Protected App Routes */}
+            <Route path="/app" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/app/transacoes" element={<ProtectedRoute><Transacoes /></ProtectedRoute>} />
+            <Route path="/app/categorias" element={<ProtectedRoute><Categorias /></ProtectedRoute>} />
+            <Route path="/app/lembretes" element={<ProtectedRoute><Lembretes /></ProtectedRoute>} />
+            <Route path="/app/recorrentes" element={<ProtectedRoute><Recorrentes /></ProtectedRoute>} />
+            <Route path="/app/cartoes" element={<ProtectedRoute><Cartoes /></ProtectedRoute>} />
+            <Route path="/app/configuracoes" element={<ProtectedRoute><Configuracoes /></ProtectedRoute>} />
             
             {/* Catch-all */}
             <Route path="*" element={<NotFound />} />
