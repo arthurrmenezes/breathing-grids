@@ -89,8 +89,8 @@ const formatYAxisValue = (value: number): string => {
 const monthLabels = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
 interface FinancialData {
-  totalIncome: number;
-  totalExpense: number;
+  periodIncome: number;
+  periodExpense: number;
   balance: number;
 }
 
@@ -261,7 +261,7 @@ const Dashboard = () => {
       const response = await transactionService.getFinancialSummary(start, end);
       if (response.data) {
         // Calculate balance as income - expenses for the period
-        const periodBalance = response.data.totalIncome - response.data.totalExpense;
+        const periodBalance = response.data.periodIncome - response.data.periodExpense;
         setPeriodBalance(periodBalance);
       }
     } catch (error) {
@@ -434,8 +434,8 @@ const Dashboard = () => {
       
       if (currentResponse.data) {
         setCurrentSummary({
-          totalIncome: currentResponse.data.totalIncome,
-          totalExpense: currentResponse.data.totalExpense,
+          periodIncome: currentResponse.data.periodIncome,
+          periodExpense: currentResponse.data.periodExpense,
           balance: currentResponse.data.balance,
         });
       }
@@ -445,8 +445,8 @@ const Dashboard = () => {
       
       if (previousResponse.data) {
         setPreviousSummary({
-          totalIncome: previousResponse.data.totalIncome,
-          totalExpense: previousResponse.data.totalExpense,
+          periodIncome: currentResponse.data.periodIncome,
+          periodExpense: previousResponse.data.periodExpense,
           balance: previousResponse.data.balance,
         });
       }
@@ -705,11 +705,11 @@ const Dashboard = () => {
   };
 
   const incomeChange = currentSummary && previousSummary
-    ? calculateChange(currentSummary.totalIncome, previousSummary.totalIncome)
+    ? calculateChange(currentSummary.periodIncome, previousSummary.periodIncome)
     : { percentage: 0, value: 0 };
 
   const expenseChange = currentSummary && previousSummary
-    ? calculateChange(currentSummary.totalExpense, previousSummary.totalExpense)
+    ? calculateChange(currentSummary.periodExpense, previousSummary.periodExpense)
     : { percentage: 0, value: 0 };
 
   const spendingPaceChange = previousMonthTotal > 0
@@ -792,7 +792,7 @@ const Dashboard = () => {
           />
           <SummaryCard 
             title="Receitas" 
-            value={hideValue(formatCurrency(currentSummary?.totalIncome || 0))} 
+            value={hideValue(formatCurrency(currentSummary?.periodIncome || 0))} 
             change={`${incomeChange.percentage >= 0 ? "+" : ""}${incomeChange.percentage}%`}
             changeValue={`${incomeChange.value >= 0 ? "+" : "-"}${formatCurrency(incomeChange.value)}`}
             trend={incomeChange.percentage >= 0 ? "up" : "down"} 
@@ -801,7 +801,7 @@ const Dashboard = () => {
           />
           <SummaryCard 
             title="Despesas" 
-            value={hideValue(formatCurrency(currentSummary?.totalExpense || 0))} 
+            value={hideValue(formatCurrency(currentSummary?.periodExpense || 0))} 
             change={`${expenseChange.percentage >= 0 ? "+" : ""}${expenseChange.percentage}%`}
             changeValue={`${expenseChange.value >= 0 ? "+" : "-"}${formatCurrency(expenseChange.value)}`}
             trend={expenseChange.percentage <= 0 ? "up" : "down"} 

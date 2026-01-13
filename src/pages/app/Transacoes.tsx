@@ -792,13 +792,13 @@ const Transacoes = () => {
               <div className="flex items-center gap-2">
                 <ArrowUp className="w-4 h-4 text-success" />
                 <span className={`font-medium ${showValues ? 'text-success' : ''}`}>
-                  {showValues ? formatCurrency(summary?.totalIncome || 0) : '••••••'}
+                  {showValues ? formatCurrency(summary?.periodIncome || 0) : '••••••'}
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <ArrowDown className="w-4 h-4 text-destructive" />
                 <span className={`font-medium ${showValues ? 'text-destructive' : ''}`}>
-                  {showValues ? formatCurrency(summary?.totalExpense || 0) : '••••••'}
+                  {showValues ? formatCurrency(summary?.periodExpense || 0) : '••••••'}
                 </span>
               </div>
               <div className="flex items-center gap-2">
