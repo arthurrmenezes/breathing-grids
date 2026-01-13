@@ -35,7 +35,10 @@ export function GoogleIdentityButton({
     if (Math.abs(width - lastWidthRef.current) < 1) return;
     lastWidthRef.current = width;
 
-    el.innerHTML = "";
+    // Clear container safely without innerHTML to prevent XSS risk
+    while (el.firstChild) {
+      el.removeChild(el.firstChild);
+    }
     google.accounts.id.renderButton(el, {
       type: "standard",
       theme: "outline",
