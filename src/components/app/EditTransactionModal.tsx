@@ -29,6 +29,14 @@ import {
 } from "@/components/ui/select";
 import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { 
+  validateTransaction, 
+  validateInstallment, 
+  getFirstValidationError,
+  getFieldError,
+  hasFieldError,
+  ValidationError 
+} from '@/lib/validation';
 
 interface EditTransactionModalProps {
   open: boolean;
@@ -83,6 +91,7 @@ export const EditTransactionModal = ({ open, onOpenChange, onSuccess, categories
   const [destination, setDestination] = useState('');
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
   
   // Installment fields
   const [hasInstallment, setHasInstallment] = useState(false);
@@ -167,6 +176,11 @@ export const EditTransactionModal = ({ open, onOpenChange, onSuccess, categories
     }
   }, [type, category, categories]);
 
+  // Clear validation errors when fields change
+  useEffect(() => {
+    setValidationErrors([]);
+  }, [title, rawValue, date, status, description, destination, hasInstallment, totalInstallments]);
+
   const formatCurrency = (cents: number) => {
     return (cents / 100).toLocaleString('pt-BR', {
       minimumFractionDigits: 2,
@@ -190,13 +204,41 @@ export const EditTransactionModal = ({ open, onOpenChange, onSuccess, categories
       return;
     }
     
+    // Basic required field check
     if (!title || !rawValue || !date || !category || !type || !payment || !status) {
       toast.error('Preencha todos os campos obrigatórios');
       return;
     }
 
-    if (hasInstallment && (!totalInstallments || parseInt(totalInstallments) < 2)) {
-      toast.error('Número de parcelas deve ser pelo menos 2');
+    // Run transaction validation
+    const transactionErrors = validateTransaction({
+      title: title.trim(),
+      amount: rawValue,
+      date,
+      status,
+      description: description.trim(),
+      destination: destination.trim(),
+    });
+
+    // Run installment validation if enabled
+    let installmentErrors: ValidationError[] = [];
+    if (hasInstallment) {
+      const parsedInstallments = parseInt(totalInstallments, 10) || 0;
+      installmentErrors = validateInstallment({
+        totalInstallments: parsedInstallments,
+        totalAmount: rawValue,
+        firstPaymentDate: date,
+      });
+    }
+
+    const allErrors = [...transactionErrors, ...installmentErrors];
+    
+    if (allErrors.length > 0) {
+      setValidationErrors(allErrors);
+      const firstError = getFirstValidationError(allErrors);
+      if (firstError) {
+        toast.error(firstError);
+      }
       return;
     }
 
@@ -215,14 +257,14 @@ export const EditTransactionModal = ({ open, onOpenChange, onSuccess, categories
 
       const payload: any = {
         categoryId: category,
-        title,
-        description: description || undefined,
+        title: title.trim(),
+        description: description.trim() || undefined,
         amount: rawValue / 100,
         date: dateValue,
         transactionType,
         paymentMethod,
         status: paymentStatus,
-        destination: destination || undefined,
+        destination: destination.trim() || undefined,
       };
 
       // Add installment data if changed
@@ -246,6 +288,14 @@ export const EditTransactionModal = ({ open, onOpenChange, onSuccess, categories
     } finally {
       setLoading(false);
     }
+  };
+
+  const getInputError = (field: string): string | undefined => {
+    return getFieldError(validationErrors, field) || undefined;
+  };
+
+  const hasError = (field: string): boolean => {
+    return hasFieldError(validationErrors, field);
   };
 
   return (
@@ -279,7 +329,13 @@ export const EditTransactionModal = ({ open, onOpenChange, onSuccess, categories
                 placeholder="Ex: Mercado"
                 required
                 disabled={loading}
+                maxLength={50}
+                className={hasError('title') ? 'border-destructive' : ''}
               />
+              {getInputError('title') && (
+                <p className="text-xs text-destructive">{getInputError('title')}</p>
+              )}
+              <p className="text-xs text-muted-foreground text-right">{title.length}/50</p>
             </div>
 
             {/* Linha 2 - Valor + Data */}
@@ -292,12 +348,15 @@ export const EditTransactionModal = ({ open, onOpenChange, onSuccess, categories
                     id="edit-value"
                     value={formatCurrency(rawValue)}
                     onChange={handleValueChange}
-                    className="pl-8 text-right font-mono text-sm"
+                    className={`pl-8 text-right font-mono text-sm ${hasError('amount') ? 'border-destructive' : ''}`}
                     placeholder="0,00"
                     required
                     disabled={loading}
                   />
                 </div>
+                {getInputError('amount') && (
+                  <p className="text-xs text-destructive">{getInputError('amount')}</p>
+                )}
               </div>
 
               <div className="space-y-1.5">
@@ -332,7 +391,7 @@ export const EditTransactionModal = ({ open, onOpenChange, onSuccess, categories
               <div className="space-y-1.5">
                 <Label>Status <span className="text-destructive">*</span></Label>
                 <Select value={status} onValueChange={setStatus} required disabled={loading}>
-                  <SelectTrigger className="text-sm">
+                  <SelectTrigger className={`text-sm ${hasError('status') ? 'border-destructive' : ''}`}>
                     <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
                   <SelectContent>
@@ -341,6 +400,9 @@ export const EditTransactionModal = ({ open, onOpenChange, onSuccess, categories
                     <SelectItem value="Atrasado">Atrasado</SelectItem>
                   </SelectContent>
                 </Select>
+                {getInputError('status') && (
+                  <p className="text-xs text-destructive">{getInputError('status')}</p>
+                )}
               </div>
             </div>
 
@@ -399,13 +461,17 @@ export const EditTransactionModal = ({ open, onOpenChange, onSuccess, categories
                     id="edit-installments"
                     type="number"
                     min="2"
-                    max="48"
+                    max="480"
                     value={totalInstallments}
                     onChange={(e) => setTotalInstallments(e.target.value)}
-                    placeholder="Ex: 12"
+                    placeholder="Ex: 12 (máx. 480)"
                     disabled={loading}
+                    className={hasError('totalInstallments') ? 'border-destructive' : ''}
                   />
-                  {totalInstallments && parseInt(totalInstallments) >= 2 && (
+                  {getInputError('totalInstallments') && (
+                    <p className="text-xs text-destructive">{getInputError('totalInstallments')}</p>
+                  )}
+                  {totalInstallments && parseInt(totalInstallments) >= 2 && parseInt(totalInstallments) <= 480 && (
                     <p className="text-xs text-muted-foreground">
                       {parseInt(totalInstallments)}x de {formatCurrency(Math.ceil(rawValue / parseInt(totalInstallments)))}
                     </p>
@@ -425,7 +491,15 @@ export const EditTransactionModal = ({ open, onOpenChange, onSuccess, categories
                 onChange={(e) => setDestination(e.target.value)}
                 placeholder={type === 'Receita' ? 'Ex: Empresa XYZ' : 'Ex: Pão de Açúcar'}
                 disabled={loading}
+                maxLength={50}
+                className={hasError('destination') ? 'border-destructive' : ''}
               />
+              {getInputError('destination') && (
+                <p className="text-xs text-destructive">{getInputError('destination')}</p>
+              )}
+              {destination.length > 0 && (
+                <p className="text-xs text-muted-foreground text-right">{destination.length}/50</p>
+              )}
             </div>
 
             {/* Linha 7 - Descrição */}
@@ -437,9 +511,16 @@ export const EditTransactionModal = ({ open, onOpenChange, onSuccess, categories
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Ex: Detalhes adicionais..."
                 rows={2}
-                className="resize-none"
+                className={`resize-none ${hasError('description') ? 'border-destructive' : ''}`}
                 disabled={loading}
+                maxLength={300}
               />
+              {getInputError('description') && (
+                <p className="text-xs text-destructive">{getInputError('description')}</p>
+              )}
+              {description.length > 0 && (
+                <p className="text-xs text-muted-foreground text-right">{description.length}/300</p>
+              )}
             </div>
 
             {/* Actions */}
