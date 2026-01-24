@@ -84,4 +84,25 @@ export const transactionService = {
     
     return api.get<FinancialSummary>(endpoint);
   },
+
+  /**
+   * Get all transactions for a specific invoice
+   */
+  async getByInvoice(
+    cardId: string, 
+    invoiceId: string, 
+    params?: { pageNumber?: number; pageSize?: number }
+  ): Promise<ApiResponse<TransactionsListResponse>> {
+    const queryParams = new URLSearchParams();
+    
+    if (params?.pageNumber) queryParams.append('pageNumber', params.pageNumber.toString());
+    if (params?.pageSize) queryParams.append('pageSize', params.pageSize.toString());
+    
+    const queryString = queryParams.toString();
+    const endpoint = queryString 
+      ? `${BASE_ENDPOINT}/${cardId}/${invoiceId}?${queryString}` 
+      : `${BASE_ENDPOINT}/${cardId}/${invoiceId}`;
+    
+    return api.get<TransactionsListResponse>(endpoint);
+  },
 };

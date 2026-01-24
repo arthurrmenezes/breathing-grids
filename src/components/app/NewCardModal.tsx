@@ -156,7 +156,7 @@ export const NewCardModal = ({ open, onOpenChange, onSuccess }: NewCardModalProp
               id="card-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Ex: Nubank Crédito"
+              placeholder="Ex: Itaú Débito"
               required
               disabled={loading}
               maxLength={50}
