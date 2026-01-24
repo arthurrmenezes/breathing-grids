@@ -327,7 +327,7 @@ const Contas = () => {
             <Button variant="outline" size="sm" onClick={() => setShowValues(!showValues)}>
               {showValues ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
             </Button>
-            <Button variant="accent" size="sm" onClick={() => setNewCardOpen(true)}>
+            <Button size="sm" onClick={() => setNewCardOpen(true)}>
               <Plus className="w-4 h-4 mr-2" />
               Adicionar Cartão
             </Button>
@@ -340,7 +340,7 @@ const Contas = () => {
             <CreditCard className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
             <h3 className="text-lg font-medium mb-2">Nenhum cartão cadastrado</h3>
             <p className="text-muted-foreground mb-4">Adicione seu primeiro cartão para começar a gerenciar seus gastos.</p>
-            <Button variant="accent" onClick={() => setNewCardOpen(true)}>
+            <Button onClick={() => setNewCardOpen(true)}>
               <Plus className="w-4 h-4 mr-2" />
               Adicionar Cartão
             </Button>

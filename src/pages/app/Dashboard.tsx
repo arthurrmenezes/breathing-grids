@@ -1334,35 +1334,47 @@ const Dashboard = () => {
           </ResponsiveContainer>
         </div>
 
-        {/* Next Month Forecast - Same style as summary cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-          <div>
-            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Previsão Próximo Mês</p>
-            <p className="text-2xl font-bold">
-              {showValues ? "R$ 1.650,00" : "••••••"}
-            </p>
-            <p className="text-sm text-muted-foreground">Próximo mês: {capitalize(format(addMonths(new Date(), 1), "MMMM", { locale: ptBR }))}</p>
+        {/* Next Month Forecast - Modern compact card */}
+        <div className="bg-gradient-to-br from-card to-secondary/50 rounded-2xl border border-border p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <div>
+              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Previsão Próximo Mês</h3>
+              <p className="text-xs text-muted-foreground mt-1">
+                Próximo mês: {capitalize(format(addMonths(new Date(), 1), "MMMM yyyy", { locale: ptBR }))}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs px-2 py-1 rounded-full bg-accent/10 text-accent font-medium">
+                Baseado em recorrentes
+              </span>
+            </div>
           </div>
-          <div>
-            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Receita Prevista</p>
-            <p className="text-2xl font-bold text-success">
-              {showValues ? "R$ 5.500,00" : "••••••"}
-            </p>
-            <p className="text-sm text-muted-foreground">Salário + recorrentes</p>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Despesa Prevista</p>
-            <p className="text-2xl font-bold text-destructive">
-              {showValues ? "R$ 3.850,00" : "••••••"}
-            </p>
-            <p className="text-sm text-muted-foreground">Parcelas + recorrentes</p>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Saldo Previsto</p>
-            <p className="text-2xl font-bold">
-              {showValues ? "R$ 1.650,00" : "••••••"}
-            </p>
-            <p className="text-sm text-muted-foreground">Receita - Despesas</p>
+          
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
+            <div className="space-y-1">
+              <p className="text-2xl sm:text-3xl font-bold">
+                {showValues ? "R$ 1.650" : "••••"}
+              </p>
+              <p className="text-xs text-muted-foreground">Saldo previsto</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-2xl sm:text-3xl font-bold text-success">
+                {showValues ? "R$ 5.500" : "••••"}
+              </p>
+              <p className="text-xs text-muted-foreground">Receita prevista</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-2xl sm:text-3xl font-bold text-destructive">
+                {showValues ? "R$ 3.850" : "••••"}
+              </p>
+              <p className="text-xs text-muted-foreground">Despesa prevista</p>
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <p className="text-2xl sm:text-3xl font-bold text-accent">+43%</p>
+              </div>
+              <p className="text-xs text-muted-foreground">vs. mês atual</p>
+            </div>
           </div>
         </div>
       </div>

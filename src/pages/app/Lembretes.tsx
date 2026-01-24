@@ -115,7 +115,7 @@ const Lembretes = () => {
             <Button variant="outline" size="sm" onClick={() => setShowValues(!showValues)}>
               {showValues ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
             </Button>
-            <Button variant="accent" size="sm">
+            <Button size="sm">
               <Plus className="w-4 h-4 mr-2" />
               Novo Lembrete
             </Button>
@@ -138,8 +138,8 @@ const Lembretes = () => {
           
           <div className="bg-card rounded-xl border border-border p-5">
             <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 rounded-lg bg-yellow-500/10">
-                <Calendar className="w-4 h-4 text-yellow-600" />
+              <div className="p-2 rounded-lg bg-accent/10">
+                <Calendar className="w-4 h-4 text-accent" />
               </div>
               <span className="text-sm text-muted-foreground">Vence Esta Semana</span>
             </div>
@@ -221,7 +221,7 @@ const Lembretes = () => {
                         <p className="font-medium tabular-nums">
                           R$ {reminder.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </p>
-                        <p className={`text-sm ${reminder.daysUntil <= 7 ? 'text-yellow-600' : 'text-muted-foreground'}`}>
+                        <p className={`text-sm ${reminder.daysUntil <= 7 ? 'text-accent' : 'text-muted-foreground'}`}>
                           Vence em {reminder.daysUntil} dias
                         </p>
                       </div>

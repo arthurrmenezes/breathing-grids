@@ -494,7 +494,7 @@ const Recorrentes = () => {
               </TabsTrigger>
             </TabsList>
             
-            <Button variant="accent" size="sm">
+            <Button size="sm">
               <Plus className="w-4 h-4 mr-2" />
               Criar nova {activeTab === 'expense' ? 'despesa' : 'receita'}
             </Button>
