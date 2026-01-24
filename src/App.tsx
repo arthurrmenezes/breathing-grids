@@ -17,7 +17,7 @@ import Transacoes from "./pages/app/Transacoes";
 import Categorias from "./pages/app/Categorias";
 import Lembretes from "./pages/app/Lembretes";
 import Recorrentes from "./pages/app/Recorrentes";
-import Cartoes from "./pages/app/Cartoes";
+import Contas from "./pages/app/Contas";
 import Configuracoes from "./pages/app/Configuracoes";
 
 const queryClient = new QueryClient();
@@ -43,11 +43,12 @@ const App = () => (
             
             {/* Protected App Routes */}
             <Route path="/app" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/app/contas" element={<ProtectedRoute><Contas /></ProtectedRoute>} />
+            <Route path="/app/cartoes" element={<Navigate to="/app/contas" replace />} />
             <Route path="/app/transacoes" element={<ProtectedRoute><Transacoes /></ProtectedRoute>} />
             <Route path="/app/categorias" element={<ProtectedRoute><Categorias /></ProtectedRoute>} />
             <Route path="/app/lembretes" element={<ProtectedRoute><Lembretes /></ProtectedRoute>} />
             <Route path="/app/recorrentes" element={<ProtectedRoute><Recorrentes /></ProtectedRoute>} />
-            <Route path="/app/cartoes" element={<ProtectedRoute><Cartoes /></ProtectedRoute>} />
             <Route path="/app/configuracoes" element={<ProtectedRoute><Configuracoes /></ProtectedRoute>} />
             
             {/* Catch-all */}
