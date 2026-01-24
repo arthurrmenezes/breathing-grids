@@ -533,10 +533,10 @@ const Transacoes = () => {
   return (
     <AppLayout>
       <div className="space-y-6">
-        {/* Header Row 1: Month Navigation + Search (center) + Actions (right) */}
-        <div className="flex items-center justify-between gap-4">
+        {/* Header Row - Responsive */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           {/* Month Navigation - Left */}
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             <Button 
               variant="ghost" 
               size="icon"
@@ -548,7 +548,7 @@ const Transacoes = () => {
             >
               <ChevronLeft className="w-5 h-5" />
             </Button>
-            <span className="font-medium min-w-[120px] text-center">
+            <span className="font-medium min-w-[100px] sm:min-w-[120px] text-center text-sm sm:text-base">
               {filterStartDate 
                 ? format(filterStartDate, 'MMMM yyyy', { locale: ptBR }).replace(/^\w/, c => c.toUpperCase())
                 : format(new Date(), 'MMMM yyyy', { locale: ptBR }).replace(/^\w/, c => c.toUpperCase())
@@ -569,6 +569,7 @@ const Transacoes = () => {
             <Button 
               variant="ghost" 
               size="sm"
+              className="hidden sm:flex"
               onClick={() => {
                 const now = new Date();
                 setFilterStartDate(new Date(now.getFullYear(), now.getMonth(), 1));
@@ -579,8 +580,8 @@ const Transacoes = () => {
             </Button>
           </div>
 
-          {/* Search - Center */}
-          <div className="relative flex-1 max-w-md mx-auto">
+          {/* Search - Center (hidden on mobile, shown below) */}
+          <div className="hidden sm:block relative flex-1 max-w-md mx-auto">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               placeholder="Buscar transações..."
@@ -609,40 +610,34 @@ const Transacoes = () => {
             >
               {showValues ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
             </Button>
-            <Button variant="accent" size="sm" onClick={() => setNewTransactionOpen(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Adicionar
+            <Button size="sm" onClick={() => setNewTransactionOpen(true)}>
+              <Plus className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Adicionar</span>
             </Button>
           </div>
         </div>
 
-        {/* Summary Stats - Full width, evenly distributed */}
-        <div className="grid grid-cols-4 gap-4 px-4">
-          <div className="text-center">
-            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Transações</p>
-            <p className="text-2xl font-bold">{totalItems}</p>
-          </div>
-          <div className="text-center">
-            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Receitas</p>
-            <p className="text-2xl font-bold text-success">
-              {showValues ? formatCurrency(summary?.periodIncome || 0) : '••••••'}
-            </p>
-          </div>
-          <div className="text-center">
-            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Despesas</p>
-            <p className="text-2xl font-bold text-destructive">
-              {showValues ? formatCurrency(summary?.periodExpense || 0) : '••••••'}
-            </p>
-          </div>
-          <div className="text-center">
-            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Saldo</p>
-            <p className={cn("text-2xl font-bold", (summary?.balance || 0) >= 0 ? 'text-success' : 'text-destructive')}>
-              {showValues ? formatCurrency(summary?.balance || 0) : '••••••'}
-            </p>
-          </div>
+        {/* Mobile Search */}
+        <div className="sm:hidden relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar transações..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+            className="pl-10 pr-10 bg-card border-border"
+          />
+          {searchQuery && (
+            <button 
+              onClick={clearSearch}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
-        {/* Filter Dropdowns Bar */}
+        {/* Filter Dropdowns Bar - Now ABOVE summary */}
         <div className="flex flex-wrap items-center gap-2">
           {/* Transaction Type Filter */}
           <Select value={filterType} onValueChange={setFilterType}>
@@ -850,6 +845,32 @@ const Transacoes = () => {
           </button>
         )}
 
+        {/* Summary Stats - Full width, evenly distributed - NOW BELOW FILTERS */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="text-center">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Transações</p>
+            <p className="text-xl sm:text-2xl font-bold">{totalItems}</p>
+          </div>
+          <div className="text-center">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Receitas</p>
+            <p className="text-xl sm:text-2xl font-bold text-success">
+              {showValues ? formatCurrency(summary?.periodIncome || 0) : '••••••'}
+            </p>
+          </div>
+          <div className="text-center">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Despesas</p>
+            <p className="text-xl sm:text-2xl font-bold text-destructive">
+              {showValues ? formatCurrency(summary?.periodExpense || 0) : '••••••'}
+            </p>
+          </div>
+          <div className="text-center">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Saldo</p>
+            <p className={cn("text-xl sm:text-2xl font-bold", (summary?.balance || 0) >= 0 ? 'text-success' : 'text-destructive')}>
+              {showValues ? formatCurrency(summary?.balance || 0) : '••••••'}
+            </p>
+          </div>
+        </div>
+
         {/* Transactions Table */}
         <div className="bg-card rounded-xl border border-border overflow-hidden">
           {loading ? (
@@ -859,7 +880,7 @@ const Transacoes = () => {
           ) : transactions.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <p className="text-muted-foreground mb-4">Nenhuma transação encontrada</p>
-              <Button variant="accent" onClick={() => setNewTransactionOpen(true)}>
+              <Button onClick={() => setNewTransactionOpen(true)}>
                 <Plus className="w-4 h-4 mr-2" />
                 Criar primeira transação
               </Button>

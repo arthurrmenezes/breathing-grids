@@ -206,7 +206,7 @@ const Categorias = () => {
             <Button variant="outline" size="sm" onClick={() => setShowValues(!showValues)}>
               {showValues ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
             </Button>
-            <Button variant="accent" size="sm" onClick={() => setNewCategoryOpen(true)}>
+            <Button size="sm" onClick={() => setNewCategoryOpen(true)}>
               <Plus className="w-4 h-4 mr-2" />
               Nova Categoria
             </Button>
@@ -271,7 +271,7 @@ const Categorias = () => {
           <div className="flex flex-col items-center justify-center py-12 text-center bg-card rounded-2xl border border-border">
             <Tag className="w-12 h-12 text-muted-foreground mb-4" />
             <p className="text-muted-foreground mb-4">Nenhuma categoria encontrada</p>
-            <Button variant="accent" onClick={() => setNewCategoryOpen(true)}>
+            <Button onClick={() => setNewCategoryOpen(true)}>
               <Plus className="w-4 h-4 mr-2" />
               Criar primeira categoria
             </Button>
