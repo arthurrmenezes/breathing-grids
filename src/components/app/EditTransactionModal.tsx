@@ -49,8 +49,10 @@ interface EditTransactionModalProps {
 // Map backend paymentMethod string to enum number
 const getPaymentMethodValue = (apiValue: string): number => {
   const mapping: Record<string, number> = {
-    'CreditCard': PaymentMethodEnum.CreditCard,
-    'DebitCard': PaymentMethodEnum.DebitCard,
+    'Credit': PaymentMethodEnum.Credit,
+    'Debit': PaymentMethodEnum.Debit,
+    'CreditCard': PaymentMethodEnum.Credit,
+    'DebitCard': PaymentMethodEnum.Debit,
     'Pix': PaymentMethodEnum.Pix,
     'TED': PaymentMethodEnum.TED,
     'Boleto': PaymentMethodEnum.Boleto,

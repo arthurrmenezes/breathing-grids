@@ -36,6 +36,7 @@ export const transactionService = {
     
     if (params?.pageNumber) queryParams.append('pageNumber', params.pageNumber.toString());
     if (params?.pageSize) queryParams.append('pageSize', params.pageSize.toString());
+    if (params?.cardId) queryParams.append('cardId', params.cardId);
     if (params?.transactionType !== undefined) queryParams.append('transactionType', params.transactionType.toString());
     if (params?.categoryId) queryParams.append('categoryId', params.categoryId);
     if (params?.paymentMethod !== undefined) queryParams.append('paymentMethod', params.paymentMethod.toString());
@@ -45,6 +46,7 @@ export const transactionService = {
     if (params?.minValue !== undefined) queryParams.append('minValue', params.minValue.toString());
     if (params?.maxValue !== undefined) queryParams.append('maxValue', params.maxValue.toString());
     if (params?.textSearch) queryParams.append('textSearch', params.textSearch);
+    if (params?.hasInstallment !== undefined) queryParams.append('hasInstallment', params.hasInstallment.toString());
     
     const queryString = queryParams.toString();
     const endpoint = queryString ? `${BASE_ENDPOINT}?${queryString}` : BASE_ENDPOINT;

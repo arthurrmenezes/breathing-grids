@@ -1,4 +1,4 @@
-// Transaction and Installment Validation Rules
+// Transaction, Installment, Card and Invoice Validation Rules
 // These mirror backend validation without exposing internal details
 
 export interface ValidationError {
@@ -19,6 +19,23 @@ export interface InstallmentValidationInput {
   totalInstallments: number;
   totalAmount: number; // in cents
   firstPaymentDate: string; // YYYY-MM-DD format
+}
+
+export interface CardValidationInput {
+  name: string;
+  cardType: number; // 0 = DebitCard, 1 = CreditCard
+  limit?: number;
+  closeDay?: number;
+  dueDay?: number;
+}
+
+export interface InvoiceValidationInput {
+  month: number;
+  year: number;
+  closeDay: number;
+  dueDay: number;
+  limitTotal?: number;
+  amountPaid?: number;
 }
 
 // Get today's date in YYYY-MM-DD format (local timezone)
@@ -163,6 +180,154 @@ export const validateInstallment = (input: InstallmentValidationInput): Validati
       field: 'firstPaymentDate',
       message: 'A data de início é inválida.',
     });
+  }
+
+  return errors;
+};
+
+/**
+ * Validates credit card data according to business rules
+ * Returns array of validation errors (empty if valid)
+ */
+export const validateCreditCard = (limit: number, closeDay: number, dueDay: number): ValidationError[] => {
+  const errors: ValidationError[] = [];
+
+  if (limit <= 0) {
+    errors.push({
+      field: 'limit',
+      message: 'O valor do limite deve ser maior que 0.',
+    });
+  }
+
+  if (closeDay < 1 || closeDay > 31) {
+    errors.push({
+      field: 'closeDay',
+      message: 'O dia de fechamento deve estar entre 1 e 31.',
+    });
+  }
+
+  if (dueDay < 1 || dueDay > 31) {
+    errors.push({
+      field: 'dueDay',
+      message: 'O dia de vencimento deve estar entre 1 e 31.',
+    });
+  }
+
+  return errors;
+};
+
+/**
+ * Validates invoice data according to business rules
+ * Returns array of validation errors (empty if valid)
+ */
+export const validateInvoice = (input: InvoiceValidationInput): ValidationError[] => {
+  const errors: ValidationError[] = [];
+  const currentYear = new Date().getFullYear();
+
+  if (input.month < 1 || input.month > 12) {
+    errors.push({
+      field: 'month',
+      message: 'O mês da fatura deve estar entre 1 e 12.',
+    });
+  }
+
+  if (input.year < 2024 || input.year > currentYear + 50) {
+    errors.push({
+      field: 'year',
+      message: 'O ano da fatura é inválido.',
+    });
+  }
+
+  // Get last day of the month
+  const firstDay = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  const lastDayOfMonth = new Date(firstDay.getFullYear(), firstDay.getMonth() + 1, 0).getDate();
+
+  if (input.closeDay < 1 || input.closeDay > lastDayOfMonth) {
+    errors.push({
+      field: 'closeDay',
+      message: `O dia de fechamento deve estar entre 1 e ${lastDayOfMonth}.`,
+    });
+  }
+
+  if (input.dueDay < 1 || input.dueDay > lastDayOfMonth) {
+    errors.push({
+      field: 'dueDay',
+      message: `O dia de vencimento deve estar entre 1 e ${lastDayOfMonth}.`,
+    });
+  }
+
+  if (input.closeDay >= input.dueDay) {
+    errors.push({
+      field: 'closeDay',
+      message: 'O dia de fechamento deve ser anterior ao dia de vencimento.',
+    });
+  }
+
+  if (input.limitTotal !== undefined && input.limitTotal < 0) {
+    errors.push({
+      field: 'limitTotal',
+      message: 'O valor do limite não pode ser negativo.',
+    });
+  }
+
+  if (input.amountPaid !== undefined && input.amountPaid < 0) {
+    errors.push({
+      field: 'amountPaid',
+      message: 'O valor pago não pode ser negativo.',
+    });
+  }
+
+  if (input.limitTotal !== undefined && input.amountPaid !== undefined && input.limitTotal < input.amountPaid) {
+    errors.push({
+      field: 'limitTotal',
+      message: 'O valor do limite não pode ser menor que o valor já pago.',
+    });
+  }
+
+  return errors;
+};
+
+/**
+ * Validates card data according to business rules
+ * Returns array of validation errors (empty if valid)
+ */
+export const validateCard = (input: CardValidationInput): ValidationError[] => {
+  const errors: ValidationError[] = [];
+
+  if (!input.name || input.name.trim().length === 0) {
+    errors.push({
+      field: 'name',
+      message: 'O nome do cartão é obrigatório.',
+    });
+  } else if (input.name.length > 50) {
+    errors.push({
+      field: 'name',
+      message: 'O nome do cartão deve ter no máximo 50 caracteres.',
+    });
+  }
+
+  // Credit card specific validations
+  if (input.cardType === 1) { // CreditCard
+    if (input.limit !== undefined && input.limit <= 0) {
+      errors.push({
+        field: 'limit',
+        message: 'O valor do limite deve ser maior que 0.',
+      });
+    }
+
+    if (input.closeDay !== undefined && (input.closeDay < 1 || input.closeDay > 31)) {
+      errors.push({
+        field: 'closeDay',
+        message: 'O dia de fechamento deve estar entre 1 e 31.',
+      });
+    }
+
+    if (input.dueDay !== undefined && (input.dueDay < 1 || input.dueDay > 31)) {
+      errors.push({
+        field: 'dueDay',
+        message: 'O dia de vencimento deve estar entre 1 e 31.',
+      });
+    }
   }
 
   return errors;
