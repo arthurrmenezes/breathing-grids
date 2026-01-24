@@ -16,12 +16,12 @@ import {
 } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { cn } from '@/lib/utils';
-import { format, parseISO, subMonths, startOfMonth, endOfMonth } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { cardService } from '@/services/cardService';
 import { transactionService } from '@/services/transactionService';
-import { Card as CardType, CardTypeLabels, getCardColor } from '@/types/card';
+import { Card as CardType, CardTypeLabels, getCardColor, Invoice } from '@/types/card';
 import { Transaction } from '@/types/transaction';
 import { NewCardModal } from '@/components/app/NewCardModal';
 import { EditCardModal } from '@/components/app/EditCardModal';
@@ -42,14 +42,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-interface Invoice {
-  id: string;
-  month: string;
-  year: number;
-  closeDate: string;
-  dueDate: string;
-  status: 'open' | 'closed';
-  totalAmount: number;
+// Extended invoice interface for UI (includes transactions)
+interface InvoiceWithTransactions extends Invoice {
+  monthLabel: string;
   transactions: Transaction[];
 }
 
@@ -60,7 +55,7 @@ const Contas = () => {
   const { showValues, setShowValues } = useValuesVisibility();
   
   // Selected invoice for viewing transactions
-  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<InvoiceWithTransactions | null>(null);
   
   // Modals
   const [newCardOpen, setNewCardOpen] = useState(false);
@@ -74,8 +69,8 @@ const Contas = () => {
   const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
   const [pendingTransactions, setPendingTransactions] = useState<Transaction[]>([]);
 
-  // Invoices (simulated based on transactions)
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  // Invoices from API
+  const [invoices, setInvoices] = useState<InvoiceWithTransactions[]>([]);
 
   // Financial summary
   const [financialSummary, setFinancialSummary] = useState<{
@@ -135,7 +130,7 @@ const Contas = () => {
     }
   };
 
-  // Fetch invoices for credit cards
+  // Fetch invoices for credit cards using new API
   const fetchInvoices = async () => {
     if (!selectedCard || selectedCard.type !== 'CreditCard') {
       setInvoices([]);
@@ -143,43 +138,38 @@ const Contas = () => {
     }
 
     try {
-      const now = new Date();
-      const generatedInvoices: Invoice[] = [];
+      const response = await cardService.getInvoices(selectedCard.id, { pageSize: 12 });
+      
+      if (response.data?.invoices) {
+        const monthNames = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
+        
+        // Transform invoices from API to include transactions and UI labels
+        const invoicesWithTransactions: InvoiceWithTransactions[] = await Promise.all(
+          response.data.invoices.map(async (invoice) => {
+            // Fetch transactions for this invoice period
+            const startDate = format(new Date(invoice.year, invoice.month - 1, 1), 'yyyy-MM-dd');
+            const endDate = format(new Date(invoice.year, invoice.month, 0), 'yyyy-MM-dd');
+            
+            const txResponse = await transactionService.getAll({
+              cardId: selectedCard.id,
+              startDate,
+              endDate,
+              pageSize: 100,
+            });
+            
+            return {
+              ...invoice,
+              monthLabel: `${monthNames[invoice.month - 1]} ${invoice.year}`,
+              transactions: txResponse.data?.transactions || [],
+            };
+          })
+        );
 
-      // Generate invoices for the last 6 months
-      for (let i = 0; i < 6; i++) {
-        const invoiceDate = subMonths(now, i);
-        const monthStart = startOfMonth(invoiceDate);
-        const monthEnd = endOfMonth(invoiceDate);
-
-        const response = await transactionService.getAll({
-          cardId: selectedCard.id,
-          startDate: format(monthStart, 'yyyy-MM-dd'),
-          endDate: format(monthEnd, 'yyyy-MM-dd'),
-          pageSize: 100,
-        });
-
-        const transactions = response.data?.transactions || [];
-        const totalAmount = transactions.reduce((sum, tx) => sum + tx.amount, 0);
-
-        if (transactions.length > 0) {
-          generatedInvoices.push({
-            id: `invoice-${selectedCard.id}-${format(invoiceDate, 'yyyy-MM')}`,
-            month: format(invoiceDate, 'MMM yyyy', { locale: ptBR }).toUpperCase(),
-            year: invoiceDate.getFullYear(),
-            closeDate: format(new Date(invoiceDate.getFullYear(), invoiceDate.getMonth(), selectedCard.creditCard?.closeDay || 1), 'dd/MM/yyyy'),
-            dueDate: format(new Date(invoiceDate.getFullYear(), invoiceDate.getMonth(), selectedCard.creditCard?.dueDay || 10), 'dd/MM/yyyy'),
-            status: i === 0 ? 'open' : 'closed',
-            totalAmount,
-            transactions,
-          });
+        setInvoices(invoicesWithTransactions);
+        // Auto-select the first (current) invoice
+        if (invoicesWithTransactions.length > 0) {
+          setSelectedInvoice(invoicesWithTransactions[0]);
         }
-      }
-
-      setInvoices(generatedInvoices);
-      // Auto-select the first (current) invoice
-      if (generatedInvoices.length > 0) {
-        setSelectedInvoice(generatedInvoices[0]);
       }
     } catch (error) {
       console.error('Error fetching invoices:', error);
@@ -263,17 +253,16 @@ const Contas = () => {
 
   const totalAvailable = totalLimit - totalUsed;
 
-  // Payment status data for ring chart
-  const paidTransactions = recentTransactions.filter(t => t.status === 'Paid');
-  const totalPaid = paidTransactions.reduce((sum, t) => sum + t.amount, 0);
-  const totalPending = pendingTransactions.reduce((sum, t) => sum + t.amount, 0);
-  const totalPayments = totalPaid + totalPending;
-  const paidPercentage = totalPayments > 0 ? (totalPaid / totalPayments) * 100 : 0;
-  const pendingPercentage = totalPayments > 0 ? (totalPending / totalPayments) * 100 : 0;
+  // Payment status data for ring chart - based on selected invoice
+  const invoicePaid = selectedInvoice?.amountPaid || 0;
+  const invoiceTotal = selectedInvoice?.totalAmount || 0;
+  const invoicePending = Math.max(0, invoiceTotal - invoicePaid);
+  const paidPercentage = invoiceTotal > 0 ? (invoicePaid / invoiceTotal) * 100 : 0;
+  const pendingPercentage = invoiceTotal > 0 ? (invoicePending / invoiceTotal) * 100 : 0;
 
   const paymentStatusData = [
-    { name: 'Pago', value: totalPaid, color: 'hsl(var(--accent))', percentage: paidPercentage },
-    { name: 'Falta pagar', value: totalPending, color: 'hsl(var(--muted))', percentage: pendingPercentage },
+    { name: 'Pago', value: invoicePaid, color: 'hsl(var(--accent))', percentage: paidPercentage },
+    { name: 'Falta pagar', value: invoicePending, color: 'hsl(var(--muted))', percentage: pendingPercentage },
   ];
 
   const formatCurrency = (value: number) => 
@@ -446,21 +435,23 @@ const Contas = () => {
                           )}
                         >
                           <div className="flex items-center justify-between mb-2">
-                            <span className="font-medium">{invoice.month}</span>
+                            <span className="font-medium">{invoice.monthLabel}</span>
                             <span className={cn(
                               "text-xs px-2 py-0.5 rounded-full",
-                              invoice.status === 'open' 
+                              invoice.status === 0 
                                 ? 'bg-accent/10 text-accent' 
-                                : 'bg-secondary text-muted-foreground'
+                                : invoice.status === 2
+                                  ? 'bg-success/10 text-success'
+                                  : 'bg-secondary text-muted-foreground'
                             )}>
-                              {invoice.status === 'open' ? 'Aberta' : 'Fechada'}
+                              {invoice.status === 0 ? 'Aberta' : invoice.status === 2 ? 'Paga' : 'Fechada'}
                             </span>
                           </div>
                           <p className="font-bold text-lg mb-2">
                             {showValues ? formatCurrency(invoice.totalAmount) : '••••••'}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            Vencimento: {invoice.dueDate}
+                            Vencimento: {format(parseISO(invoice.dueDay), 'dd/MM/yyyy')}
                           </p>
                         </div>
                       ))}
@@ -472,7 +463,7 @@ const Contas = () => {
                 {selectedInvoice && (
                   <div className="bg-card rounded-2xl border border-border">
                     <div className="p-4 border-b border-border flex items-center justify-between">
-                      <h3 className="font-medium">Transações - {selectedInvoice.month}</h3>
+                      <h3 className="font-medium">Transações - {selectedInvoice.monthLabel}</h3>
                       <span className="text-sm text-muted-foreground">
                         {selectedInvoice.transactions.length} transações
                       </span>
@@ -552,12 +543,12 @@ const Contas = () => {
                 {/* Payment Status Ring + Pending Transactions */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Payment Status */}
-                  {totalPayments > 0 && (
+                  {invoiceTotal > 0 && (
                     <div className="bg-card rounded-2xl border border-border p-6">
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
                           <p className="text-2xl font-bold">
-                            {showValues ? formatCurrency(totalPending) : 'R$ ••••••'}
+                            {showValues ? formatCurrency(invoicePending) : 'R$ ••••••'}
                           </p>
                           <p className="text-sm text-muted-foreground">Falta pagar</p>
                           <p className="text-xs text-muted-foreground mt-1">{pendingPercentage.toFixed(1)}%</p>
@@ -590,7 +581,7 @@ const Contas = () => {
 
                         <div className="flex-1 text-right">
                           <p className="text-2xl font-bold">
-                            {showValues ? formatCurrency(totalPaid) : 'R$ ••••••'}
+                            {showValues ? formatCurrency(invoicePaid) : 'R$ ••••••'}
                           </p>
                           <p className="text-sm text-muted-foreground">Pago até agora</p>
                           <p className="text-xs text-muted-foreground mt-1">{paidPercentage.toFixed(1)}%</p>
@@ -733,11 +724,11 @@ const Contas = () => {
                 handleDeleteCard={handleDeleteCard}
                 cards={cards}
                 CustomRingTooltip={CustomRingTooltip}
-                totalPending={totalPending}
-                totalPaid={totalPaid}
+                invoicePending={invoicePending}
+                invoicePaid={invoicePaid}
                 pendingPercentage={pendingPercentage}
                 paidPercentage={paidPercentage}
-                totalPayments={totalPayments}
+                invoiceTotal={invoiceTotal}
               />
             )}
           </>
@@ -809,11 +800,11 @@ interface TransactionsContentProps {
   handleDeleteCard: (card: CardType) => void;
   cards: CardType[];
   CustomRingTooltip: any;
-  totalPending: number;
-  totalPaid: number;
+  invoicePending: number;
+  invoicePaid: number;
   pendingPercentage: number;
   paidPercentage: number;
-  totalPayments: number;
+  invoiceTotal: number;
 }
 
 const TransactionsContent = ({
@@ -833,11 +824,11 @@ const TransactionsContent = ({
   handleDeleteCard,
   cards,
   CustomRingTooltip,
-  totalPending,
-  totalPaid,
+  invoicePending,
+  invoicePaid,
   pendingPercentage,
   paidPercentage,
-  totalPayments,
+  invoiceTotal,
 }: TransactionsContentProps) => {
   return (
     <div className="space-y-6">
@@ -888,12 +879,12 @@ const TransactionsContent = ({
       )}
 
       {/* Payment Status Ring */}
-      {totalPayments > 0 && (
+      {invoiceTotal > 0 && (
         <div className="bg-card rounded-2xl border border-border p-6">
           <div className="flex items-center justify-between">
             <div className="flex-1">
               <p className="text-2xl font-bold">
-                {showValues ? formatCurrency(totalPending) : 'R$ ••••••'}
+                {showValues ? formatCurrency(invoicePending) : 'R$ ••••••'}
               </p>
               <p className="text-sm text-muted-foreground">Falta pagar</p>
               <p className="text-xs text-muted-foreground mt-1">{pendingPercentage.toFixed(1)}%</p>
@@ -926,7 +917,7 @@ const TransactionsContent = ({
 
             <div className="flex-1 text-right">
               <p className="text-2xl font-bold">
-                {showValues ? formatCurrency(totalPaid) : 'R$ ••••••'}
+                {showValues ? formatCurrency(invoicePaid) : 'R$ ••••••'}
               </p>
               <p className="text-sm text-muted-foreground">Pago até agora</p>
               <p className="text-xs text-muted-foreground mt-1">{paidPercentage.toFixed(1)}%</p>

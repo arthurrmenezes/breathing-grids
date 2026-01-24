@@ -55,6 +55,37 @@ export interface GetCardsParams {
   cardType?: number;
 }
 
+// Invoice Types
+export type InvoiceStatus = 0 | 1 | 2 | 3; // 0 = Open, 1 = Closed, 2 = Paid, 3 = Overdue
+
+export interface Invoice {
+  id: string;
+  cardId: string;
+  month: number;
+  year: number;
+  closeDay: string;
+  dueDay: string;
+  totalAmount: number;
+  limitTotal: number;
+  amountPaid: number;
+  status: InvoiceStatus;
+  updatedAt?: string;
+  createdAt: string;
+}
+
+export interface InvoicesListResponse {
+  totalInvoices: number;
+  pageNumber: number;
+  pageSize: number;
+  totalPages: number;
+  invoices: Invoice[];
+}
+
+export interface GetInvoicesParams {
+  pageNumber?: number;
+  pageSize?: number;
+}
+
 // Enums
 export const CardTypeEnum = {
   DebitCard: 0,
