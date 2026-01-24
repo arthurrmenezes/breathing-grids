@@ -2,6 +2,7 @@
 
 export interface TransactionInstallmentItem {
   id: string;
+  invoiceId?: string;
   number: number;
   amount: number;
   dueDate: string;
@@ -17,13 +18,17 @@ export interface TransactionInstallment {
   totalAmount: number;
   firstPaymentDate: string;
   status: string;
-  installments: TransactionInstallmentItem[];
+  installments?: TransactionInstallmentItem[];
+  installmentItems?: TransactionInstallmentItem[];
 }
 
 export interface Transaction {
   id: string;
   accountId: string;
+  cardId: string;
   categoryId: string;
+  installmentId?: string;
+  invoiceId?: string;
   title: string;
   description?: string;
   amount: number;
@@ -47,6 +52,7 @@ export interface CreateTransactionInstallmentInput {
 }
 
 export interface CreateTransactionInput {
+  cardId: string;
   categoryId: string;
   title: string;
   description?: string;
@@ -59,21 +65,14 @@ export interface CreateTransactionInput {
   hasInstallment?: CreateTransactionInstallmentInput;
 }
 
-export interface UpdateTransactionInstallmentInput {
-  totalInstallments?: number;
-}
-
 export interface UpdateTransactionInput {
   categoryId?: string;
   title?: string;
   description?: string;
   amount?: number;
   date?: string;
-  transactionType?: number;
-  paymentMethod?: number;
   status?: number;
   destination?: string;
-  installment?: UpdateTransactionInstallmentInput;
 }
 
 export interface TransactionsListResponse {
@@ -87,6 +86,7 @@ export interface TransactionsListResponse {
 export interface GetTransactionsParams {
   pageNumber?: number;
   pageSize?: number;
+  cardId?: string;
   transactionType?: number;
   categoryId?: string;
   paymentMethod?: number;
@@ -96,6 +96,7 @@ export interface GetTransactionsParams {
   minValue?: number;
   maxValue?: number;
   textSearch?: string;
+  hasInstallment?: boolean;
 }
 
 export interface FinancialSummary {
@@ -114,8 +115,8 @@ export const TransactionTypeEnum = {
 
 // Backend PaymentMethod enum - CORRECT ORDER
 export const PaymentMethodEnum = {
-  CreditCard: 0,
-  DebitCard: 1,
+  Credit: 0,
+  Debit: 1,
   Pix: 2,
   TED: 3,
   Boleto: 4,
@@ -142,8 +143,8 @@ export const TransactionTypeLabels: Record<string, string> = {
 
 // Mapping backend paymentMethod string to display labels
 export const PaymentMethodLabels: Record<string, string> = {
-  'CreditCard': 'Cartão Crédito',
-  'DebitCard': 'Cartão Débito',
+  'Credit': 'Cartão Crédito',
+  'Debit': 'Cartão Débito',
   'Pix': 'Pix',
   'TED': 'TED',
   'Boleto': 'Boleto',
@@ -160,10 +161,10 @@ export const PaymentStatusLabels: Record<string, string> = {
   'Overdue': 'Atrasado',
 };
 
-// For select options in forms
-export const PaymentMethodOptions = [
-  { label: 'Cartão Crédito', value: PaymentMethodEnum.CreditCard },
-  { label: 'Cartão Débito', value: PaymentMethodEnum.DebitCard },
+// All payment method options
+export const AllPaymentMethodOptions = [
+  { label: 'Cartão Crédito', value: PaymentMethodEnum.Credit },
+  { label: 'Cartão Débito', value: PaymentMethodEnum.Debit },
   { label: 'Pix', value: PaymentMethodEnum.Pix },
   { label: 'TED', value: PaymentMethodEnum.TED },
   { label: 'Boleto', value: PaymentMethodEnum.Boleto },
@@ -173,3 +174,24 @@ export const PaymentMethodOptions = [
   { label: 'Voucher', value: PaymentMethodEnum.Voucher },
   { label: 'Outro', value: PaymentMethodEnum.Other },
 ];
+
+// Credit card only allows Credit payment method
+export const CreditCardPaymentMethodOptions = [
+  { label: 'Cartão Crédito', value: PaymentMethodEnum.Credit },
+];
+
+// Debit card allows all EXCEPT Credit
+export const DebitCardPaymentMethodOptions = [
+  { label: 'Cartão Débito', value: PaymentMethodEnum.Debit },
+  { label: 'Pix', value: PaymentMethodEnum.Pix },
+  { label: 'TED', value: PaymentMethodEnum.TED },
+  { label: 'Boleto', value: PaymentMethodEnum.Boleto },
+  { label: 'Dinheiro', value: PaymentMethodEnum.Cash },
+  { label: 'Cheque', value: PaymentMethodEnum.Cheque },
+  { label: 'Crypto Wallet', value: PaymentMethodEnum.CryptoWallet },
+  { label: 'Voucher', value: PaymentMethodEnum.Voucher },
+  { label: 'Outro', value: PaymentMethodEnum.Other },
+];
+
+// For backwards compatibility
+export const PaymentMethodOptions = AllPaymentMethodOptions;

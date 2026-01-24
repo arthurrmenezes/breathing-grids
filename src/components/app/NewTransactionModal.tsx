@@ -15,9 +15,13 @@ import { transactionService } from '@/services/transactionService';
 import { 
   TransactionTypeEnum, 
   PaymentStatusEnum,
-  PaymentMethodOptions
+  AllPaymentMethodOptions,
+  CreditCardPaymentMethodOptions,
+  DebitCardPaymentMethodOptions,
+  PaymentMethodEnum,
 } from '@/types/transaction';
 import { Category, CategoryTypeLabels } from '@/types/category';
+import { Card, CardTypeLabels } from '@/types/card';
 import {
   Select,
   SelectContent,
@@ -40,13 +44,23 @@ interface NewTransactionModalProps {
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
   categories?: Category[];
+  cards?: Card[];
+  preselectedCardId?: string;
 }
 
-export const NewTransactionModal = ({ open, onOpenChange, onSuccess, categories = [] }: NewTransactionModalProps) => {
+export const NewTransactionModal = ({ 
+  open, 
+  onOpenChange, 
+  onSuccess, 
+  categories = [],
+  cards = [],
+  preselectedCardId,
+}: NewTransactionModalProps) => {
   const [title, setTitle] = useState('');
   const [rawValue, setRawValue] = useState(0);
   const [date, setDate] = useState('');
   const [category, setCategory] = useState('');
+  const [cardId, setCardId] = useState('');
   const [type, setType] = useState('');
   const [payment, setPayment] = useState('');
   const [status, setStatus] = useState('');
@@ -58,6 +72,41 @@ export const NewTransactionModal = ({ open, onOpenChange, onSuccess, categories 
   // Installment fields
   const [hasInstallment, setHasInstallment] = useState(false);
   const [totalInstallments, setTotalInstallments] = useState('');
+
+  // Set preselected card when modal opens
+  useEffect(() => {
+    if (open && preselectedCardId) {
+      setCardId(preselectedCardId);
+    }
+  }, [open, preselectedCardId]);
+
+  // Get selected card
+  const selectedCard = useMemo(() => {
+    return cards.find(c => c.id === cardId);
+  }, [cards, cardId]);
+
+  // Get payment method options based on selected card type
+  const paymentMethodOptions = useMemo(() => {
+    if (!selectedCard) return AllPaymentMethodOptions;
+    
+    if (selectedCard.type === 'CreditCard') {
+      return CreditCardPaymentMethodOptions;
+    } else {
+      return DebitCardPaymentMethodOptions;
+    }
+  }, [selectedCard]);
+
+  // Reset payment method when card changes
+  useEffect(() => {
+    if (selectedCard) {
+      if (selectedCard.type === 'CreditCard') {
+        setPayment(PaymentMethodEnum.Credit.toString());
+      } else if (payment === PaymentMethodEnum.Credit.toString()) {
+        // If debit card and credit payment was selected, reset
+        setPayment('');
+      }
+    }
+  }, [cardId, selectedCard]);
 
   // Filter categories based on transaction type
   const filteredCategories = useMemo(() => {
@@ -114,6 +163,7 @@ export const NewTransactionModal = ({ open, onOpenChange, onSuccess, categories 
     setRawValue(0);
     setDate('');
     setCategory('');
+    setCardId(preselectedCardId || '');
     setType('');
     setPayment('');
     setStatus('');
@@ -128,7 +178,7 @@ export const NewTransactionModal = ({ open, onOpenChange, onSuccess, categories 
     e.preventDefault();
     
     // Basic required field check
-    if (!title || !rawValue || !date || !category || !type || !payment || !status) {
+    if (!title || !rawValue || !date || !category || !cardId || !type || !payment || !status) {
       toast.error('Preencha todos os campos obrigatórios');
       return;
     }
@@ -179,6 +229,7 @@ export const NewTransactionModal = ({ open, onOpenChange, onSuccess, categories 
       const dateValue = `${date}T12:00:00.000Z`;
 
       const payload: any = {
+        cardId,
         categoryId: category,
         title: title.trim(),
         description: description.trim() || undefined,
@@ -284,8 +335,27 @@ export const NewTransactionModal = ({ open, onOpenChange, onSuccess, categories 
             </div>
           </div>
 
-          {/* Linha 3 - Tipo + Status */}
+          {/* Linha 3 - Cartão + Tipo */}
           <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>Cartão <span className="text-destructive">*</span></Label>
+              <Select value={cardId} onValueChange={setCardId} required disabled={loading}>
+                <SelectTrigger className="text-sm">
+                  <SelectValue placeholder="Selecione o cartão" />
+                </SelectTrigger>
+                <SelectContent>
+                  {cards.map((card) => (
+                    <SelectItem key={card.id} value={card.id}>
+                      {card.name} ({CardTypeLabels[card.type] || card.type})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {cards.length === 0 && (
+                <p className="text-xs text-muted-foreground">Nenhum cartão cadastrado</p>
+              )}
+            </div>
+
             <div className="space-y-1.5">
               <Label>Tipo <span className="text-destructive">*</span></Label>
               <Select value={type} onValueChange={setType} required disabled={loading}>
@@ -298,7 +368,10 @@ export const NewTransactionModal = ({ open, onOpenChange, onSuccess, categories 
                 </SelectContent>
               </Select>
             </div>
+          </div>
 
+          {/* Linha 4 - Status + Pagamento */}
+          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Status <span className="text-destructive">*</span></Label>
               <Select value={status} onValueChange={setStatus} required disabled={loading}>
@@ -315,42 +388,43 @@ export const NewTransactionModal = ({ open, onOpenChange, onSuccess, categories 
                 <p className="text-xs text-destructive">{getInputError('status')}</p>
               )}
             </div>
-          </div>
-
-          {/* Linha 4 - Categoria + Forma de Pagamento */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>Categoria <span className="text-destructive">*</span></Label>
-              <Select value={category} onValueChange={setCategory} required disabled={loading || !type}>
-                <SelectTrigger className="text-sm">
-                  <SelectValue placeholder={type ? "Selecione" : "Selecione o tipo primeiro"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {filteredCategories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>{cat.title}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
 
             <div className="space-y-1.5">
               <Label>Pagamento <span className="text-destructive">*</span></Label>
-              <Select value={payment} onValueChange={setPayment} required disabled={loading}>
+              <Select value={payment} onValueChange={setPayment} required disabled={loading || !cardId}>
                 <SelectTrigger className="text-sm">
-                  <SelectValue placeholder="Selecione" />
+                  <SelectValue placeholder={cardId ? "Selecione" : "Selecione um cartão"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {PaymentMethodOptions.map((method) => (
+                  {paymentMethodOptions.map((method) => (
                     <SelectItem key={method.value} value={method.value.toString()}>
                       {method.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              {selectedCard?.type === 'CreditCard' && (
+                <p className="text-xs text-muted-foreground">Cartão de crédito usa apenas pagamento em crédito</p>
+              )}
             </div>
           </div>
 
-          {/* Linha 5 - Parcelamento */}
+          {/* Linha 5 - Categoria */}
+          <div className="space-y-1.5">
+            <Label>Categoria <span className="text-destructive">*</span></Label>
+            <Select value={category} onValueChange={setCategory} required disabled={loading || !type}>
+              <SelectTrigger className="text-sm">
+                <SelectValue placeholder={type ? "Selecione" : "Selecione o tipo primeiro"} />
+              </SelectTrigger>
+              <SelectContent>
+                {filteredCategories.map((cat) => (
+                  <SelectItem key={cat.id} value={cat.id}>{cat.title}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Linha 6 - Parcelamento */}
           <div className="space-y-3 p-3 border border-border rounded-lg bg-secondary/30">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
@@ -391,7 +465,7 @@ export const NewTransactionModal = ({ open, onOpenChange, onSuccess, categories 
             )}
           </div>
 
-          {/* Linha 6 - Destino/Origem */}
+          {/* Linha 7 - Destino/Origem */}
           <div className="space-y-1.5">
             <Label htmlFor="destination">
               {type === 'Receita' ? 'Origem' : 'Destino'} (opcional)
@@ -413,7 +487,7 @@ export const NewTransactionModal = ({ open, onOpenChange, onSuccess, categories 
             )}
           </div>
 
-          {/* Linha 7 - Descrição */}
+          {/* Linha 8 - Descrição */}
           <div className="space-y-1.5">
             <Label htmlFor="description">Descrição (opcional)</Label>
             <Textarea
