@@ -41,12 +41,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
 
 interface Invoice {
   id: string;
@@ -64,7 +58,9 @@ const Contas = () => {
   const [selectedCard, setSelectedCard] = useState<CardType | null>(null);
   const [loading, setLoading] = useState(true);
   const { showValues, setShowValues } = useValuesVisibility();
-  const [activeTab, setActiveTab] = useState<'transactions' | 'invoices'>('transactions');
+  
+  // Selected invoice for viewing transactions
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   
   // Modals
   const [newCardOpen, setNewCardOpen] = useState(false);
@@ -181,6 +177,10 @@ const Contas = () => {
       }
 
       setInvoices(generatedInvoices);
+      // Auto-select the first (current) invoice
+      if (generatedInvoices.length > 0) {
+        setSelectedInvoice(generatedInvoices[0]);
+      }
     } catch (error) {
       console.error('Error fetching invoices:', error);
     }
@@ -322,10 +322,7 @@ const Contas = () => {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-h2">Contas</h1>
-            <p className="text-muted-foreground">Gerencie seus cartões de crédito e débito</p>
-          </div>
+          <h1 className="text-h2">Contas</h1>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => setShowValues(!showValues)}>
               {showValues ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
@@ -426,123 +423,295 @@ const Contas = () => {
               </div>
             </div>
 
-            {/* Tabs: Faturas / Transações */}
+            {/* Credit Card Content - Everything shown together */}
             {selectedCard && selectedCard.type === 'CreditCard' && (
-              <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)} className="w-full">
-                <TabsList className="bg-card border border-border w-full sm:w-auto">
-                  <TabsTrigger value="transactions" className="flex-1 sm:flex-none data-[state=active]:bg-accent data-[state=active]:text-accent-foreground">
-                    Transações
-                  </TabsTrigger>
-                  <TabsTrigger value="invoices" className="flex-1 sm:flex-none data-[state=active]:bg-accent data-[state=active]:text-accent-foreground">
-                    Faturas
-                  </TabsTrigger>
-                </TabsList>
+              <div className="space-y-6">
+                {/* Faturas Section */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Faturas Abertas</h3>
+                  
+                  {invoices.length === 0 ? (
+                    <div className="bg-card rounded-xl border border-border p-8 text-center">
+                      <p className="text-muted-foreground">Nenhuma fatura encontrada</p>
+                    </div>
+                  ) : (
+                    <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 lg:mx-0 lg:px-0">
+                      {invoices.map((invoice) => (
+                        <div
+                          key={invoice.id}
+                          onClick={() => setSelectedInvoice(invoice)}
+                          className={cn(
+                            "flex-shrink-0 w-48 bg-card rounded-xl border border-border p-4 hover:shadow-md transition-all cursor-pointer",
+                            selectedInvoice?.id === invoice.id && "ring-2 ring-accent"
+                          )}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="font-medium">{invoice.month}</span>
+                            <span className={cn(
+                              "text-xs px-2 py-0.5 rounded-full",
+                              invoice.status === 'open' 
+                                ? 'bg-accent/10 text-accent' 
+                                : 'bg-secondary text-muted-foreground'
+                            )}>
+                              {invoice.status === 'open' ? 'Aberta' : 'Fechada'}
+                            </span>
+                          </div>
+                          <p className="font-bold text-lg mb-2">
+                            {showValues ? formatCurrency(invoice.totalAmount) : '••••••'}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Vencimento: {invoice.dueDate}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
-                <TabsContent value="invoices" className="mt-6">
-                  {/* Faturas Section */}
-                  <div className="space-y-4">
-                    <p className="text-sm text-muted-foreground">
-                      As seguintes faturas estão disponíveis para o seu cartão {selectedCard.name}. 
-                      Acha que o valor não bate ou sente falta de alguma transação? Conta pra gente!
-                    </p>
-                    
-                    {invoices.length === 0 ? (
-                      <div className="bg-card rounded-xl border border-border p-8 text-center">
-                        <p className="text-muted-foreground">Nenhuma fatura encontrada</p>
-                      </div>
-                    ) : (
-                      <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 lg:mx-0 lg:px-0">
-                        {invoices.map((invoice) => (
-                          <div
-                            key={invoice.id}
-                            className="flex-shrink-0 w-48 bg-card rounded-xl border border-border p-4 hover:shadow-md transition-shadow cursor-pointer"
-                          >
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="font-medium">{invoice.month}</span>
-                              <span className={cn(
-                                "text-xs px-2 py-0.5 rounded-full",
-                                invoice.status === 'open' 
-                                  ? 'bg-accent/10 text-accent' 
-                                  : 'bg-secondary text-muted-foreground'
-                              )}>
-                                {invoice.status === 'open' ? 'Aberta' : 'Fechada'}
-                              </span>
+                {/* Selected Invoice Transactions */}
+                {selectedInvoice && (
+                  <div className="bg-card rounded-2xl border border-border">
+                    <div className="p-4 border-b border-border flex items-center justify-between">
+                      <h3 className="font-medium">Transações - {selectedInvoice.month}</h3>
+                      <span className="text-sm text-muted-foreground">
+                        {selectedInvoice.transactions.length} transações
+                      </span>
+                    </div>
+                    <div className="divide-y divide-border">
+                      {selectedInvoice.transactions.map((tx) => {
+                        const isIncome = tx.transactionType === 'Income' || tx.transactionType === 'Receita';
+                        return (
+                          <div key={tx.id} className="flex items-center gap-4 p-4 hover:bg-secondary/30 transition-colors">
+                            <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-sm">
+                              {isIncome ? "💰" : "💸"}
                             </div>
-                            <p className="font-bold text-lg mb-2">
-                              {showValues ? formatCurrency(invoice.totalAmount) : '••••••'}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              Vencimento: {invoice.dueDate}
-                            </p>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">{tx.title}</p>
+                              <p className="text-xs text-muted-foreground">{formatDate(tx.date)}</p>
+                            </div>
+                            <span className={cn(
+                              "font-medium tabular-nums",
+                              isIncome ? "text-success" : "text-destructive"
+                            )}>
+                              {showValues 
+                                ? `${isIncome ? '+' : '-'}${formatCurrency(tx.amount)}` 
+                                : '••••••'
+                              }
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Summary Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="bg-card rounded-xl border border-border p-4">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="p-2 rounded-lg bg-accent/10">
+                        <CreditCard className="w-4 h-4 text-accent" />
+                      </div>
+                      <span className="text-sm text-muted-foreground">Limite Total</span>
+                    </div>
+                    <p className="text-xl font-semibold">
+                      {showValues ? formatCurrency(totalLimit) : '••••••'}
+                    </p>
+                  </div>
+                  
+                  <div className="bg-card rounded-xl border border-border p-4">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="p-2 rounded-lg bg-destructive/10">
+                        <ArrowUpRight className="w-4 h-4 text-destructive" />
+                      </div>
+                      <span className="text-sm text-muted-foreground">Utilizado</span>
+                    </div>
+                    <p className="text-xl font-semibold">
+                      {showValues ? formatCurrency(totalUsed) : '••••••'}
+                    </p>
+                    {totalLimit > 0 && (
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {((totalUsed / totalLimit) * 100).toFixed(1)}% do limite
+                      </p>
+                    )}
+                  </div>
+                  
+                  <div className="bg-card rounded-xl border border-border p-4">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="p-2 rounded-lg bg-success/10">
+                        <CreditCard className="w-4 h-4 text-success" />
+                      </div>
+                      <span className="text-sm text-muted-foreground">Disponível</span>
+                    </div>
+                    <p className="text-xl font-semibold text-success">
+                      {showValues ? formatCurrency(totalAvailable) : '••••••'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Payment Status Ring + Pending Transactions */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Payment Status */}
+                  {totalPayments > 0 && (
+                    <div className="bg-card rounded-2xl border border-border p-6">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <p className="text-2xl font-bold">
+                            {showValues ? formatCurrency(totalPending) : 'R$ ••••••'}
+                          </p>
+                          <p className="text-sm text-muted-foreground">Falta pagar</p>
+                          <p className="text-xs text-muted-foreground mt-1">{pendingPercentage.toFixed(1)}%</p>
+                        </div>
+
+                        <div className="w-24 h-24 relative">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                              <Pie
+                                data={paymentStatusData}
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={30}
+                                outerRadius={40}
+                                startAngle={90}
+                                endAngle={-270}
+                                dataKey="value"
+                              >
+                                {paymentStatusData.map((entry, index) => (
+                                  <Cell key={`cell-${index}`} fill={entry.color} />
+                                ))}
+                              </Pie>
+                              <Tooltip content={<CustomRingTooltip />} />
+                            </PieChart>
+                          </ResponsiveContainer>
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-2 h-2 rounded-full bg-accent" />
+                          </div>
+                        </div>
+
+                        <div className="flex-1 text-right">
+                          <p className="text-2xl font-bold">
+                            {showValues ? formatCurrency(totalPaid) : 'R$ ••••••'}
+                          </p>
+                          <p className="text-sm text-muted-foreground">Pago até agora</p>
+                          <p className="text-xs text-muted-foreground mt-1">{paidPercentage.toFixed(1)}%</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Pending Transactions */}
+                  <div className="bg-card rounded-2xl border border-border p-6">
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-lg font-medium">Transações Pendentes</h3>
+                      <span className="text-sm text-muted-foreground">{pendingTransactions.length} pendentes</span>
+                    </div>
+                    
+                    {pendingTransactions.length === 0 ? (
+                      <p className="text-muted-foreground text-center py-8">Nenhuma transação pendente</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {pendingTransactions.slice(0, 5).map((tx) => (
+                          <div 
+                            key={tx.id}
+                            className="flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/50 transition-colors"
+                          >
+                            <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-sm">
+                              💸
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">{tx.title}</p>
+                              <p className="text-xs text-muted-foreground">{formatDate(tx.date)}</p>
+                            </div>
+                            <span className="font-medium tabular-nums text-destructive">
+                              {showValues ? `-${formatCurrency(tx.amount)}` : '••••••'}
+                            </span>
                           </div>
                         ))}
                       </div>
                     )}
+                  </div>
+                </div>
 
-                    {/* Invoice Transactions */}
-                    {invoices.length > 0 && (
-                      <div className="bg-card rounded-2xl border border-border">
-                        <div className="p-4 border-b border-border">
-                          <h3 className="font-medium">Transações - {invoices[0]?.month}</h3>
-                        </div>
-                        <div className="divide-y divide-border">
-                          {invoices[0]?.transactions.slice(0, 10).map((tx) => {
-                            const isIncome = tx.transactionType === 'Income' || tx.transactionType === 'Receita';
-                            return (
-                              <div key={tx.id} className="flex items-center gap-4 p-4 hover:bg-secondary/30 transition-colors">
-                                <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-sm">
-                                  {isIncome ? "💰" : "💸"}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-medium truncate">{tx.title}</p>
-                                  <p className="text-xs text-muted-foreground">{formatDate(tx.date)}</p>
-                                </div>
-                                <span className={cn(
-                                  "font-medium tabular-nums",
-                                  isIncome ? "text-success" : "text-destructive"
-                                )}>
-                                  {showValues 
-                                    ? `${isIncome ? '+' : '-'}${formatCurrency(tx.amount)}` 
-                                    : '••••••'
-                                  }
-                                </span>
-                                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                {/* Recent Transactions + Card Details */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Recent Transactions */}
+                  <div className="bg-card rounded-2xl border border-border p-6">
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-lg font-medium">Últimas Transações</h3>
+                      <Link to={`/app/transacoes?cardId=${selectedCard.id}`} className="text-sm text-accent hover:underline">
+                        Ver todas
+                      </Link>
+                    </div>
+                    
+                    {recentTransactions.length === 0 ? (
+                      <p className="text-muted-foreground text-center py-8">Nenhuma transação recente</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {recentTransactions.slice(0, 5).map((tx) => {
+                          const isIncome = tx.transactionType === 'Income' || tx.transactionType === 'Receita';
+                          return (
+                            <div 
+                              key={tx.id}
+                              className="flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/50 transition-colors"
+                            >
+                              <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-sm">
+                                {isIncome ? "💰" : "💸"}
                               </div>
-                            );
-                          })}
-                        </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium truncate">{tx.title}</p>
+                                <p className="text-xs text-muted-foreground">{formatDate(tx.date)}</p>
+                              </div>
+                              <span className={cn(
+                                "font-medium tabular-nums",
+                                isIncome ? "text-success" : "text-destructive"
+                              )}>
+                                {showValues 
+                                  ? `${isIncome ? '+' : '-'}${formatCurrency(tx.amount)}` 
+                                  : '••••••'
+                                }
+                              </span>
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
-                </TabsContent>
 
-                <TabsContent value="transactions" className="mt-6">
-                  {/* Existing transactions content */}
-                  <TransactionsContent 
-                    selectedCard={selectedCard}
-                    recentTransactions={recentTransactions}
-                    pendingTransactions={pendingTransactions}
-                    financialSummary={financialSummary}
-                    totalLimit={totalLimit}
-                    totalUsed={totalUsed}
-                    totalAvailable={totalAvailable}
-                    paymentStatusData={paymentStatusData}
-                    showValues={showValues}
-                    formatCurrency={formatCurrency}
-                    formatDate={formatDate}
-                    getCardTypeLabel={getCardTypeLabel}
-                    handleEditCard={handleEditCard}
-                    handleDeleteCard={handleDeleteCard}
-                    cards={cards}
-                    CustomRingTooltip={CustomRingTooltip}
-                    totalPending={totalPending}
-                    totalPaid={totalPaid}
-                    pendingPercentage={pendingPercentage}
-                    paidPercentage={paidPercentage}
-                    totalPayments={totalPayments}
-                  />
-                </TabsContent>
-              </Tabs>
+                  {/* Card Details */}
+                  <div className="bg-card rounded-2xl border border-border p-6">
+                    <h3 className="text-lg font-medium mb-6">Detalhes do Cartão</h3>
+                    
+                    <div className="space-y-4">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Nome</span>
+                        <span className="font-medium">{selectedCard.name}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Tipo</span>
+                        <span className="font-medium">{getCardTypeLabel(selectedCard.type)}</span>
+                      </div>
+                      {selectedCard.creditCard && (
+                        <>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Limite</span>
+                            <span className="font-medium">
+                              {showValues ? formatCurrency(selectedCard.creditCard.limit) : '••••••'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Dia de Fechamento</span>
+                            <span className="font-medium">{selectedCard.creditCard.closeDay}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Dia de Vencimento</span>
+                            <span className="font-medium">{selectedCard.creditCard.dueDay}</span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
             )}
 
             {/* For debit cards, show transactions directly */}

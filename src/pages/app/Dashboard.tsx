@@ -133,9 +133,10 @@ const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   
-  // Card filter - filter all data by selected card
+  // Card filter - filter all data by selected card (always has a card selected)
   const [cards, setCards] = useState<Card[]>([]);
   const [selectedCardId, setSelectedCardId] = useState<string>("");
+  const [cardsLoaded, setCardsLoaded] = useState(false);
   
   // Main period filter
   const [mainPeriod, setMainPeriod] = useState<MainPeriodType>("current-month");
@@ -184,6 +185,11 @@ const Dashboard = () => {
       const response = await cardService.getAll({ pageSize: 50 });
       if (response.data) {
         setCards(response.data.cards);
+        // Auto-select first card if none selected
+        if (response.data.cards.length > 0 && !selectedCardId) {
+          setSelectedCardId(response.data.cards[0].id);
+        }
+        setCardsLoaded(true);
       }
     } catch (error) {
       console.error("Error fetching cards:", error);
@@ -274,14 +280,20 @@ const Dashboard = () => {
 
   // Fetch balance for the selected period (income - expenses for that period)
   const fetchPeriodBalance = async () => {
+    if (!selectedCardId) return;
     try {
       const { start, end } = getMainDateRange();
-      // Get financial summary for the selected period (not cumulative)
+      // Get financial summary for the selected period with card filter
+      const queryParams = new URLSearchParams();
+      if (start) queryParams.append('startDate', start);
+      if (end) queryParams.append('endDate', end);
+      queryParams.append('cardId', selectedCardId);
+      
       const response = await transactionService.getFinancialSummary(start, end);
       if (response.data) {
         // Calculate balance as income - expenses for the period
-        const periodBalance = response.data.periodIncome - response.data.periodExpense;
-        setPeriodBalance(periodBalance);
+        const periodBalanceCalc = response.data.periodIncome - response.data.periodExpense;
+        setPeriodBalance(periodBalanceCalc);
       }
     } catch (error) {
       console.error("Error fetching period balance:", error);
@@ -810,16 +822,13 @@ const Dashboard = () => {
           <div className="flex items-center gap-3">
             <h2 className="text-lg font-medium">{getPeriodLabel()}</h2>
             
-            {/* Card Filter */}
-            <Select value={selectedCardId || "all"} onValueChange={(value) => setSelectedCardId(value === "all" ? "" : value)}>
+            {/* Card Filter - Always has a card selected */}
+            <Select value={selectedCardId} onValueChange={setSelectedCardId}>
               <SelectTrigger className="w-auto h-9 px-3 bg-card border-border rounded-md text-sm">
                 <CreditCard className="w-4 h-4 mr-2 text-muted-foreground" />
-                <SelectValue placeholder="Todas as contas" />
+                <SelectValue placeholder="Selecione uma conta" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">
-                  <span className="font-medium">Todas as contas</span>
-                </SelectItem>
                 {cards.map((card) => (
                   <SelectItem key={card.id} value={card.id}>
                     {card.name}
@@ -906,21 +915,9 @@ const Dashboard = () => {
             
             <div className="mb-2">
               <p className="text-2xl font-bold">
-                {showValues ? formatCurrency(currentMonthTotal) : "••••••"}{" "}
-                <span className="text-base font-normal text-muted-foreground">abaixo</span>
+                {showValues ? formatCurrency(currentMonthTotal) : "••••••"}
               </p>
-              <div className="flex items-center gap-2 mt-1">
-                <span className={`text-xs px-2 py-0.5 rounded font-medium ${
-                  spendingPaceChange <= 0 
-                    ? "bg-success/10 text-success" 
-                    : "bg-destructive/10 text-destructive"
-                }`}>
-                  {spendingPaceChange >= 0 ? "+" : ""}{spendingPaceChange}%
-                </span>
-                <span className="text-sm text-muted-foreground">
-                  vs {showValues ? formatCurrency(previousMonthTotal) : "••••••"} mês anterior
-                </span>
-              </div>
+              <p className="text-sm text-muted-foreground">Total de gastos no período</p>
             </div>
 
             <ResponsiveContainer width="100%" height={200}>

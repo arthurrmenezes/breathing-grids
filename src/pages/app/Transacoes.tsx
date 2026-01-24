@@ -617,25 +617,25 @@ const Transacoes = () => {
             </div>
           </div>
 
-          {/* Summary Stats */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div className="bg-card rounded-xl border border-border p-4">
+          {/* Summary Stats - Clean style without background cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
+            <div>
               <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Transações</p>
               <p className="text-2xl font-bold">{totalItems}</p>
             </div>
-            <div className="bg-card rounded-xl border border-border p-4">
+            <div>
               <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Receitas</p>
               <p className="text-2xl font-bold text-success">
                 {showValues ? formatCurrency(summary?.periodIncome || 0) : '••••••'}
               </p>
             </div>
-            <div className="bg-card rounded-xl border border-border p-4">
+            <div>
               <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Despesas</p>
               <p className="text-2xl font-bold text-destructive">
                 {showValues ? formatCurrency(summary?.periodExpense || 0) : '••••••'}
               </p>
             </div>
-            <div className="bg-card rounded-xl border border-border p-4">
+            <div>
               <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Saldo</p>
               <p className={cn("text-2xl font-bold", (summary?.balance || 0) >= 0 ? 'text-success' : 'text-destructive')}>
                 {showValues ? formatCurrency(summary?.balance || 0) : '••••••'}
@@ -1073,6 +1073,7 @@ const Transacoes = () => {
         onOpenChange={setNewTransactionOpen}
         onSuccess={handleTransactionCreated}
         categories={categories}
+        cards={cards}
       />
 
       {/* Edit Transaction Modal */}
