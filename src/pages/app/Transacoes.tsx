@@ -746,12 +746,15 @@ const Transacoes = () => {
           </Popover>
 
           {/* Card Filter */}
-          <Select value={filterCardId} onValueChange={setFilterCardId}>
+          <Select 
+            value={filterCardId || "all"} 
+            onValueChange={(value) => setFilterCardId(value === "all" ? "" : value)}
+          >
             <SelectTrigger className={cn("w-auto min-w-[150px] bg-card border-border h-10 rounded-md justify-center", hasCardFilter && "border-accent")}>
               <SelectValue placeholder="Todos os cartões" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value=""><span className="font-semibold">Todos os cartões</span></SelectItem>
+              <SelectItem value="all"><span className="font-semibold">Todos os cartões</span></SelectItem>
               {cards.map((card) => (
                 <SelectItem key={card.id} value={card.id}>
                   {card.name} ({CardTypeLabels[card.type] || card.type})
