@@ -1,20 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { AppLayout, useValuesVisibility } from '@/components/app/AppLayout';
 import { Button } from '@/components/ui/button';
-import { Plus, Pencil, Trash2, Eye, EyeOff, Filter, Loader2 } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, TooltipProps } from 'recharts';
+import { Plus, Pencil, Trash2, Eye, EyeOff, Tag, ChevronRight, ChevronDown, Loader2, MoreHorizontal } from 'lucide-react';
 import { NewCategoryModal } from '@/components/app/NewCategoryModal';
 import { EditCategoryModal } from '@/components/app/EditCategoryModal';
 import { categoryService } from '@/services/categoryService';
+import { transactionService } from '@/services/transactionService';
 import { Category, CategoryTypeLabels, CategoryTypeEnum } from '@/types/category';
 import { toast } from 'sonner';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { cn } from '@/lib/utils';
+import { format, startOfMonth, endOfMonth } from 'date-fns';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,59 +20,102 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 
 // Color palette for categories
 const categoryColors = [
-  '#10B981', '#3B82F6', '#8B5CF6', '#F59E0B', '#EF4444', 
-  '#EC4899', '#14B8A6', '#6366F1', '#22C55E', '#0EA5E9',
-  '#F97316', '#84CC16', '#06B6D4', '#A855F7', '#F43F5E'
+  'hsl(160 84% 39%)', 'hsl(200 84% 45%)', 'hsl(280 84% 50%)', 
+  'hsl(40 84% 50%)', 'hsl(0 84% 50%)', 'hsl(340 84% 50%)',
+  'hsl(120 84% 39%)', 'hsl(220 84% 50%)', 'hsl(30 84% 50%)',
+  'hsl(180 84% 40%)', 'hsl(260 84% 50%)', 'hsl(60 84% 45%)'
 ];
 
 const getCategoryColor = (index: number) => categoryColors[index % categoryColors.length];
 
-// Custom tooltip component for dark mode support
-const CustomTooltip = ({ active, payload }: TooltipProps<number, string>) => {
-  if (active && payload && payload.length) {
-    const data = payload[0];
-    return (
-      <div className="bg-card text-foreground border border-border rounded-lg px-3 py-2 shadow-lg">
-        <p className="text-sm font-medium">{data.name}</p>
-      </div>
-    );
-  }
-  return null;
+// Category icons based on name (simplified)
+const getCategoryIcon = () => {
+  return <Tag className="w-4 h-4" />;
 };
+
+interface CategoryWithStats extends Category {
+  transactionCount: number;
+  totalAmount: number;
+}
 
 const Categorias = () => {
   const { showValues, setShowValues } = useValuesVisibility();
   const [newCategoryOpen, setNewCategoryOpen] = useState(false);
   const [editCategoryOpen, setEditCategoryOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [filterType, setFilterType] = useState('Todos');
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [filterType, setFilterType] = useState<'all' | 'expense' | 'income'>('all');
+  const [categories, setCategories] = useState<CategoryWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
   const fetchCategories = async () => {
     setLoading(true);
     try {
-      const categoryType = filterType === 'Receita' 
+      const categoryType = filterType === 'income' 
         ? CategoryTypeEnum.Receita 
-        : filterType === 'Despesa' 
+        : filterType === 'expense' 
         ? CategoryTypeEnum.Despesa 
         : undefined;
 
       const response = await categoryService.getAll({ 
-        pageSize: 50,
+        pageSize: 100,
         categoryType 
       });
       
       if (response.error) {
         toast.error(response.error);
       } else if (response.data) {
-        setCategories(response.data.categories);
+        // Fetch transaction counts for each category
+        const now = new Date();
+        const startDate = format(startOfMonth(now), 'yyyy-MM-dd');
+        const endDate = format(endOfMonth(now), 'yyyy-MM-dd');
+        
+        const categoriesWithStats: CategoryWithStats[] = await Promise.all(
+          response.data.categories.map(async (cat) => {
+            try {
+              const txResponse = await transactionService.getAll({
+                categoryId: cat.id,
+                startDate,
+                endDate,
+                pageSize: 1000,
+              });
+              
+              const transactions = txResponse.data?.transactions || [];
+              const totalAmount = transactions.reduce((sum, tx) => sum + tx.amount, 0);
+              
+              return {
+                ...cat,
+                transactionCount: transactions.length,
+                totalAmount,
+              };
+            } catch {
+              return {
+                ...cat,
+                transactionCount: 0,
+                totalAmount: 0,
+              };
+            }
+          })
+        );
+        
+        setCategories(categoriesWithStats);
       }
     } catch (error) {
       toast.error('Erro ao carregar categorias');
@@ -134,12 +172,26 @@ const Categorias = () => {
     return CategoryTypeLabels[type] || type;
   };
 
-  // Simulate spent data for chart (this would come from transactions API in real scenario)
-  const chartData = categories.map((cat, index) => ({
-    name: cat.title,
-    value: 100, // Placeholder value
-    color: getCategoryColor(index),
-  }));
+  const toggleGroup = (groupId: string) => {
+    setExpandedGroups(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(groupId)) {
+        newSet.delete(groupId);
+      } else {
+        newSet.add(groupId);
+      }
+      return newSet;
+    });
+  };
+
+  // Statistics
+  const totalCategories = categories.length;
+  const expenseCategories = categories.filter(c => c.type === 'Expense' || c.type === 'Despesa' || getTypeLabel(c.type) === 'Despesa').length;
+  const incomeCategories = categories.filter(c => c.type === 'Income' || c.type === 'Receita' || getTypeLabel(c.type) === 'Receita').length;
+  const customCategories = categories.filter(c => !c.isDefault).length;
+
+  const formatCurrency = (value: number) => 
+    `R$ ${Math.abs(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
 
   return (
     <AppLayout>
@@ -148,7 +200,7 @@ const Categorias = () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-h2">Categorias</h1>
-            <p className="text-muted-foreground">Gerencie suas categorias de gastos</p>
+            <p className="text-muted-foreground">Organize suas transações por categoria</p>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => setShowValues(!showValues)}>
@@ -161,30 +213,63 @@ const Categorias = () => {
           </div>
         </div>
 
-        {/* Filter by Type */}
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">Filtrar por tipo:</span>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-card rounded-xl border border-border p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <Tag className="w-4 h-4 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground uppercase tracking-wider">Categorias</span>
+            </div>
+            <p className="text-2xl font-bold">{totalCategories}</p>
           </div>
-          <Select value={filterType} onValueChange={setFilterType}>
-            <SelectTrigger className="w-[150px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Todos">Todos</SelectItem>
-              <SelectItem value="Receita">Receita</SelectItem>
-              <SelectItem value="Despesa">Despesa</SelectItem>
-            </SelectContent>
-          </Select>
+          
+          <div className="bg-card rounded-xl border border-border p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-2 h-2 rounded-full bg-destructive" />
+              <span className="text-xs text-muted-foreground uppercase tracking-wider">Despesas</span>
+            </div>
+            <p className="text-2xl font-bold">{expenseCategories}</p>
+          </div>
+          
+          <div className="bg-card rounded-xl border border-border p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-2 h-2 rounded-full bg-success" />
+              <span className="text-xs text-muted-foreground uppercase tracking-wider">Receitas</span>
+            </div>
+            <p className="text-2xl font-bold">{incomeCategories}</p>
+          </div>
+          
+          <div className="bg-card rounded-xl border border-border p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-2 h-2 rounded-full bg-accent" />
+              <span className="text-xs text-muted-foreground uppercase tracking-wider">Personalizadas</span>
+            </div>
+            <p className="text-2xl font-bold">{customCategories}</p>
+          </div>
         </div>
+
+        {/* Filter Tabs */}
+        <Tabs value={filterType} onValueChange={(v) => setFilterType(v as typeof filterType)}>
+          <TabsList className="bg-card border border-border">
+            <TabsTrigger value="all" className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground">
+              Todas
+            </TabsTrigger>
+            <TabsTrigger value="expense" className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground">
+              Despesas
+            </TabsTrigger>
+            <TabsTrigger value="income" className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground">
+              Receitas
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
 
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
           </div>
         ) : categories.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
+          <div className="flex flex-col items-center justify-center py-12 text-center bg-card rounded-2xl border border-border">
+            <Tag className="w-12 h-12 text-muted-foreground mb-4" />
             <p className="text-muted-foreground mb-4">Nenhuma categoria encontrada</p>
             <Button variant="accent" onClick={() => setNewCategoryOpen(true)}>
               <Plus className="w-4 h-4 mr-2" />
@@ -192,83 +277,106 @@ const Categorias = () => {
             </Button>
           </div>
         ) : (
-          /* Overview */
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Pie Chart */}
-            <div className="lg:col-span-1 bg-card rounded-2xl border border-border p-6">
-              <h3 className="text-lg font-medium mb-4">Distribuição</h3>
-              <ResponsiveContainer width="100%" height={280}>
-                <PieChart>
-                  <Pie
-                    data={chartData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={2}
-                    dataKey="value"
-                  >
-                    {chartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<CustomTooltip />} />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="text-center mt-4">
-                <p className="text-sm text-muted-foreground">Total de Categorias</p>
-                <p className="text-2xl font-semibold">{categories.length}</p>
-              </div>
-            </div>
-
-            {/* Categories Grid */}
-            <div className="lg:col-span-2">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {categories.map((category, index) => (
-                  <div 
-                    key={category.id}
-                    className="bg-card rounded-xl border border-border p-5 hover:shadow-card-hover transition-shadow"
-                  >
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <div 
-                          className="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
-                          style={{ backgroundColor: `${getCategoryColor(index)}20` }}
-                        >
-                          <div 
-                            className="w-4 h-4 rounded-full"
-                            style={{ backgroundColor: getCategoryColor(index) }}
-                          />
-                        </div>
-                        <div>
-                          <h4 className="font-medium">{category.title}</h4>
-                          <p className="text-sm text-muted-foreground">
-                            {getTypeLabel(category.type)}
-                            {category.isDefault && ' • Padrão'}
-                          </p>
-                        </div>
+          /* Categories List */
+          <div className="bg-card rounded-2xl border border-border divide-y divide-border">
+            {categories.map((category, index) => {
+              const isExpanded = expandedGroups.has(category.id);
+              const typeLabel = getTypeLabel(category.type);
+              const isExpense = typeLabel === 'Despesa';
+              
+              return (
+                <div key={category.id}>
+                  <div className="flex items-center gap-4 p-4 hover:bg-secondary/30 transition-colors">
+                    {/* Color indicator */}
+                    <div 
+                      className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                      style={{ backgroundColor: `${getCategoryColor(index)}20` }}
+                    >
+                      <div 
+                        className="w-5 h-5 rounded-lg flex items-center justify-center"
+                        style={{ backgroundColor: getCategoryColor(index) }}
+                      >
+                        {getCategoryIcon()}
                       </div>
+                    </div>
+                    
+                    {/* Category info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-medium truncate">{category.title}</h4>
+                        {category.isDefault && (
+                          <span className="text-xs bg-secondary px-2 py-0.5 rounded">Padrão</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className={cn(
+                          "text-xs px-2 py-0.5 rounded-full",
+                          isExpense 
+                            ? "bg-destructive/10 text-destructive" 
+                            : typeLabel === 'Receita' 
+                            ? "bg-success/10 text-success"
+                            : "bg-accent/10 text-accent"
+                        )}>
+                          {typeLabel}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {category.transactionCount} transação{category.transactionCount !== 1 ? 'ões' : ''}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {/* Amount */}
+                    <div className="text-right hidden sm:block">
+                      <p className={cn(
+                        "font-medium tabular-nums",
+                        showValues ? (isExpense ? 'text-destructive' : 'text-success') : ''
+                      )}>
+                        {showValues ? formatCurrency(category.totalAmount) : '••••••'}
+                      </p>
+                      <p className="text-xs text-muted-foreground">este mês</p>
+                    </div>
+                    
+                    {/* Actions */}
+                    <div className="flex items-center gap-1">
                       {!category.isDefault && (
-                        <div className="flex items-center gap-1">
-                          <button 
-                            className="p-1.5 rounded-lg hover:bg-secondary transition-colors"
-                            onClick={() => handleEdit(category)}
-                          >
-                            <Pencil className="w-4 h-4 text-muted-foreground" />
-                          </button>
-                          <button 
-                            className="p-1.5 rounded-lg hover:bg-destructive/10 transition-colors"
-                            onClick={() => handleDelete(category)}
-                          >
-                            <Trash2 className="w-4 h-4 text-destructive" />
-                          </button>
-                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button className="p-2 rounded-lg hover:bg-secondary transition-colors">
+                              <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleEdit(category)}>
+                              <Pencil className="w-4 h-4 mr-2" />
+                              Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => handleDelete(category)}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Excluir
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       )}
+                      <ChevronRight className="w-4 h-4 text-muted-foreground" />
                     </div>
                   </div>
-                ))}
+                </div>
+              );
+            })}
+            
+            {/* Add category row */}
+            <button 
+              onClick={() => setNewCategoryOpen(true)}
+              className="flex items-center gap-4 p-4 w-full hover:bg-secondary/30 transition-colors text-muted-foreground hover:text-foreground"
+            >
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-secondary/50 shrink-0">
+                <Plus className="w-5 h-5" />
               </div>
-            </div>
+              <span className="text-sm">Adicionar categoria</span>
+            </button>
           </div>
         )}
       </div>

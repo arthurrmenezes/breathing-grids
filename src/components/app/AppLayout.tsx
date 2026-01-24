@@ -6,7 +6,7 @@ import {
   Tags,
   Bell,
   Repeat,
-  CreditCard,
+  Wallet,
   Settings,
   LogOut,
   Menu,
@@ -41,13 +41,14 @@ const ValuesVisibilityContext = createContext<ValuesVisibilityContextType>({
 
 export const useValuesVisibility = () => useContext(ValuesVisibilityContext);
 
+// Updated menu order: Dashboard, Contas (renamed from Cartões), Transações, Recorrentes, Lembretes, Categorias
 const menuItems = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/app" },
+  { label: "Contas", icon: Wallet, href: "/app/contas" },
   { label: "Transações", icon: ArrowLeftRight, href: "/app/transacoes" },
   { label: "Recorrentes", icon: Repeat, href: "/app/recorrentes" },
   { label: "Lembretes", icon: Bell, href: "/app/lembretes" },
   { label: "Categorias", icon: Tags, href: "/app/categorias" },
-  { label: "Cartões", icon: CreditCard, href: "/app/cartoes" },
 ];
 
 const bottomMenuItems = [{ label: "Configurações", icon: Settings, href: "/app/configuracoes" }];

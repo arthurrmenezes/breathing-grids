@@ -533,79 +533,130 @@ const Transacoes = () => {
   return (
     <AppLayout>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <h1 className="text-h2">Transações</h1>
-          <div className="flex items-center gap-2">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => setShowValues(!showValues)}
-              title={showValues ? "Ocultar valores" : "Mostrar valores"}
-            >
-              {showValues ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
-            </Button>
-            <Button variant="accent" size="sm" onClick={() => setNewTransactionOpen(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Nova Transação
-            </Button>
+        {/* New Header with Month Selector */}
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-wrap items-center gap-4">
+            {/* Month Navigation */}
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={() => {
+                  const newDate = filterStartDate ? new Date(filterStartDate.getFullYear(), filterStartDate.getMonth() - 1, 1) : new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1);
+                  setFilterStartDate(newDate);
+                  setFilterEndDate(new Date(newDate.getFullYear(), newDate.getMonth() + 1, 0));
+                }}
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </Button>
+              <span className="font-medium min-w-[120px] text-center">
+                {filterStartDate 
+                  ? format(filterStartDate, 'MMMM yyyy', { locale: ptBR }).replace(/^\w/, c => c.toUpperCase())
+                  : format(new Date(), 'MMMM yyyy', { locale: ptBR }).replace(/^\w/, c => c.toUpperCase())
+                }
+              </span>
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={() => {
+                  const baseDate = filterStartDate || new Date();
+                  const newDate = new Date(baseDate.getFullYear(), baseDate.getMonth() + 1, 1);
+                  setFilterStartDate(newDate);
+                  setFilterEndDate(new Date(newDate.getFullYear(), newDate.getMonth() + 1, 0));
+                }}
+              >
+                <ChevronRight className="w-5 h-5" />
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => {
+                  const now = new Date();
+                  setFilterStartDate(new Date(now.getFullYear(), now.getMonth(), 1));
+                  setFilterEndDate(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+                }}
+              >
+                Hoje
+              </Button>
+            </div>
+
+            {/* Search */}
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar transações..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                className="pl-10 pr-10 bg-card border-border"
+              />
+              {searchQuery && (
+                <button 
+                  onClick={clearSearch}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => setShowValues(!showValues)}
+                title={showValues ? "Ocultar valores" : "Mostrar valores"}
+              >
+                {showValues ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
+              </Button>
+              <Button variant="accent" size="sm" onClick={() => setNewTransactionOpen(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Adicionar
+              </Button>
+            </div>
+          </div>
+
+          {/* Summary Stats */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="bg-card rounded-xl border border-border p-4">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Transações</p>
+              <p className="text-2xl font-bold">{totalItems}</p>
+            </div>
+            <div className="bg-card rounded-xl border border-border p-4">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Receitas</p>
+              <p className="text-2xl font-bold text-success">
+                {showValues ? formatCurrency(summary?.periodIncome || 0) : '••••••'}
+              </p>
+            </div>
+            <div className="bg-card rounded-xl border border-border p-4">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Despesas</p>
+              <p className="text-2xl font-bold text-destructive">
+                {showValues ? formatCurrency(summary?.periodExpense || 0) : '••••••'}
+              </p>
+            </div>
+            <div className="bg-card rounded-xl border border-border p-4">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Saldo</p>
+              <p className={cn("text-2xl font-bold", (summary?.balance || 0) >= 0 ? 'text-success' : 'text-destructive')}>
+                {showValues ? formatCurrency(summary?.balance || 0) : '••••••'}
+              </p>
+            </div>
           </div>
         </div>
 
         {/* Filter Dropdowns Bar */}
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Date Filter */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="default" className={cn("bg-card border-border h-10 min-w-[140px] rounded-md", hasDateFilter && "border-accent")}>
-                <CalendarDays className="w-4 h-4 mr-2 text-muted-foreground" />
-                {hasDateFilter ? (
-                  <span className="text-sm">
-                    {filterStartDate ? format(filterStartDate, 'dd/MM/yy') : '...'} - {filterEndDate ? format(filterEndDate, 'dd/MM/yy') : '...'}
-                  </span>
-                ) : (
-                  'Período'
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-4" align="start">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Data inicial</Label>
-                  <Calendar
-                    mode="single"
-                    selected={filterStartDate}
-                    onSelect={handleStartDateSelect}
-                    disabled={(date) => filterEndDate ? date > filterEndDate : false}
-                    className={cn("p-3 pointer-events-auto rounded-md border")}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Data final</Label>
-                  <Calendar
-                    mode="single"
-                    selected={filterEndDate}
-                    onSelect={handleEndDateSelect}
-                    disabled={(date) => filterStartDate ? date < filterStartDate : false}
-                    className={cn("p-3 pointer-events-auto rounded-md border")}
-                  />
-                </div>
-                {hasDateFilter && (
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    className="w-full"
-                    onClick={() => {
-                      setFilterStartDate(undefined);
-                      setFilterEndDate(undefined);
-                    }}
-                  >
-                    Limpar datas
-                  </Button>
-                )}
-              </div>
-            </PopoverContent>
-          </Popover>
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Transaction Type Filter */}
+          <Select value={filterType} onValueChange={setFilterType}>
+            <SelectTrigger className="w-auto h-9 px-3 bg-card border-border rounded-md text-sm">
+              <SelectValue placeholder="Tipo" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas</SelectItem>
+              <SelectItem value="income">Receitas</SelectItem>
+              <SelectItem value="expense">Despesas</SelectItem>
+            </SelectContent>
+          </Select>
 
           {/* Transaction Type Filter */}
           <Select value={filterType} onValueChange={setFilterType}>
