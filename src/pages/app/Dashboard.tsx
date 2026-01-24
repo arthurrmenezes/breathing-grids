@@ -9,7 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Transaction, PaymentStatusEnum } from "@/types/transaction";
 import { Category } from "@/types/category";
 import { Card } from "@/types/card";
-import { format, subMonths, startOfMonth, endOfMonth, parseISO, startOfQuarter, startOfYear, subDays, getDaysInMonth, getDate, subWeeks, subYears, addMonths } from "date-fns";
+import { addDays, addMonths, eachDayOfInterval, endOfMonth, format, getDate, parseISO, startOfMonth, startOfQuarter, startOfYear, subDays, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -30,7 +30,6 @@ import { NewTransactionModal } from "@/components/app/NewTransactionModal";
 
 type PeriodType = "year" | "6months" | "3months";
 type MainPeriodType = "current-month" | "last-month" | "current-quarter" | "current-year" | "last-6-months" | "last-12-months";
-type PatrimonioPeriodType = "1D" | "1W" | "1M" | "3M" | "YTD" | "1Y" | "ALL";
 type AccumulatedPeriodType = "3months" | "6months" | "year";
 type TransactionFilterType = "all" | "income" | "expense";
 
@@ -102,13 +101,7 @@ interface ChartDataPoint {
   expense: number;
 }
 
-interface SpendingPaceDataPoint {
-  day: number;
-  currentMonth: number;
-  previousMonth: number;
-}
-
-interface PatrimonioDataPoint {
+interface SimpleTimeSeriesPoint {
   label: string;
   value: number;
 }
@@ -132,6 +125,10 @@ const Dashboard = () => {
   const { showValues } = useValuesVisibility();
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  const isIncomeTx = (tx: Transaction) => tx.transactionType === "Income" || tx.transactionType === "Receita";
+  const isExpenseTx = (tx: Transaction) => tx.transactionType === "Expense" || tx.transactionType === "Despesa";
+  const capitalize = (text: string) => (text ? text.charAt(0).toUpperCase() + text.slice(1) : text);
   
   // Card filter - filter all data by selected card (always has a card selected)
   const [cards, setCards] = useState<Card[]>([]);
@@ -151,9 +148,6 @@ const Dashboard = () => {
   const [recentTxFilter, setRecentTxFilter] = useState<TransactionFilterType>("all");
   const [categoryFilter, setCategoryFilter] = useState<TransactionFilterType>("all");
   
-  // Patrimonio period
-  const [patrimonioPeriod, setPatrimonioPeriod] = useState<PatrimonioPeriodType>("1M");
-  
   const [loading, setLoading] = useState(true);
   
   // New transaction modal
@@ -170,14 +164,16 @@ const Dashboard = () => {
   const [categorySpending, setCategorySpending] = useState<CategorySpendingItem[]>([]);
   
   // Spending pace data
-  const [spendingPaceData, setSpendingPaceData] = useState<SpendingPaceDataPoint[]>([]);
-  const [currentMonthTotal, setCurrentMonthTotal] = useState(0);
-  const [previousMonthTotal, setPreviousMonthTotal] = useState(0);
+  const [spendingPaceData, setSpendingPaceData] = useState<SimpleTimeSeriesPoint[]>([]);
+  const [spendingTotal, setSpendingTotal] = useState(0);
   
   // Patrimonio data
-  const [patrimonioData, setPatrimonioData] = useState<PatrimonioDataPoint[]>([]);
+  const [patrimonioData, setPatrimonioData] = useState<SimpleTimeSeriesPoint[]>([]);
   const [currentPatrimonio, setCurrentPatrimonio] = useState(0);
   const [patrimonioChange, setPatrimonioChange] = useState(0);
+
+  // Accumulated balance data
+  const [accumulatedBalanceData, setAccumulatedBalanceData] = useState<SimpleTimeSeriesPoint[]>([]);
   
   // Fetch cards
   const fetchCards = async () => {
@@ -283,13 +279,7 @@ const Dashboard = () => {
     if (!selectedCardId) return;
     try {
       const { start, end } = getMainDateRange();
-      // Get financial summary for the selected period with card filter
-      const queryParams = new URLSearchParams();
-      if (start) queryParams.append('startDate', start);
-      if (end) queryParams.append('endDate', end);
-      queryParams.append('cardId', selectedCardId);
-      
-      const response = await transactionService.getFinancialSummary(start, end);
+      const response = await cardService.getFinancialSummary(selectedCardId, start, end);
       if (response.data) {
         // Calculate balance as income - expenses for the period
         const periodBalanceCalc = response.data.periodIncome - response.data.periodExpense;
@@ -300,156 +290,85 @@ const Dashboard = () => {
     }
   };
 
-  // Fetch spending pace data (cumulative expenses per day for current and previous month)
+  // Fetch spending pace data (cumulative expenses per day for the selected main period)
   const fetchSpendingPaceData = async () => {
+    if (!selectedCardId) return;
     try {
-      const now = new Date();
-      const currentMonthStart = startOfMonth(now);
-      const currentMonthEnd = endOfMonth(now);
-      const previousMonthStart = startOfMonth(subMonths(now, 1));
-      const previousMonthEnd = endOfMonth(subMonths(now, 1));
-      
-      const daysInCurrentMonth = getDaysInMonth(now);
-      const daysInPreviousMonth = getDaysInMonth(subMonths(now, 1));
-      const currentDay = getDate(now);
-      
-      // Fetch current month transactions
-      const currentResponse = await transactionService.getAll({
+      const { start, end, startDate, endDate } = getMainDateRange();
+
+      const response = await transactionService.getAll({
         pageNumber: 1,
-        pageSize: 1000,
-        startDate: format(currentMonthStart, "yyyy-MM-dd"),
-        endDate: format(currentMonthEnd, "yyyy-MM-dd"),
+        pageSize: 5000,
+        startDate: start,
+        endDate: end,
         cardId: selectedCardId || undefined,
       });
-      
-      // Fetch previous month transactions
-      const previousResponse = await transactionService.getAll({
-        pageNumber: 1,
-        pageSize: 1000,
-        startDate: format(previousMonthStart, "yyyy-MM-dd"),
-        endDate: format(previousMonthEnd, "yyyy-MM-dd"),
-        cardId: selectedCardId || undefined,
+
+      const expensesByDate = new Map<string, number>();
+      if (response.data) {
+        response.data.transactions.forEach((tx) => {
+          if (!isExpenseTx(tx)) return;
+          const dateKey = format(parseISO(tx.date), "yyyy-MM-dd");
+          expensesByDate.set(dateKey, (expensesByDate.get(dateKey) || 0) + tx.amount);
+        });
+      }
+
+      const days = eachDayOfInterval({ start: startDate, end: endDate });
+      let cumulative = 0;
+      const points: SimpleTimeSeriesPoint[] = days.map((d) => {
+        const key = format(d, "yyyy-MM-dd");
+        cumulative += expensesByDate.get(key) || 0;
+        return {
+          label: format(d, "dd/MM"),
+          value: cumulative,
+        };
       });
-      
-      // Build cumulative data for current month
-      const currentExpensesByDay = new Map<number, number>();
-      if (currentResponse.data) {
-        currentResponse.data.transactions.forEach((tx) => {
-          const isExpense = tx.transactionType === "Expense" || tx.transactionType === "Despesa";
-          if (isExpense) {
-            const day = getDate(parseISO(tx.date));
-            currentExpensesByDay.set(day, (currentExpensesByDay.get(day) || 0) + tx.amount);
-          }
-        });
-      }
-      
-      // Build cumulative data for previous month
-      const previousExpensesByDay = new Map<number, number>();
-      if (previousResponse.data) {
-        previousResponse.data.transactions.forEach((tx) => {
-          const isExpense = tx.transactionType === "Expense" || tx.transactionType === "Despesa";
-          if (isExpense) {
-            const day = getDate(parseISO(tx.date));
-            previousExpensesByDay.set(day, (previousExpensesByDay.get(day) || 0) + tx.amount);
-          }
-        });
-      }
-      
-      // Generate chart data with cumulative values
-      const chartPoints: SpendingPaceDataPoint[] = [];
-      let cumulativeCurrent = 0;
-      let cumulativePrevious = 0;
-      
-      const maxDays = Math.max(daysInCurrentMonth, daysInPreviousMonth);
-      
-      for (let day = 1; day <= maxDays; day++) {
-        cumulativeCurrent += currentExpensesByDay.get(day) || 0;
-        cumulativePrevious += previousExpensesByDay.get(day) || 0;
-        
-        chartPoints.push({
-          day,
-          currentMonth: day <= currentDay ? cumulativeCurrent : 0,
-          previousMonth: cumulativePrevious,
-        });
-      }
-      
-      setSpendingPaceData(chartPoints);
-      setCurrentMonthTotal(cumulativeCurrent);
-      setPreviousMonthTotal(cumulativePrevious);
+
+      setSpendingPaceData(points);
+      setSpendingTotal(cumulative);
     } catch (error) {
       console.error("Error fetching spending pace data:", error);
     }
   };
 
-  // Fetch patrimonio (income) data based on selected period
+  // Fetch patrimonio (cumulative income) data for the selected main period
   const fetchPatrimonioData = async () => {
+    if (!selectedCardId) return;
     try {
-      const now = new Date();
-      let startDate: Date;
-      
-      switch (patrimonioPeriod) {
-        case "1D":
-          startDate = subDays(now, 1);
-          break;
-        case "1W":
-          startDate = subWeeks(now, 1);
-          break;
-        case "1M":
-          startDate = subMonths(now, 1);
-          break;
-        case "3M":
-          startDate = subMonths(now, 3);
-          break;
-        case "YTD":
-          startDate = startOfYear(now);
-          break;
-        case "1Y":
-          startDate = subYears(now, 1);
-          break;
-        case "ALL":
-        default:
-          startDate = subYears(now, 5);
-          break;
-      }
-      
+      const { start, end, startDate, endDate } = getMainDateRange();
+
       const response = await transactionService.getAll({
         pageNumber: 1,
-        pageSize: 1000,
-        startDate: format(startDate, "yyyy-MM-dd"),
-        endDate: format(now, "yyyy-MM-dd"),
+        pageSize: 5000,
+        startDate: start,
+        endDate: end,
         cardId: selectedCardId || undefined,
       });
       
       if (response.data) {
-        const transactions = response.data.transactions;
-        
-        // Group by date and calculate cumulative balance
-        const dailyBalance = new Map<string, number>();
-        let runningBalance = 0;
-        
-        // Sort transactions by date
-        const sortedTx = [...transactions].sort((a, b) => 
-          new Date(a.date).getTime() - new Date(b.date).getTime()
-        );
-        
-        sortedTx.forEach((tx) => {
-          const dateKey = format(parseISO(tx.date), "dd/MM");
-          const isIncome = tx.transactionType === "Income" || tx.transactionType === "Receita";
-          runningBalance += isIncome ? tx.amount : -tx.amount;
-          dailyBalance.set(dateKey, runningBalance);
+        const incomesByDate = new Map<string, number>();
+        response.data.transactions.forEach((tx) => {
+          if (!isIncomeTx(tx)) return;
+          const dateKey = format(parseISO(tx.date), "yyyy-MM-dd");
+          incomesByDate.set(dateKey, (incomesByDate.get(dateKey) || 0) + tx.amount);
         });
-        
-        const chartPoints: PatrimonioDataPoint[] = Array.from(dailyBalance.entries()).map(([label, value]) => ({
-          label,
-          value,
-        }));
-        
-        setPatrimonioData(chartPoints);
-        setCurrentPatrimonio(runningBalance);
-        
-        // Calculate change percentage
-        const firstValue = chartPoints.length > 0 ? chartPoints[0].value : 0;
-        const change = firstValue !== 0 ? ((runningBalance - firstValue) / Math.abs(firstValue)) * 100 : 0;
+
+        const days = eachDayOfInterval({ start: startDate, end: endDate });
+        let cumulative = 0;
+        const points: SimpleTimeSeriesPoint[] = days.map((d) => {
+          const key = format(d, "yyyy-MM-dd");
+          cumulative += incomesByDate.get(key) || 0;
+          return {
+            label: format(d, "dd/MM"),
+            value: cumulative,
+          };
+        });
+
+        setPatrimonioData(points);
+        setCurrentPatrimonio(cumulative);
+
+        const firstValue = points.length > 0 ? points[0].value : 0;
+        const change = firstValue !== 0 ? ((cumulative - firstValue) / Math.abs(firstValue)) * 100 : 0;
         setPatrimonioChange(change);
       }
     } catch (error) {
@@ -457,14 +376,66 @@ const Dashboard = () => {
     }
   };
 
+  // Fetch accumulated balance evolution data (monthly cumulative net = income - expense)
+  const fetchAccumulatedBalanceData = async () => {
+    if (!selectedCardId) return;
+    try {
+      const now = new Date();
+      const monthsCount = accumulatedPeriod === "3months" ? 3 : accumulatedPeriod === "6months" ? 6 : 12;
+      const rangeStart = startOfMonth(subMonths(now, monthsCount - 1));
+      const rangeEnd = endOfMonth(now);
+
+      const response = await transactionService.getAll({
+        pageNumber: 1,
+        pageSize: 5000,
+        startDate: format(rangeStart, "yyyy-MM-dd"),
+        endDate: format(rangeEnd, "yyyy-MM-dd"),
+        cardId: selectedCardId || undefined,
+      });
+
+      const monthStarts: Date[] = [];
+      for (let i = 0; i < monthsCount; i++) {
+        monthStarts.push(startOfMonth(addMonths(rangeStart, i)));
+      }
+
+      const netByMonth = new Map<string, number>();
+      monthStarts.forEach((m) => netByMonth.set(format(m, "yyyy-MM"), 0));
+
+      if (response.data) {
+        response.data.transactions.forEach((tx) => {
+          const monthKey = format(parseISO(tx.date), "yyyy-MM");
+          if (!netByMonth.has(monthKey)) return;
+          const current = netByMonth.get(monthKey) || 0;
+          const next = isIncomeTx(tx) ? current + tx.amount : isExpenseTx(tx) ? current - tx.amount : current;
+          netByMonth.set(monthKey, next);
+        });
+      }
+
+      let running = 0;
+      const points: SimpleTimeSeriesPoint[] = monthStarts.map((m) => {
+        const key = format(m, "yyyy-MM");
+        running += netByMonth.get(key) || 0;
+        return {
+          label: capitalize(format(m, "MMM", { locale: ptBR })),
+          value: running,
+        };
+      });
+
+      setAccumulatedBalanceData(points.length > 0 ? points : [{ label: "-", value: 0 }]);
+    } catch (error) {
+      console.error("Error fetching accumulated balance data:", error);
+    }
+  };
+
   // Fetch summary data based on selected period
   const fetchSummaryData = async () => {
+    if (!selectedCardId) return;
     const { start: monthStart, end: monthEnd } = getMainDateRange();
     const { start: previousMonthStart, end: previousMonthEnd } = getPreviousDateRange();
 
     try {
       // Fetch current period summary
-      const currentResponse = await transactionService.getFinancialSummary(monthStart, monthEnd);
+      const currentResponse = await cardService.getFinancialSummary(selectedCardId, monthStart, monthEnd);
       
       if (currentResponse.data) {
         setCurrentSummary({
@@ -475,11 +446,11 @@ const Dashboard = () => {
       }
 
       // Fetch previous period for comparison
-      const previousResponse = await transactionService.getFinancialSummary(previousMonthStart, previousMonthEnd);
+      const previousResponse = await cardService.getFinancialSummary(selectedCardId, previousMonthStart, previousMonthEnd);
       
       if (previousResponse.data) {
         setPreviousSummary({
-          periodIncome: currentResponse.data.periodIncome,
+          periodIncome: previousResponse.data.periodIncome,
           periodExpense: previousResponse.data.periodExpense,
           balance: previousResponse.data.balance,
         });
@@ -517,8 +488,7 @@ const Dashboard = () => {
         // Calculate spending by category for current period
         const currentCategoryMap = new Map<string, number>();
         currentTransactions.forEach((tx) => {
-          const isExpense = tx.transactionType === "Expense" || tx.transactionType === "Despesa";
-          if (isExpense) {
+          if (isExpenseTx(tx)) {
             const current = currentCategoryMap.get(tx.categoryId) || 0;
             currentCategoryMap.set(tx.categoryId, current + tx.amount);
           }
@@ -527,8 +497,7 @@ const Dashboard = () => {
         // Calculate spending by category for previous period
         const previousCategoryMap = new Map<string, number>();
         previousTransactions.forEach((tx) => {
-          const isExpense = tx.transactionType === "Expense" || tx.transactionType === "Despesa";
-          if (isExpense) {
+          if (isExpenseTx(tx)) {
             const current = previousCategoryMap.get(tx.categoryId) || 0;
             previousCategoryMap.set(tx.categoryId, current + tx.amount);
           }
@@ -579,8 +548,8 @@ const Dashboard = () => {
         const monthlyData = new Map<string, { income: number; expense: number }>();
         
         // Generate all months in the range
-        const startDate = new Date(dateRanges.start);
-        const endDate = new Date(dateRanges.end);
+        const startDate = parseISO(dateRanges.start);
+        const endDate = parseISO(dateRanges.end);
         let currentDate = startOfMonth(startDate);
         
         while (currentDate <= endDate) {
@@ -591,7 +560,7 @@ const Dashboard = () => {
         
         // Now add transaction data
         transactions.forEach((tx) => {
-          const date = new Date(tx.date);
+          const date = parseISO(tx.date);
           const monthKey = format(date, "yyyy-MM");
           
           if (!monthlyData.has(monthKey)) {
@@ -599,9 +568,8 @@ const Dashboard = () => {
           }
           
           const data = monthlyData.get(monthKey)!;
-          const isIncome = tx.transactionType === "Income" || tx.transactionType === "Receita";
           
-          if (isIncome) {
+          if (isIncomeTx(tx)) {
             data.income += tx.amount;
           } else {
             data.expense += tx.amount;
@@ -611,7 +579,7 @@ const Dashboard = () => {
         // Convert to array sorted by date
         const sortedEntries = Array.from(monthlyData.entries()).sort((a, b) => a[0].localeCompare(b[0]));
         const chartDataPoints = sortedEntries.map(([key]) => {
-          const date = new Date(key + "-01");
+          const date = parseISO(`${key}-01`);
           const data = monthlyData.get(key)!;
           return {
             label: monthLabels[date.getMonth()],
@@ -630,9 +598,12 @@ const Dashboard = () => {
   // Fetch recent transactions (ordered by date, most recent first)
   const fetchRecentTransactions = async () => {
     try {
+      const { start, end } = getMainDateRange();
       const transactionsResponse = await transactionService.getAll({
         pageNumber: 1,
         pageSize: 5,
+        startDate: start,
+        endDate: end,
         cardId: selectedCardId || undefined,
       });
       
@@ -679,6 +650,7 @@ const Dashboard = () => {
         fetchOverdueTransactions(),
         fetchSpendingPaceData(),
         fetchPatrimonioData(),
+        fetchAccumulatedBalanceData(),
       ]);
       setLoading(false);
     };
@@ -687,15 +659,15 @@ const Dashboard = () => {
 
   // Update all data when card filter changes
   useEffect(() => {
-    if (!loading) {
-      fetchPeriodBalance();
-      fetchSummaryData();
-      fetchChartData();
-      fetchRecentTransactions();
-      fetchOverdueTransactions();
-      fetchSpendingPaceData();
-      fetchPatrimonioData();
-    }
+    if (!selectedCardId) return;
+    fetchPeriodBalance();
+    fetchSummaryData();
+    fetchChartData();
+    fetchRecentTransactions();
+    fetchOverdueTransactions();
+    fetchSpendingPaceData();
+    fetchPatrimonioData();
+    fetchAccumulatedBalanceData();
   }, [selectedCardId]);
 
   // Update summary, category spending and balance when period changes
@@ -703,6 +675,8 @@ const Dashboard = () => {
     fetchPeriodBalance();
     fetchSummaryData();
     fetchSpendingPaceData();
+    fetchPatrimonioData();
+    fetchRecentTransactions();
   }, [mainPeriod]);
 
   // Update chart when period changes
@@ -710,10 +684,10 @@ const Dashboard = () => {
     fetchChartData();
   }, [selectedPeriod]);
 
-  // Update patrimonio when period changes
+  // Update accumulated balance when its period changes
   useEffect(() => {
-    fetchPatrimonioData();
-  }, [patrimonioPeriod]);
+    fetchAccumulatedBalanceData();
+  }, [accumulatedPeriod]);
 
   const yAxisTicks = useMemo(() => {
     if (chartData.length === 0) return [0];
@@ -730,9 +704,7 @@ const Dashboard = () => {
   // Spending pace chart ticks
   const spendingPaceYAxisTicks = useMemo(() => {
     if (spendingPaceData.length === 0) return [0];
-    const maxCurrent = Math.max(...spendingPaceData.map((d) => d.currentMonth));
-    const maxPrevious = Math.max(...spendingPaceData.map((d) => d.previousMonth));
-    const maxValue = Math.max(maxCurrent, maxPrevious);
+    const maxValue = Math.max(...spendingPaceData.map((d) => d.value));
     return calculateYAxisTicks(maxValue);
   }, [spendingPaceData]);
 
@@ -752,9 +724,9 @@ const Dashboard = () => {
   const filteredRecentTransactions = useMemo(() => {
     if (recentTxFilter === "all") return recentTransactions;
     return recentTransactions.filter((tx) => {
-      const isIncome = tx.transactionType === "Income" || tx.transactionType === "Receita";
-      if (recentTxFilter === "income") return isIncome;
-      return !isIncome;
+      const income = isIncomeTx(tx);
+      if (recentTxFilter === "income") return income;
+      return !income;
     });
   }, [recentTransactions, recentTxFilter]);
 
@@ -782,10 +754,6 @@ const Dashboard = () => {
   const expenseChange = currentSummary && previousSummary
     ? calculateChange(currentSummary.periodExpense, previousSummary.periodExpense)
     : { percentage: 0, value: 0 };
-
-  const spendingPaceChange = previousMonthTotal > 0
-    ? Math.round(((currentMonthTotal - previousMonthTotal) / previousMonthTotal) * 100)
-    : 0;
 
   const formatCurrency = (value: number) => 
     `R$ ${Math.abs(value).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
@@ -915,7 +883,7 @@ const Dashboard = () => {
             
             <div className="mb-2">
               <p className="text-2xl font-bold">
-                {showValues ? formatCurrency(currentMonthTotal) : "••••••"}
+                {showValues ? formatCurrency(spendingTotal) : "••••••"}
               </p>
               <p className="text-sm text-muted-foreground">Total de gastos no período</p>
             </div>
@@ -930,11 +898,11 @@ const Dashboard = () => {
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                 <XAxis
-                  dataKey="day"
+                  dataKey="label"
                   axisLine={false}
                   tickLine={false}
                   tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
-                  interval={4}
+                  interval="preserveStartEnd"
                 />
                 <YAxis
                   axisLine={false}
@@ -952,42 +920,19 @@ const Dashboard = () => {
                     borderRadius: "8px",
                     color: "hsl(var(--foreground))",
                   }}
-                  formatter={(value: number, name: string) => [
-                    showValues ? formatCurrency(value) : "••••••",
-                    name === "currentMonth" ? "Este mês" : "Mês passado"
-                  ]}
-                  labelFormatter={(day) => `Dia ${day}`}
+                  formatter={(value: number) => [showValues ? formatCurrency(value) : "••••••", "Gastos acumulados"]}
+                  labelFormatter={(label) => `${label}`}
                 />
                 <Area
                   type="monotone"
-                  dataKey="currentMonth"
+                  dataKey="value"
                   stroke="hsl(35 92% 50%)"
                   strokeWidth={2}
                   fill="url(#spendingGradient)"
-                  name="Este mês"
-                />
-                <Line
-                  type="monotone"
-                  dataKey="previousMonth"
-                  stroke="hsl(var(--muted-foreground))"
-                  strokeWidth={2}
-                  strokeDasharray="5 5"
-                  dot={false}
-                  name="Mês passado"
+                  name="Gastos acumulados"
                 />
               </AreaChart>
             </ResponsiveContainer>
-            
-            <div className="flex items-center gap-4 mt-4 text-sm">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-0.5 bg-[hsl(35_92%_50%)]" />
-                <span className="text-muted-foreground">Este mês</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-0.5 bg-muted-foreground" style={{ borderStyle: "dashed" }} />
-                <span className="text-muted-foreground">Mês passado</span>
-              </div>
-            </div>
           </div>
 
           {/* Patrimonio Chart */}
@@ -1058,24 +1003,6 @@ const Dashboard = () => {
                 />
               </AreaChart>
             </ResponsiveContainer>
-            
-            {/* Period buttons */}
-            <div className="flex items-center justify-center gap-1 mt-4">
-              {(["1D", "1W", "1M", "3M", "YTD", "1Y", "ALL"] as PatrimonioPeriodType[]).map((period) => (
-                <button
-                  key={period}
-                  onClick={() => setPatrimonioPeriod(period)}
-                  className={cn(
-                    "px-3 py-1 text-xs rounded-md transition-colors",
-                    patrimonioPeriod === period
-                      ? "bg-accent text-accent-foreground"
-                      : "text-muted-foreground hover:bg-secondary"
-                  )}
-                >
-                  {period}
-                </button>
-              ))}
-            </div>
           </div>
         </div>
 
@@ -1342,7 +1269,7 @@ const Dashboard = () => {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
             <div>
               <h3 className="text-lg font-medium">Evolução do Saldo Acumulado</h3>
-              <p className="text-sm text-muted-foreground">Saldo mês atual: {showValues ? formatCurrency(periodBalance) : "••••••"}</p>
+              <p className="text-sm text-muted-foreground">Saldo no período: {showValues ? formatCurrency(periodBalance) : "••••••"}</p>
             </div>
             <div className="flex items-center gap-4">
               <div className="text-right">
@@ -1362,7 +1289,7 @@ const Dashboard = () => {
             </div>
           </div>
           <ResponsiveContainer width="100%" height={250}>
-            <AreaChart data={chartData}>
+            <AreaChart data={accumulatedBalanceData}>
               <defs>
                 <linearGradient id="accumulatedGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="hsl(280 84% 50%)" stopOpacity={0.3} />
@@ -1393,7 +1320,7 @@ const Dashboard = () => {
               />
               <Area
                 type="monotone"
-                dataKey="income"
+                dataKey="value"
                 stroke="hsl(280 84% 50%)"
                 strokeWidth={2}
                 fill="url(#accumulatedGradient)"
@@ -1404,25 +1331,28 @@ const Dashboard = () => {
 
         {/* Next Month Forecast */}
         <div className="bg-card rounded-2xl border border-border p-6">
-          <h3 className="text-lg font-medium mb-4">Previsão Próximo Mês</h3>
+          <div className="mb-4">
+            <h3 className="text-lg font-medium">Previsão Próximo Mês</h3>
+            <p className="text-sm text-muted-foreground">Próximo mês: {capitalize(format(addMonths(new Date(), 1), "MMMM", { locale: ptBR }))}</p>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="p-4 rounded-xl bg-success/10 border border-success/20">
+            <div className="bg-card rounded-xl border border-border p-4">
               <p className="text-sm text-muted-foreground mb-1">Receita Prevista</p>
-              <p className="text-xl font-semibold text-success">
+              <p className="text-xl font-semibold">
                 {showValues ? "R$ 5.500,00" : "••••••"}
               </p>
               <p className="text-xs text-muted-foreground mt-1">Salário + recorrentes</p>
             </div>
-            <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/20">
+            <div className="bg-card rounded-xl border border-border p-4">
               <p className="text-sm text-muted-foreground mb-1">Despesa Prevista</p>
-              <p className="text-xl font-semibold text-destructive">
+              <p className="text-xl font-semibold">
                 {showValues ? "R$ 3.850,00" : "••••••"}
               </p>
               <p className="text-xs text-muted-foreground mt-1">Parcelas + recorrentes</p>
             </div>
-            <div className="p-4 rounded-xl bg-accent/10 border border-accent/20">
+            <div className="bg-card rounded-xl border border-border p-4">
               <p className="text-sm text-muted-foreground mb-1">Saldo Previsto</p>
-              <p className="text-xl font-semibold text-accent">
+              <p className="text-xl font-semibold">
                 {showValues ? "R$ 1.650,00" : "••••••"}
               </p>
               <p className="text-xs text-muted-foreground mt-1">Receita - Despesas</p>
