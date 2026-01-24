@@ -28,12 +28,13 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { NewTransactionModal } from "@/components/app/NewTransactionModal";
 
-type PeriodType = "year" | "6months" | "3months";
+type PeriodType = "current-month" | "year" | "6months" | "3months";
 type MainPeriodType = "current-month" | "last-month" | "current-quarter" | "current-year" | "last-6-months" | "last-12-months";
 type AccumulatedPeriodType = "3months" | "6months" | "year";
 type TransactionFilterType = "all" | "income" | "expense";
 
 const periodLabels: Record<PeriodType, string> = {
+  "current-month": "Mês atual",
   year: "Último ano",
   "6months": "Últimos 6 meses",
   "3months": "Últimos 3 meses",
@@ -137,10 +138,10 @@ const Dashboard = () => {
   
   // Main period filter
   const [mainPeriod, setMainPeriod] = useState<MainPeriodType>("current-month");
-  
+
   // Separate period for cash flow chart
-  const [selectedPeriod, setSelectedPeriod] = useState<PeriodType>("6months");
-  
+  const [selectedPeriod, setSelectedPeriod] = useState<PeriodType>("current-month");
+
   // Accumulated balance period
   const [accumulatedPeriod, setAccumulatedPeriod] = useState<AccumulatedPeriodType>("6months");
   
@@ -254,6 +255,9 @@ const Dashboard = () => {
     let startDate: Date;
     
     switch (period) {
+      case "current-month":
+        startDate = startOfMonth(now);
+        break;
       case "year":
         startDate = subMonths(startOfMonth(now), 11);
         break;
@@ -271,6 +275,8 @@ const Dashboard = () => {
     return {
       start: format(startDate, "yyyy-MM-dd"),
       end: format(endOfMonth(now), "yyyy-MM-dd"),
+      startDate,
+      endDate: endOfMonth(now),
     };
   };
 
@@ -544,51 +550,89 @@ const Dashboard = () => {
       if (allTransactionsResponse.data) {
         const transactions = allTransactionsResponse.data.transactions;
         
-        // Build chart data by month - first create all months in range with 0 values
-        const monthlyData = new Map<string, { income: number; expense: number }>();
-        
-        // Generate all months in the range
-        const startDate = parseISO(dateRanges.start);
-        const endDate = parseISO(dateRanges.end);
-        let currentDate = startOfMonth(startDate);
-        
-        while (currentDate <= endDate) {
-          const monthKey = format(currentDate, "yyyy-MM");
-          monthlyData.set(monthKey, { income: 0, expense: 0 });
-          currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
-        }
-        
-        // Now add transaction data
-        transactions.forEach((tx) => {
-          const date = parseISO(tx.date);
-          const monthKey = format(date, "yyyy-MM");
+        // For "current-month", show daily non-cumulative data
+        if (selectedPeriod === "current-month") {
+          const dailyData = new Map<string, { income: number; expense: number }>();
           
-          if (!monthlyData.has(monthKey)) {
-            monthlyData.set(monthKey, { income: 0, expense: 0 });
-          }
+          // Generate all days in the current month
+          const days = eachDayOfInterval({ start: dateRanges.startDate, end: dateRanges.endDate });
+          days.forEach((day) => {
+            const dayKey = format(day, "yyyy-MM-dd");
+            dailyData.set(dayKey, { income: 0, expense: 0 });
+          });
           
-          const data = monthlyData.get(monthKey)!;
-          
-          if (isIncomeTx(tx)) {
-            data.income += tx.amount;
-          } else {
-            data.expense += tx.amount;
-          }
-        });
+          // Add transaction data (non-cumulative - just daily totals)
+          transactions.forEach((tx) => {
+            const dayKey = format(parseISO(tx.date), "yyyy-MM-dd");
+            if (!dailyData.has(dayKey)) return;
+            
+            const data = dailyData.get(dayKey)!;
+            if (isIncomeTx(tx)) {
+              data.income += tx.amount;
+            } else if (isExpenseTx(tx)) {
+              data.expense += tx.amount;
+            }
+          });
 
-        // Convert to array sorted by date
-        const sortedEntries = Array.from(monthlyData.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-        const chartDataPoints = sortedEntries.map(([key]) => {
-          const date = parseISO(`${key}-01`);
-          const data = monthlyData.get(key)!;
-          return {
-            label: monthLabels[date.getMonth()],
-            income: data.income,
-            expense: data.expense,
-          };
-        });
-        
-        setChartData(chartDataPoints.length > 0 ? chartDataPoints : [{ label: "-", income: 0, expense: 0 }]);
+          // Convert to array sorted by date
+          const sortedEntries = Array.from(dailyData.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+          const chartDataPoints = sortedEntries.map(([key]) => {
+            const data = dailyData.get(key)!;
+            return {
+              label: format(parseISO(key), "dd"),
+              income: data.income,
+              expense: data.expense,
+            };
+          });
+          
+          setChartData(chartDataPoints.length > 0 ? chartDataPoints : [{ label: "-", income: 0, expense: 0 }]);
+        } else {
+          // For other periods, show monthly data
+          const monthlyData = new Map<string, { income: number; expense: number }>();
+          
+          // Generate all months in the range
+          const startDate = parseISO(dateRanges.start);
+          const endDate = parseISO(dateRanges.end);
+          let currentDate = startOfMonth(startDate);
+          
+          while (currentDate <= endDate) {
+            const monthKey = format(currentDate, "yyyy-MM");
+            monthlyData.set(monthKey, { income: 0, expense: 0 });
+            currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
+          }
+          
+          // Now add transaction data
+          transactions.forEach((tx) => {
+            const date = parseISO(tx.date);
+            const monthKey = format(date, "yyyy-MM");
+            
+            if (!monthlyData.has(monthKey)) {
+              monthlyData.set(monthKey, { income: 0, expense: 0 });
+            }
+            
+            const data = monthlyData.get(monthKey)!;
+            
+            if (isIncomeTx(tx)) {
+              data.income += tx.amount;
+            } else {
+              data.expense += tx.amount;
+            }
+          });
+
+          // Convert to array sorted by date
+          const sortedEntries = Array.from(monthlyData.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+          const chartDataPoints = sortedEntries.map(([key]) => {
+            const date = parseISO(`${key}-01`);
+            const data = monthlyData.get(key)!;
+            return {
+              label: monthLabels[date.getMonth()],
+              income: data.income,
+              expense: data.expense,
+            };
+          });
+          
+          setChartData(chartDataPoints.length > 0 ? chartDataPoints : [{ label: "-", income: 0, expense: 0 }]);
+        }
       }
     } catch (error) {
       console.error("Error fetching chart data:", error);
@@ -1016,11 +1060,14 @@ const Dashboard = () => {
             <Select value={selectedPeriod} onValueChange={(value) => setSelectedPeriod(value as PeriodType)}>
               <SelectTrigger className="w-[160px]">
                 <SelectValue />
+
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="current-month">Mês atual</SelectItem>
                 <SelectItem value="year">Último ano</SelectItem>
                 <SelectItem value="6months">Últimos 6 meses</SelectItem>
                 <SelectItem value="3months">Últimos 3 meses</SelectItem>
+
               </SelectContent>
             </Select>
           </div>
@@ -1325,7 +1372,7 @@ const Dashboard = () => {
                   const formattedValue = value < 0 
                     ? `-R$ ${Math.abs(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
                     : `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
-                  return [showValues ? formattedValue : "••••••", "Saldo:"];
+                  return [`Saldo: ${showValues ? formattedValue : "••••••"}`];
                 }}
               />
               <Area

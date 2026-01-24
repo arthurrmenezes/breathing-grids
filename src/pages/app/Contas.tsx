@@ -12,7 +12,10 @@ import {
   Loader2,
   Pencil,
   Trash2,
-  ChevronRight
+  ChevronRight,
+  ChevronDown,
+  ChevronUp,
+  ChevronLeft
 } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { cn } from '@/lib/utils';
@@ -71,6 +74,13 @@ const Contas = () => {
 
   // Invoices from API
   const [invoices, setInvoices] = useState<InvoiceWithTransactions[]>([]);
+  const [invoicesPage, setInvoicesPage] = useState(1);
+  const [invoicesTotalPages, setInvoicesTotalPages] = useState(1);
+
+  // Expandable invoice transactions
+  const [expandedInvoiceTransactions, setExpandedInvoiceTransactions] = useState(false);
+  const [invoiceTransactions, setInvoiceTransactions] = useState<Transaction[]>([]);
+  const [invoiceTransactionsLoading, setInvoiceTransactionsLoading] = useState(false);
 
   // Financial summary
   const [financialSummary, setFinancialSummary] = useState<{
@@ -131,49 +141,76 @@ const Contas = () => {
   };
 
   // Fetch invoices for credit cards using new API
-  const fetchInvoices = async () => {
+  const fetchInvoices = async (page: number = 1) => {
     if (!selectedCard || selectedCard.type !== 'CreditCard') {
       setInvoices([]);
       return;
     }
 
     try {
-      const response = await cardService.getInvoices(selectedCard.id, { pageSize: 12 });
+      const response = await cardService.getInvoices(selectedCard.id, { pageNumber: page, pageSize: 24 });
       
       if (response.data?.invoices) {
         const monthNames = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
         
-        // Transform invoices from API to include transactions and UI labels
-        const invoicesWithTransactions: InvoiceWithTransactions[] = await Promise.all(
-          response.data.invoices.map(async (invoice) => {
-            // Fetch transactions for this invoice period
-            const startDate = format(new Date(invoice.year, invoice.month - 1, 1), 'yyyy-MM-dd');
-            const endDate = format(new Date(invoice.year, invoice.month, 0), 'yyyy-MM-dd');
-            
-            const txResponse = await transactionService.getAll({
-              cardId: selectedCard.id,
-              startDate,
-              endDate,
-              pageSize: 100,
-            });
-            
-            return {
-              ...invoice,
-              monthLabel: `${monthNames[invoice.month - 1]} ${invoice.year}`,
-              transactions: txResponse.data?.transactions || [],
-            };
-          })
-        );
+        // Sort invoices: Open first, then by date descending
+        const sortedInvoices = [...response.data.invoices].sort((a, b) => {
+          // Open invoices first
+          if (a.status === 'Open' && b.status !== 'Open') return -1;
+          if (a.status !== 'Open' && b.status === 'Open') return 1;
+          // Then by year and month descending
+          if (a.year !== b.year) return b.year - a.year;
+          return b.month - a.month;
+        });
 
-        setInvoices(invoicesWithTransactions);
-        // Auto-select the first (current) invoice
-        if (invoicesWithTransactions.length > 0) {
-          setSelectedInvoice(invoicesWithTransactions[0]);
+        // Transform invoices to include UI labels (without fetching transactions individually)
+        const invoicesWithLabels: InvoiceWithTransactions[] = sortedInvoices.map((invoice) => ({
+          ...invoice,
+          monthLabel: `${monthNames[invoice.month - 1]} ${invoice.year}`,
+          transactions: [], // Will be fetched on demand
+        }));
+
+        setInvoices(invoicesWithLabels);
+        setInvoicesTotalPages(response.data.totalPages);
+        setInvoicesPage(response.data.pageNumber);
+        
+        // Auto-select the open invoice (first after sorting)
+        if (invoicesWithLabels.length > 0) {
+          const openInvoice = invoicesWithLabels.find(inv => inv.status === 'Open') || invoicesWithLabels[0];
+          setSelectedInvoice(openInvoice);
+          setExpandedInvoiceTransactions(false);
+          setInvoiceTransactions([]);
         }
       }
     } catch (error) {
       console.error('Error fetching invoices:', error);
     }
+  };
+
+  // Fetch transactions for selected invoice using new endpoint
+  const fetchInvoiceTransactions = async () => {
+    if (!selectedCard || !selectedInvoice) return;
+    
+    setInvoiceTransactionsLoading(true);
+    try {
+      const response = await transactionService.getByInvoice(selectedCard.id, selectedInvoice.id, { pageSize: 50 });
+      
+      if (response.data?.transactions) {
+        setInvoiceTransactions(response.data.transactions);
+      }
+    } catch (error) {
+      console.error('Error fetching invoice transactions:', error);
+    } finally {
+      setInvoiceTransactionsLoading(false);
+    }
+  };
+
+  // Toggle invoice transactions visibility
+  const toggleInvoiceTransactions = () => {
+    if (!expandedInvoiceTransactions && invoiceTransactions.length === 0) {
+      fetchInvoiceTransactions();
+    }
+    setExpandedInvoiceTransactions(!expandedInvoiceTransactions);
   };
 
   // Fetch financial summary for selected card
@@ -240,18 +277,10 @@ const Contas = () => {
     }
   };
 
-  // Calculate totals for credit cards
-  const totalLimit = useMemo(() => {
-    return cards
-      .filter(c => c.type === 'CreditCard')
-      .reduce((sum, c) => sum + (c.creditCard?.limit || 0), 0);
-  }, [cards]);
-
-  const totalUsed = useMemo(() => {
-    return financialSummary?.periodExpense || 0;
-  }, [financialSummary]);
-
-  const totalAvailable = totalLimit - totalUsed;
+  // Calculate totals from selected invoice
+  const invoiceLimit = selectedInvoice?.limitTotal || selectedCard?.creditCard?.limit || 0;
+  const invoiceUsed = selectedInvoice?.totalAmount || 0;
+  const invoiceAvailable = Math.max(0, invoiceLimit - invoiceUsed);
 
   // Payment status data for ring chart - based on selected invoice
   const invoicePaid = selectedInvoice?.amountPaid || 0;
@@ -438,13 +467,15 @@ const Contas = () => {
                             <span className="font-medium">{invoice.monthLabel}</span>
                             <span className={cn(
                               "text-xs px-2 py-0.5 rounded-full",
-                              invoice.status === 0 
+                              invoice.status === 'Open' 
                                 ? 'bg-accent/10 text-accent' 
-                                : invoice.status === 2
+                                : invoice.status === 'Paid'
                                   ? 'bg-success/10 text-success'
-                                  : 'bg-secondary text-muted-foreground'
+                                  : invoice.status === 'Overdue'
+                                    ? 'bg-destructive/10 text-destructive'
+                                    : 'bg-secondary text-muted-foreground'
                             )}>
-                              {invoice.status === 0 ? 'Aberta' : invoice.status === 2 ? 'Paga' : 'Fechada'}
+                              {invoice.status === 'Open' ? 'Aberta' : invoice.status === 'Paid' ? 'Paga' : invoice.status === 'Overdue' ? 'Atrasada' : 'Fechada'}
                             </span>
                           </div>
                           <p className="font-bold text-lg mb-2">
@@ -459,40 +490,65 @@ const Contas = () => {
                   )}
                 </div>
 
-                {/* Selected Invoice Transactions */}
+                {/* Selected Invoice Transactions - Expandable */}
                 {selectedInvoice && (
                   <div className="bg-card rounded-2xl border border-border">
-                    <div className="p-4 border-b border-border flex items-center justify-between">
-                      <h3 className="font-medium">Transações - {selectedInvoice.monthLabel}</h3>
-                      <span className="text-sm text-muted-foreground">
-                        {selectedInvoice.transactions.length} transações
-                      </span>
-                    </div>
-                    <div className="divide-y divide-border">
-                      {selectedInvoice.transactions.map((tx) => {
-                        const isIncome = tx.transactionType === 'Income' || tx.transactionType === 'Receita';
-                        return (
-                          <div key={tx.id} className="flex items-center gap-4 p-4 hover:bg-secondary/30 transition-colors">
-                            <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-sm">
-                              {isIncome ? "💰" : "💸"}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium truncate">{tx.title}</p>
-                              <p className="text-xs text-muted-foreground">{formatDate(tx.date)}</p>
-                            </div>
-                            <span className={cn(
-                              "font-medium tabular-nums",
-                              isIncome ? "text-success" : "text-destructive"
-                            )}>
-                              {showValues 
-                                ? `${isIncome ? '+' : '-'}${formatCurrency(tx.amount)}` 
-                                : '••••••'
-                              }
-                            </span>
+                    <button 
+                      onClick={toggleInvoiceTransactions}
+                      className="w-full p-4 border-b border-border flex items-center justify-between hover:bg-secondary/30 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-medium">Transações - {selectedInvoice.monthLabel}</h3>
+                        <span className="text-sm text-muted-foreground">Detalhadas</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {expandedInvoiceTransactions ? (
+                          <ChevronUp className="w-5 h-5 text-muted-foreground" />
+                        ) : (
+                          <ChevronDown className="w-5 h-5 text-muted-foreground" />
+                        )}
+                      </div>
+                    </button>
+                    {expandedInvoiceTransactions && (
+                      <div className="divide-y divide-border">
+                        {invoiceTransactionsLoading ? (
+                          <div className="flex items-center justify-center p-8">
+                            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                           </div>
-                        );
-                      })}
-                    </div>
+                        ) : invoiceTransactions.length === 0 ? (
+                          <div className="p-8 text-center text-muted-foreground">
+                            Nenhuma transação encontrada
+                          </div>
+                        ) : (
+                          invoiceTransactions.map((tx) => {
+                            const isIncome = tx.transactionType === 'Income' || tx.transactionType === 'Receita';
+                            return (
+                              <div key={tx.id} className="flex items-center gap-4 p-4 hover:bg-secondary/30 transition-colors">
+                                <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-sm">
+                                  {isIncome ? "💰" : "💸"}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium truncate">{tx.title}</p>
+                                  <p className="text-xs text-muted-foreground">{formatDate(tx.date)}</p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className={cn(
+                                    "font-medium tabular-nums",
+                                    isIncome ? "text-success" : "text-destructive"
+                                  )}>
+                                    {showValues 
+                                      ? `${isIncome ? '+' : '-'}${formatCurrency(tx.amount)}` 
+                                      : '••••••'
+                                    }
+                                  </span>
+                                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                                </div>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -506,7 +562,7 @@ const Contas = () => {
                       <span className="text-sm text-muted-foreground">Limite Total</span>
                     </div>
                     <p className="text-xl font-semibold">
-                      {showValues ? formatCurrency(totalLimit) : '••••••'}
+                      {showValues ? formatCurrency(invoiceLimit) : '••••••'}
                     </p>
                   </div>
                   
@@ -518,11 +574,11 @@ const Contas = () => {
                       <span className="text-sm text-muted-foreground">Utilizado</span>
                     </div>
                     <p className="text-xl font-semibold">
-                      {showValues ? formatCurrency(totalUsed) : '••••••'}
+                      {showValues ? formatCurrency(invoiceUsed) : '••••••'}
                     </p>
-                    {totalLimit > 0 && (
+                    {invoiceLimit > 0 && (
                       <p className="text-sm text-muted-foreground mt-1">
-                        {((totalUsed / totalLimit) * 100).toFixed(1)}% do limite
+                        {((invoiceUsed / invoiceLimit) * 100).toFixed(1)}% do limite
                       </p>
                     )}
                   </div>
@@ -535,7 +591,7 @@ const Contas = () => {
                       <span className="text-sm text-muted-foreground">Disponível</span>
                     </div>
                     <p className="text-xl font-semibold text-success">
-                      {showValues ? formatCurrency(totalAvailable) : '••••••'}
+                      {showValues ? formatCurrency(invoiceAvailable) : '••••••'}
                     </p>
                   </div>
                 </div>
@@ -712,9 +768,9 @@ const Contas = () => {
                 recentTransactions={recentTransactions}
                 pendingTransactions={pendingTransactions}
                 financialSummary={financialSummary}
-                totalLimit={totalLimit}
-                totalUsed={totalUsed}
-                totalAvailable={totalAvailable}
+                totalLimit={invoiceLimit}
+                totalUsed={invoiceUsed}
+                totalAvailable={invoiceAvailable}
                 paymentStatusData={paymentStatusData}
                 showValues={showValues}
                 formatCurrency={formatCurrency}

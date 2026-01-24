@@ -56,7 +56,14 @@ export interface GetCardsParams {
 }
 
 // Invoice Types
-export type InvoiceStatus = 0 | 1 | 2 | 3; // 0 = Open, 1 = Closed, 2 = Paid, 3 = Overdue
+export type InvoiceStatus = 'Open' | 'Closed' | 'Paid' | 'Overdue';
+
+export const InvoiceStatusLabels: Record<InvoiceStatus, string> = {
+  'Open': 'Aberta',
+  'Closed': 'Fechada',
+  'Paid': 'Paga',
+  'Overdue': 'Atrasada',
+};
 
 export interface Invoice {
   id: string;
