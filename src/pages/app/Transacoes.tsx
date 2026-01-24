@@ -533,114 +533,112 @@ const Transacoes = () => {
   return (
     <AppLayout>
       <div className="space-y-6">
-        {/* New Header with Month Selector */}
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-wrap items-center gap-4">
-            {/* Month Navigation */}
-            <div className="flex items-center gap-2">
-              <Button 
-                variant="ghost" 
-                size="icon"
-                onClick={() => {
-                  const newDate = filterStartDate ? new Date(filterStartDate.getFullYear(), filterStartDate.getMonth() - 1, 1) : new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1);
-                  setFilterStartDate(newDate);
-                  setFilterEndDate(new Date(newDate.getFullYear(), newDate.getMonth() + 1, 0));
-                }}
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </Button>
-              <span className="font-medium min-w-[120px] text-center">
-                {filterStartDate 
-                  ? format(filterStartDate, 'MMMM yyyy', { locale: ptBR }).replace(/^\w/, c => c.toUpperCase())
-                  : format(new Date(), 'MMMM yyyy', { locale: ptBR }).replace(/^\w/, c => c.toUpperCase())
-                }
-              </span>
-              <Button 
-                variant="ghost" 
-                size="icon"
-                onClick={() => {
-                  const baseDate = filterStartDate || new Date();
-                  const newDate = new Date(baseDate.getFullYear(), baseDate.getMonth() + 1, 1);
-                  setFilterStartDate(newDate);
-                  setFilterEndDate(new Date(newDate.getFullYear(), newDate.getMonth() + 1, 0));
-                }}
-              >
-                <ChevronRight className="w-5 h-5" />
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => {
-                  const now = new Date();
-                  setFilterStartDate(new Date(now.getFullYear(), now.getMonth(), 1));
-                  setFilterEndDate(new Date(now.getFullYear(), now.getMonth() + 1, 0));
-                }}
-              >
-                Hoje
-              </Button>
-            </div>
-
-            {/* Search */}
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar transações..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                className="pl-10 pr-10 bg-card border-border"
-              />
-              {searchQuery && (
-                <button 
-                  onClick={clearSearch}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-
-            {/* Actions */}
-            <div className="flex items-center gap-2">
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={() => setShowValues(!showValues)}
-                title={showValues ? "Ocultar valores" : "Mostrar valores"}
-              >
-                {showValues ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
-              </Button>
-              <Button variant="accent" size="sm" onClick={() => setNewTransactionOpen(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Adicionar
-              </Button>
-            </div>
+        {/* Header Row 1: Month Navigation + Search (center) + Actions (right) */}
+        <div className="flex items-center justify-between gap-4">
+          {/* Month Navigation - Left */}
+          <div className="flex items-center gap-2 shrink-0">
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => {
+                const newDate = filterStartDate ? new Date(filterStartDate.getFullYear(), filterStartDate.getMonth() - 1, 1) : new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1);
+                setFilterStartDate(newDate);
+                setFilterEndDate(new Date(newDate.getFullYear(), newDate.getMonth() + 1, 0));
+              }}
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </Button>
+            <span className="font-medium min-w-[120px] text-center">
+              {filterStartDate 
+                ? format(filterStartDate, 'MMMM yyyy', { locale: ptBR }).replace(/^\w/, c => c.toUpperCase())
+                : format(new Date(), 'MMMM yyyy', { locale: ptBR }).replace(/^\w/, c => c.toUpperCase())
+              }
+            </span>
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => {
+                const baseDate = filterStartDate || new Date();
+                const newDate = new Date(baseDate.getFullYear(), baseDate.getMonth() + 1, 1);
+                setFilterStartDate(newDate);
+                setFilterEndDate(new Date(newDate.getFullYear(), newDate.getMonth() + 1, 0));
+              }}
+            >
+              <ChevronRight className="w-5 h-5" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => {
+                const now = new Date();
+                setFilterStartDate(new Date(now.getFullYear(), now.getMonth(), 1));
+                setFilterEndDate(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+              }}
+            >
+              Hoje
+            </Button>
           </div>
 
-          {/* Summary Stats - Clean style without background cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
-            <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Transações</p>
-              <p className="text-2xl font-bold">{totalItems}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Receitas</p>
-              <p className="text-2xl font-bold text-success">
-                {showValues ? formatCurrency(summary?.periodIncome || 0) : '••••••'}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Despesas</p>
-              <p className="text-2xl font-bold text-destructive">
-                {showValues ? formatCurrency(summary?.periodExpense || 0) : '••••••'}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Saldo</p>
-              <p className={cn("text-2xl font-bold", (summary?.balance || 0) >= 0 ? 'text-success' : 'text-destructive')}>
-                {showValues ? formatCurrency(summary?.balance || 0) : '••••••'}
-              </p>
-            </div>
+          {/* Search - Center */}
+          <div className="relative flex-1 max-w-md mx-auto">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar transações..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              className="pl-10 pr-10 bg-card border-border"
+            />
+            {searchQuery && (
+              <button 
+                onClick={clearSearch}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Actions - Right */}
+          <div className="flex items-center gap-2 shrink-0">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => setShowValues(!showValues)}
+              title={showValues ? "Ocultar valores" : "Mostrar valores"}
+            >
+              {showValues ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
+            </Button>
+            <Button variant="accent" size="sm" onClick={() => setNewTransactionOpen(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Adicionar
+            </Button>
+          </div>
+        </div>
+
+        {/* Summary Stats - Full width, evenly distributed */}
+        <div className="grid grid-cols-4 gap-4 px-4">
+          <div className="text-center">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Transações</p>
+            <p className="text-2xl font-bold">{totalItems}</p>
+          </div>
+          <div className="text-center">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Receitas</p>
+            <p className="text-2xl font-bold text-success">
+              {showValues ? formatCurrency(summary?.periodIncome || 0) : '••••••'}
+            </p>
+          </div>
+          <div className="text-center">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Despesas</p>
+            <p className="text-2xl font-bold text-destructive">
+              {showValues ? formatCurrency(summary?.periodExpense || 0) : '••••••'}
+            </p>
+          </div>
+          <div className="text-center">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Saldo</p>
+            <p className={cn("text-2xl font-bold", (summary?.balance || 0) >= 0 ? 'text-success' : 'text-destructive')}>
+              {showValues ? formatCurrency(summary?.balance || 0) : '••••••'}
+            </p>
           </div>
         </div>
 
@@ -851,60 +849,6 @@ const Transacoes = () => {
             Limpar filtros
           </button>
         )}
-
-        {/* Search and Summary */}
-        <div className="bg-card rounded-xl border border-border p-4">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            {/* Search Input */}
-            <div className="relative max-w-md flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                className="pl-10 pr-10 bg-background border-accent/50 focus:border-accent"
-              />
-              {searchQuery && (
-                <button 
-                  onClick={clearSearch}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-
-            {/* Summary Stats - Reordered: Total, Income, Expense, Balance */}
-            <div className="flex flex-wrap items-center gap-4 sm:gap-6 ml-auto text-sm">
-              <div className="flex items-center gap-2">
-                <FileText className="w-4 h-4 text-muted-foreground" />
-                <span className="font-medium">{totalItems}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <ArrowUp className="w-4 h-4 text-success" />
-                <span className={`font-medium ${showValues ? 'text-success' : ''}`}>
-                  {showValues ? formatCurrency(summary?.periodIncome || 0) : '••••••'}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <ArrowDown className="w-4 h-4 text-destructive" />
-                <span className={`font-medium ${showValues ? 'text-destructive' : ''}`}>
-                  {showValues ? formatCurrency(summary?.periodExpense || 0) : '••••••'}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <ArrowUpDown className="w-4 h-4 text-accent" />
-                <span className={`font-medium ${showValues ? ((summary?.balance || 0) < 0 ? 'text-destructive' : 'text-accent') : ''}`}>
-                  {showValues 
-                    ? `${(summary?.balance || 0) < 0 ? '-' : ''}${formatCurrency(summary?.balance || 0)}`
-                    : '••••••'
-                  }
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* Transactions Table */}
         <div className="bg-card rounded-xl border border-border overflow-hidden">

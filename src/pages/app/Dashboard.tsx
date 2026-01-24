@@ -1086,7 +1086,7 @@ const Dashboard = () => {
           </ResponsiveContainer>
         </div>
 
-        {/* Overdue Transactions Section */}
+        {/* Overdue Transactions Section - Only show if there are overdue transactions */}
         {overdueTransactions.length > 0 && (
           <div className="bg-destructive/5 rounded-2xl border border-destructive/20 p-6">
             <div className="flex items-center justify-between mb-4">
@@ -1096,7 +1096,12 @@ const Dashboard = () => {
                 </div>
                 <div>
                   <h3 className="text-lg font-medium text-destructive">Transações Atrasadas</h3>
-                  <p className="text-sm text-muted-foreground">{overdueTransactions.length} transação(ões) com pagamento em atraso</p>
+                  <p className="text-sm text-muted-foreground">
+                    {overdueTransactions.length === 1 
+                      ? "1 transação com pagamento em atraso"
+                      : `${overdueTransactions.length} transações com pagamento em atraso`
+                    }
+                  </p>
                 </div>
               </div>
               <Link to="/app/transacoes?status=2" className="text-sm text-destructive hover:underline">
@@ -1329,34 +1334,35 @@ const Dashboard = () => {
           </ResponsiveContainer>
         </div>
 
-        {/* Next Month Forecast */}
-        <div className="bg-card rounded-2xl border border-border p-6">
-          <div className="mb-4">
-            <h3 className="text-lg font-medium">Previsão Próximo Mês</h3>
+        {/* Next Month Forecast - Same style as summary cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+          <div>
+            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Previsão Próximo Mês</p>
+            <p className="text-2xl font-bold">
+              {showValues ? "R$ 1.650,00" : "••••••"}
+            </p>
             <p className="text-sm text-muted-foreground">Próximo mês: {capitalize(format(addMonths(new Date(), 1), "MMMM", { locale: ptBR }))}</p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-card rounded-xl border border-border p-4">
-              <p className="text-sm text-muted-foreground mb-1">Receita Prevista</p>
-              <p className="text-xl font-semibold">
-                {showValues ? "R$ 5.500,00" : "••••••"}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">Salário + recorrentes</p>
-            </div>
-            <div className="bg-card rounded-xl border border-border p-4">
-              <p className="text-sm text-muted-foreground mb-1">Despesa Prevista</p>
-              <p className="text-xl font-semibold">
-                {showValues ? "R$ 3.850,00" : "••••••"}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">Parcelas + recorrentes</p>
-            </div>
-            <div className="bg-card rounded-xl border border-border p-4">
-              <p className="text-sm text-muted-foreground mb-1">Saldo Previsto</p>
-              <p className="text-xl font-semibold">
-                {showValues ? "R$ 1.650,00" : "••••••"}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">Receita - Despesas</p>
-            </div>
+          <div>
+            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Receita Prevista</p>
+            <p className="text-2xl font-bold text-success">
+              {showValues ? "R$ 5.500,00" : "••••••"}
+            </p>
+            <p className="text-sm text-muted-foreground">Salário + recorrentes</p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Despesa Prevista</p>
+            <p className="text-2xl font-bold text-destructive">
+              {showValues ? "R$ 3.850,00" : "••••••"}
+            </p>
+            <p className="text-sm text-muted-foreground">Parcelas + recorrentes</p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Saldo Previsto</p>
+            <p className="text-2xl font-bold">
+              {showValues ? "R$ 1.650,00" : "••••••"}
+            </p>
+            <p className="text-sm text-muted-foreground">Receita - Despesas</p>
           </div>
         </div>
       </div>
