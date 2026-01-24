@@ -360,7 +360,6 @@ const Categorias = () => {
                           </DropdownMenuContent>
                         </DropdownMenu>
                       )}
-                      <ChevronRight className="w-4 h-4 text-muted-foreground" />
                     </div>
                   </div>
                 </div>
