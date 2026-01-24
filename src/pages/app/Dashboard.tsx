@@ -1,11 +1,11 @@
 import { useState, useMemo, useEffect } from "react";
 import { AppLayout, useValuesVisibility } from "@/components/app/AppLayout";
-import { TrendingUp, TrendingDown, Wallet, Loader2, CalendarDays, ChevronDown, Plus } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, Loader2, CalendarDays, ChevronDown, Plus, AlertCircle } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, BarChart, Bar } from "recharts";
 import { transactionService } from "@/services/transactionService";
 import { categoryService } from "@/services/categoryService";
 import { useAuth } from "@/contexts/AuthContext";
-import { Transaction } from "@/types/transaction";
+import { Transaction, PaymentStatusEnum } from "@/types/transaction";
 import { Category } from "@/types/category";
 import { format, subMonths, startOfMonth, endOfMonth, parseISO, startOfQuarter, startOfYear, subDays, getDaysInMonth, getDate, subWeeks, subYears, addMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -157,6 +157,7 @@ const Dashboard = () => {
   const [currentSummary, setCurrentSummary] = useState<FinancialData | null>(null);
   const [previousSummary, setPreviousSummary] = useState<FinancialData | null>(null);
   const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
+  const [overdueTransactions, setOverdueTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
   const [categorySpending, setCategorySpending] = useState<CategorySpendingItem[]>([]);
@@ -610,6 +611,23 @@ const Dashboard = () => {
     }
   };
 
+  // Fetch overdue transactions (status = Overdue/2)
+  const fetchOverdueTransactions = async () => {
+    try {
+      const overdueResponse = await transactionService.getAll({
+        pageNumber: 1,
+        pageSize: 10,
+        paymentStatus: PaymentStatusEnum.Atrasado, // Overdue = 2
+      });
+      
+      if (overdueResponse.data) {
+        setOverdueTransactions(overdueResponse.data.transactions);
+      }
+    } catch (error) {
+      console.error("Error fetching overdue transactions:", error);
+    }
+  };
+
   // Initial load
   useEffect(() => {
     const fetchAll = async () => {
@@ -619,6 +637,7 @@ const Dashboard = () => {
         fetchSummaryData(),
         fetchChartData(),
         fetchRecentTransactions(),
+        fetchOverdueTransactions(),
         fetchSpendingPaceData(),
         fetchPatrimonioData(),
       ]);
@@ -1082,6 +1101,55 @@ const Dashboard = () => {
           </ResponsiveContainer>
         </div>
 
+        {/* Overdue Transactions Section */}
+        {overdueTransactions.length > 0 && (
+          <div className="bg-destructive/5 rounded-2xl border border-destructive/20 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-destructive/10">
+                  <AlertCircle className="w-5 h-5 text-destructive" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-medium text-destructive">Transações Atrasadas</h3>
+                  <p className="text-sm text-muted-foreground">{overdueTransactions.length} transação(ões) com pagamento em atraso</p>
+                </div>
+              </div>
+              <Link to="/app/transacoes?status=2" className="text-sm text-destructive hover:underline">
+                Ver todas
+              </Link>
+            </div>
+            <div className="space-y-2">
+              {overdueTransactions.slice(0, 5).map((tx) => {
+                const category = categories.find(c => c.id === tx.categoryId);
+                const formattedDate = format(parseISO(tx.date), "dd MMM", { locale: ptBR });
+                
+                return (
+                  <div
+                    key={tx.id}
+                    className="flex items-center gap-3 p-3 rounded-lg bg-card hover:bg-secondary/50 transition-colors"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-destructive/10 flex items-center justify-center">
+                      <AlertCircle className="w-4 h-4 text-destructive" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm font-medium truncate ${!showValues ? 'blur-sm select-none' : ''}`}>{tx.title}</p>
+                      <p className={`text-xs text-muted-foreground ${!showValues ? 'blur-sm select-none' : ''}`}>{category?.title || "Sem categoria"} • {formattedDate}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-medium tabular-nums text-destructive">
+                        {showValues ? `-${formatCurrency(tx.amount)}` : "••••••"}
+                      </p>
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-destructive/10 text-destructive">
+                        Atrasado
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Middle Row - Transactions and Category Breakdown 50/50 */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Recent Transactions */}
@@ -1319,6 +1387,7 @@ const Dashboard = () => {
               fetchSummaryData(),
               fetchChartData(),
               fetchRecentTransactions(),
+              fetchOverdueTransactions(),
               fetchSpendingPaceData(),
               fetchPatrimonioData(),
             ]);
