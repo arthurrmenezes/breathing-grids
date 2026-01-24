@@ -658,18 +658,6 @@ const Transacoes = () => {
             </SelectContent>
           </Select>
 
-          {/* Transaction Type Filter */}
-          <Select value={filterType} onValueChange={setFilterType}>
-            <SelectTrigger className="w-auto min-w-[180px] bg-card border-border h-10 rounded-md justify-center">
-              <SelectValue placeholder="Todas as transações" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all"><span className="font-semibold">Todas as transações</span></SelectItem>
-              <SelectItem value="income">Receitas</SelectItem>
-              <SelectItem value="expense">Despesas</SelectItem>
-            </SelectContent>
-          </Select>
-
           {/* Payment Method Filter - Multi Select */}
           <Popover>
             <PopoverTrigger asChild>

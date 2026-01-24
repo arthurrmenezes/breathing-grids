@@ -1,12 +1,14 @@
 import { useState, useMemo, useEffect } from "react";
 import { AppLayout, useValuesVisibility } from "@/components/app/AppLayout";
-import { TrendingUp, TrendingDown, Wallet, Loader2, CalendarDays, ChevronDown, Plus, AlertCircle } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, Loader2, CalendarDays, ChevronDown, Plus, AlertCircle, CreditCard } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, BarChart, Bar } from "recharts";
 import { transactionService } from "@/services/transactionService";
 import { categoryService } from "@/services/categoryService";
+import { cardService } from "@/services/cardService";
 import { useAuth } from "@/contexts/AuthContext";
 import { Transaction, PaymentStatusEnum } from "@/types/transaction";
 import { Category } from "@/types/category";
+import { Card } from "@/types/card";
 import { format, subMonths, startOfMonth, endOfMonth, parseISO, startOfQuarter, startOfYear, subDays, getDaysInMonth, getDate, subWeeks, subYears, addMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Link, useNavigate } from "react-router-dom";
@@ -131,6 +133,10 @@ const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   
+  // Card filter - filter all data by selected card
+  const [cards, setCards] = useState<Card[]>([]);
+  const [selectedCardId, setSelectedCardId] = useState<string>("");
+  
   // Main period filter
   const [mainPeriod, setMainPeriod] = useState<MainPeriodType>("current-month");
   
@@ -171,6 +177,18 @@ const Dashboard = () => {
   const [patrimonioData, setPatrimonioData] = useState<PatrimonioDataPoint[]>([]);
   const [currentPatrimonio, setCurrentPatrimonio] = useState(0);
   const [patrimonioChange, setPatrimonioChange] = useState(0);
+  
+  // Fetch cards
+  const fetchCards = async () => {
+    try {
+      const response = await cardService.getAll({ pageSize: 50 });
+      if (response.data) {
+        setCards(response.data.cards);
+      }
+    } catch (error) {
+      console.error("Error fetching cards:", error);
+    }
+  };
 
   // Calculate date ranges based on main period
   const getMainDateRange = () => {
@@ -289,6 +307,7 @@ const Dashboard = () => {
         pageSize: 1000,
         startDate: format(currentMonthStart, "yyyy-MM-dd"),
         endDate: format(currentMonthEnd, "yyyy-MM-dd"),
+        cardId: selectedCardId || undefined,
       });
       
       // Fetch previous month transactions
@@ -297,6 +316,7 @@ const Dashboard = () => {
         pageSize: 1000,
         startDate: format(previousMonthStart, "yyyy-MM-dd"),
         endDate: format(previousMonthEnd, "yyyy-MM-dd"),
+        cardId: selectedCardId || undefined,
       });
       
       // Build cumulative data for current month
@@ -385,6 +405,7 @@ const Dashboard = () => {
         pageSize: 1000,
         startDate: format(startDate, "yyyy-MM-dd"),
         endDate: format(now, "yyyy-MM-dd"),
+        cardId: selectedCardId || undefined,
       });
       
       if (response.data) {
@@ -465,6 +486,7 @@ const Dashboard = () => {
         pageSize: 1000,
         startDate: monthStart,
         endDate: monthEnd,
+        cardId: selectedCardId || undefined,
       });
 
       // Fetch transactions for previous period
@@ -473,6 +495,7 @@ const Dashboard = () => {
         pageSize: 1000,
         startDate: previousMonthStart,
         endDate: previousMonthEnd,
+        cardId: selectedCardId || undefined,
       });
 
       if (transactionsForPeriod.data && transactionsForPrevious.data && categoriesResponse.data) {
@@ -534,6 +557,7 @@ const Dashboard = () => {
         pageSize: 1000,
         startDate: dateRanges.start,
         endDate: dateRanges.end,
+        cardId: selectedCardId || undefined,
       });
 
       if (allTransactionsResponse.data) {
@@ -597,6 +621,7 @@ const Dashboard = () => {
       const transactionsResponse = await transactionService.getAll({
         pageNumber: 1,
         pageSize: 5,
+        cardId: selectedCardId || undefined,
       });
       
       if (transactionsResponse.data) {
@@ -618,6 +643,7 @@ const Dashboard = () => {
         pageNumber: 1,
         pageSize: 10,
         paymentStatus: PaymentStatusEnum.Atrasado, // Overdue = 2
+        cardId: selectedCardId || undefined,
       });
       
       if (overdueResponse.data) {
@@ -632,6 +658,7 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchAll = async () => {
       setLoading(true);
+      await fetchCards();
       await Promise.all([
         fetchPeriodBalance(),
         fetchSummaryData(),
@@ -645,6 +672,19 @@ const Dashboard = () => {
     };
     fetchAll();
   }, []);
+
+  // Update all data when card filter changes
+  useEffect(() => {
+    if (!loading) {
+      fetchPeriodBalance();
+      fetchSummaryData();
+      fetchChartData();
+      fetchRecentTransactions();
+      fetchOverdueTransactions();
+      fetchSpendingPaceData();
+      fetchPatrimonioData();
+    }
+  }, [selectedCardId]);
 
   // Update summary, category spending and balance when period changes
   useEffect(() => {
@@ -765,9 +805,30 @@ const Dashboard = () => {
   return (
     <AppLayout>
       <div className="space-y-6">
-        {/* Period Selector */}
+        {/* Period Selector and Card Filter */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <h2 className="text-lg font-medium">{getPeriodLabel()}</h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-lg font-medium">{getPeriodLabel()}</h2>
+            
+            {/* Card Filter */}
+            <Select value={selectedCardId || "all"} onValueChange={(value) => setSelectedCardId(value === "all" ? "" : value)}>
+              <SelectTrigger className="w-auto h-9 px-3 bg-card border-border rounded-md text-sm">
+                <CreditCard className="w-4 h-4 mr-2 text-muted-foreground" />
+                <SelectValue placeholder="Todas as contas" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">
+                  <span className="font-medium">Todas as contas</span>
+                </SelectItem>
+                {cards.map((card) => (
+                  <SelectItem key={card.id} value={card.id}>
+                    {card.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
           <div className="flex items-center gap-2">
             <Popover>
               <PopoverTrigger asChild>
