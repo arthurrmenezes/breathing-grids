@@ -6,7 +6,10 @@ import type {
   CreateCardInput, 
   UpdateCardInput, 
   CardsListResponse,
-  GetCardsParams
+  GetCardsParams,
+  Invoice,
+  InvoicesListResponse,
+  GetInvoicesParams
 } from '@/types/card';
 import type { FinancialSummary } from '@/types/transaction';
 
@@ -72,5 +75,22 @@ export const cardService = {
       : `${BASE_ENDPOINT}/financial-summary/${cardId}`;
     
     return api.get<FinancialSummary & { cardId: string }>(endpoint);
+  },
+
+  /**
+   * Get all invoices for a credit card
+   */
+  async getInvoices(cardId: string, params?: GetInvoicesParams): Promise<ApiResponse<InvoicesListResponse>> {
+    const queryParams = new URLSearchParams();
+    
+    if (params?.pageNumber) queryParams.append('pageNumber', params.pageNumber.toString());
+    if (params?.pageSize) queryParams.append('pageSize', params.pageSize.toString());
+    
+    const queryString = queryParams.toString();
+    const endpoint = queryString 
+      ? `${BASE_ENDPOINT}/${cardId}/invoices?${queryString}` 
+      : `${BASE_ENDPOINT}/${cardId}/invoices`;
+    
+    return api.get<InvoicesListResponse>(endpoint);
   },
 };

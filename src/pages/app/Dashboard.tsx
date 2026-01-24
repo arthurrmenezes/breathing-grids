@@ -1321,7 +1321,12 @@ const Dashboard = () => {
                   borderRadius: "8px",
                   color: "hsl(var(--foreground))",
                 }}
-                formatter={(value: number) => [showValues ? formatCurrency(value) : "••••••", "Saldo"]}
+                formatter={(value: number) => {
+                  const formattedValue = value < 0 
+                    ? `-R$ ${Math.abs(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                    : `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+                  return [showValues ? formattedValue : "••••••", "Saldo:"];
+                }}
               />
               <Area
                 type="monotone"
@@ -1336,10 +1341,10 @@ const Dashboard = () => {
 
         {/* Next Month Forecast - Modern compact card */}
         <div className="bg-gradient-to-br from-card to-secondary/50 rounded-2xl border border-border p-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
             <div>
               <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Previsão Próximo Mês</h3>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 Próximo mês: {capitalize(format(addMonths(new Date(), 1), "MMMM yyyy", { locale: ptBR }))}
               </p>
             </div>
@@ -1351,25 +1356,25 @@ const Dashboard = () => {
           </div>
           
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               <p className="text-2xl sm:text-3xl font-bold">
                 {showValues ? "R$ 1.650" : "••••"}
               </p>
               <p className="text-xs text-muted-foreground">Saldo previsto</p>
             </div>
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               <p className="text-2xl sm:text-3xl font-bold text-success">
                 {showValues ? "R$ 5.500" : "••••"}
               </p>
               <p className="text-xs text-muted-foreground">Receita prevista</p>
             </div>
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               <p className="text-2xl sm:text-3xl font-bold text-destructive">
                 {showValues ? "R$ 3.850" : "••••"}
               </p>
               <p className="text-xs text-muted-foreground">Despesa prevista</p>
             </div>
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               <div className="flex items-center gap-2">
                 <p className="text-2xl sm:text-3xl font-bold text-accent">+43%</p>
               </div>
