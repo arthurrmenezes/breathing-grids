@@ -9,6 +9,7 @@ import { EditTransactionModal } from '@/components/app/EditTransactionModal';
 import { ViewTransactionModal } from '@/components/app/ViewTransactionModal';
 import { transactionService } from '@/services/transactionService';
 import { categoryService } from '@/services/categoryService';
+import { cardService } from '@/services/cardService';
 import { Calendar } from '@/components/ui/calendar';
 import { 
   Transaction, 
@@ -19,6 +20,7 @@ import {
   PaymentStatusEnum,
 } from '@/types/transaction';
 import { Category } from '@/types/category';
+import { Card, CardTypeLabels } from '@/types/card';
 import { toast } from 'sonner';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -108,6 +110,7 @@ const Transacoes = () => {
   const [viewingTransaction, setViewingTransaction] = useState<Transaction | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [summary, setSummary] = useState<FinancialSummary | null>(null);
@@ -127,6 +130,7 @@ const Transacoes = () => {
   const [filterMaxValue, setFilterMaxValue] = useState('');
   const [filterStartDate, setFilterStartDate] = useState<Date | undefined>();
   const [filterEndDate, setFilterEndDate] = useState<Date | undefined>();
+  const [filterCardId, setFilterCardId] = useState<string>('');
 
   // Sort - 3 states: date (default), amount-desc, amount-asc
   const [sortState, setSortState] = useState<SortState>('date');
@@ -136,6 +140,8 @@ const Transacoes = () => {
     const typeParam = searchParams.get('type');
     const startDateParam = searchParams.get('startDate');
     const endDateParam = searchParams.get('endDate');
+    const statusParam = searchParams.get('status');
+    const cardIdParam = searchParams.get('cardId');
     
     if (typeParam === 'expense') {
       setFilterType('expense');
@@ -149,6 +155,12 @@ const Transacoes = () => {
     if (endDateParam) {
       setFilterEndDate(parseISO(endDateParam));
     }
+    if (statusParam) {
+      setFilterStatuses([parseInt(statusParam, 10)]);
+    }
+    if (cardIdParam) {
+      setFilterCardId(cardIdParam);
+    }
   }, [searchParams]);
 
   const hasActiveFilters = useMemo(() => {
@@ -160,8 +172,9 @@ const Transacoes = () => {
            filterMaxValue !== '' ||
            filterStartDate !== undefined ||
            filterEndDate !== undefined ||
+           filterCardId !== '' ||
            searchQuery !== '';
-  }, [filterType, filterCategories, filterPayments, filterStatuses, filterMinValue, filterMaxValue, filterStartDate, filterEndDate, searchQuery]);
+  }, [filterType, filterCategories, filterPayments, filterStatuses, filterMinValue, filterMaxValue, filterStartDate, filterEndDate, filterCardId, searchQuery]);
 
   const fetchCategories = async () => {
     try {
@@ -171,6 +184,17 @@ const Transacoes = () => {
       }
     } catch (error) {
       console.error('Error fetching categories:', error);
+    }
+  };
+
+  const fetchCards = async () => {
+    try {
+      const response = await cardService.getAll({ pageSize: 50 });
+      if (response.data) {
+        setCards(response.data.cards);
+      }
+    } catch (error) {
+      console.error('Error fetching cards:', error);
     }
   };
 
@@ -196,6 +220,9 @@ const Transacoes = () => {
 
       if (filterType !== 'all') {
         params.transactionType = filterType === 'income' ? TransactionTypeEnum.Receita : TransactionTypeEnum.Despesa;
+      }
+      if (filterCardId) {
+        params.cardId = filterCardId;
       }
       // For multi-select, we'll send the first one (backend might need adjustment for multiple)
       if (filterCategories.length === 1) {
@@ -262,12 +289,13 @@ const Transacoes = () => {
 
   useEffect(() => {
     fetchCategories();
+    fetchCards();
     fetchSummary();
   }, []);
 
   useEffect(() => {
     fetchTransactions();
-  }, [currentPage, filterType, filterCategories, filterPayments, filterStatuses, filterStartDate, filterEndDate]);
+  }, [currentPage, filterType, filterCategories, filterPayments, filterStatuses, filterStartDate, filterEndDate, filterCardId]);
 
   // Sort transactions locally
   const sortedTransactions = useMemo(() => {
@@ -312,8 +340,14 @@ const Transacoes = () => {
     setFilterMaxValue('');
     setFilterStartDate(undefined);
     setFilterEndDate(undefined);
+    setFilterCardId('');
     setSearchQuery('');
     setCurrentPage(1);
+  };
+
+  const getCardName = (cardId: string) => {
+    const card = cards.find(c => c.id === cardId);
+    return card?.name || 'Sem cartão';
   };
 
   const handleDelete = (transaction: Transaction) => {
@@ -494,6 +528,7 @@ const Transacoes = () => {
   const hasPaymentFilter = filterPayments.length > 0;
   const hasStatusFilter = filterStatuses.length > 0;
   const hasCategoryFilter = filterCategories.length > 0;
+  const hasCardFilter = filterCardId !== '';
 
   return (
     <AppLayout>
@@ -710,6 +745,21 @@ const Transacoes = () => {
             </PopoverContent>
           </Popover>
 
+          {/* Card Filter */}
+          <Select value={filterCardId} onValueChange={setFilterCardId}>
+            <SelectTrigger className={cn("w-auto min-w-[150px] bg-card border-border h-10 rounded-md justify-center", hasCardFilter && "border-accent")}>
+              <SelectValue placeholder="Todos os cartões" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value=""><span className="font-semibold">Todos os cartões</span></SelectItem>
+              {cards.map((card) => (
+                <SelectItem key={card.id} value={card.id}>
+                  {card.name} ({CardTypeLabels[card.type] || card.type})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
           {/* Value Filter - Styled like Select */}
           <Popover>
             <PopoverTrigger asChild>
@@ -838,6 +888,9 @@ const Transacoes = () => {
                         Descrição
                       </th>
                       <th className="text-left p-4 font-medium text-muted-foreground text-xs uppercase tracking-wider">
+                        Cartão
+                      </th>
+                      <th className="text-left p-4 font-medium text-muted-foreground text-xs uppercase tracking-wider">
                         Categoria
                       </th>
                       <th className="text-left p-4 font-medium text-muted-foreground text-xs uppercase tracking-wider">
@@ -882,6 +935,9 @@ const Transacoes = () => {
                             >
                               {tx.title}
                             </button>
+                          </td>
+                          <td className="p-4 text-muted-foreground text-sm">
+                            {getCardName(tx.cardId)}
                           </td>
                           <td className="p-4">
                             <span className="inline-flex items-center px-2.5 py-1 rounded-md border border-border bg-secondary/50 text-sm">
