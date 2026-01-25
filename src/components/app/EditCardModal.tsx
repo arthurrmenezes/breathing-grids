@@ -8,11 +8,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, AlertTriangle } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cardService } from '@/services/cardService';
-import { Card, CardTypeLabels, BankCardColors } from '@/types/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Card, BankCardColors } from '@/types/card';
 import { 
   validateCard, 
   validateCreditCard,
@@ -150,14 +149,6 @@ export const EditCardModal = ({ open, onOpenChange, onSuccess, card }: EditCardM
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-          {/* Card Type Info */}
-          <Alert>
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>
-              O tipo do cartão ({CardTypeLabels[card?.type || ''] || card?.type}) não pode ser alterado.
-            </AlertDescription>
-          </Alert>
-
           {/* Nome do Cartão */}
           <div className="space-y-1.5">
             <Label htmlFor="edit-card-name">Nome do Cartão <span className="text-destructive">*</span></Label>

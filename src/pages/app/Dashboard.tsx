@@ -1321,7 +1321,14 @@ const Dashboard = () => {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
             <div>
               <h3 className="text-lg font-medium">Evolução do Saldo Acumulado</h3>
-              <p className="text-sm text-muted-foreground">Saldo no período: {showValues ? formatCurrency(periodBalance) : "••••••"}</p>
+              <p className="text-sm text-muted-foreground">
+                Saldo no período:{" "}
+                {showValues ? (
+                  <span className={periodBalance >= 0 ? "text-success font-medium" : "text-destructive font-medium"}>
+                    {periodBalance >= 0 ? "+" : "-"}R$ {Math.abs(periodBalance).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </span>
+                ) : "••••••"}
+              </p>
             </div>
             <div className="flex items-center gap-4">
               <div className="text-right">

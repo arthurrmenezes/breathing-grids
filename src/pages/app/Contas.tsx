@@ -207,11 +207,19 @@ const Contas = () => {
 
   // Toggle invoice transactions visibility
   const toggleInvoiceTransactions = () => {
-    if (!expandedInvoiceTransactions && invoiceTransactions.length === 0) {
+    if (!expandedInvoiceTransactions) {
+      // Always fetch transactions when expanding
       fetchInvoiceTransactions();
     }
     setExpandedInvoiceTransactions(!expandedInvoiceTransactions);
   };
+
+  // Fetch transactions when selected invoice changes
+  useEffect(() => {
+    if (selectedInvoice && expandedInvoiceTransactions) {
+      fetchInvoiceTransactions();
+    }
+  }, [selectedInvoice?.id]);
 
   // Fetch financial summary for selected card
   const fetchFinancialSummary = async () => {
