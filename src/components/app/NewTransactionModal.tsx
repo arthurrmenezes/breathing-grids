@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { transactionService } from '@/services/transactionService';
+import { useInvalidateFinancialSummary } from '@/hooks/useFinancialSummary';
 import { 
   TransactionTypeEnum, 
   PaymentStatusEnum,
@@ -56,6 +57,7 @@ export const NewTransactionModal = ({
   cards = [],
   preselectedCardId,
 }: NewTransactionModalProps) => {
+  const { invalidateAll } = useInvalidateFinancialSummary();
   const [title, setTitle] = useState('');
   const [rawValue, setRawValue] = useState(0);
   const [date, setDate] = useState('');
@@ -256,6 +258,7 @@ export const NewTransactionModal = ({
         toast.error(response.error);
       } else {
         toast.success(hasInstallment ? 'Transação parcelada criada com sucesso' : 'Transação criada com sucesso');
+        invalidateAll(); // Invalidate financial summary cache
         resetForm();
         onOpenChange(false);
         onSuccess?.();

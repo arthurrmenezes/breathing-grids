@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { transactionService } from '@/services/transactionService';
 import type { FinancialSummary } from '@/types/transaction';
 
@@ -13,6 +13,30 @@ interface FinancialSummaryWithCardId extends FinancialSummary {
   cardId: string;
 }
 
+// Query key factory for financial summary
+export const financialSummaryKeys = {
+  all: ['financial-summary'] as const,
+  byCard: (cardId: string) => ['financial-summary', cardId] as const,
+  detail: (cardId: string, startDate?: string, endDate?: string) => 
+    ['financial-summary', cardId, startDate, endDate] as const,
+};
+
+// Hook to invalidate all financial summary cache
+export const useInvalidateFinancialSummary = () => {
+  const queryClient = useQueryClient();
+  
+  return {
+    // Invalidate all financial summary queries
+    invalidateAll: () => {
+      queryClient.invalidateQueries({ queryKey: financialSummaryKeys.all });
+    },
+    // Invalidate queries for a specific card
+    invalidateByCard: (cardId: string) => {
+      queryClient.invalidateQueries({ queryKey: financialSummaryKeys.byCard(cardId) });
+    },
+  };
+};
+
 export const useFinancialSummary = ({ 
   cardId, 
   startDate, 
@@ -20,7 +44,7 @@ export const useFinancialSummary = ({
   enabled = true 
 }: UseFinancialSummaryParams) => {
   return useQuery<FinancialSummaryWithCardId | null>({
-    queryKey: ['financial-summary', cardId, startDate, endDate],
+    queryKey: financialSummaryKeys.detail(cardId || '', startDate, endDate),
     queryFn: async () => {
       if (!cardId) return null;
       
@@ -55,6 +79,8 @@ export const useFinancialSummaryComparison = ({
   previousEnd?: string;
   enabled?: boolean;
 }) => {
+  const { invalidateAll } = useInvalidateFinancialSummary();
+
   const currentQuery = useFinancialSummary({
     cardId,
     startDate: currentStart,
@@ -78,5 +104,6 @@ export const useFinancialSummaryComparison = ({
       currentQuery.refetch();
       previousQuery.refetch();
     },
+    invalidateAll,
   };
 };

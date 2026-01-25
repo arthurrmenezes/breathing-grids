@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Loader2, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { transactionService } from '@/services/transactionService';
+import { useInvalidateFinancialSummary } from '@/hooks/useFinancialSummary';
 import { 
   Transaction, 
   PaymentStatusEnum,
@@ -59,6 +60,7 @@ const getTypeKey = (apiValue: string): string => {
 };
 
 export const EditTransactionModal = ({ open, onOpenChange, onSuccess, categories = [], transaction }: EditTransactionModalProps) => {
+  const { invalidateAll } = useInvalidateFinancialSummary();
   const [title, setTitle] = useState('');
   const [rawValue, setRawValue] = useState(0);
   const [date, setDate] = useState('');
@@ -195,6 +197,7 @@ export const EditTransactionModal = ({ open, onOpenChange, onSuccess, categories
         toast.error(response.error);
       } else {
         toast.success('Transação atualizada com sucesso');
+        invalidateAll(); // Invalidate financial summary cache
         onOpenChange(false);
         onSuccess?.();
       }
