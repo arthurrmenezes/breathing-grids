@@ -99,7 +99,7 @@ const Contas = () => {
       } else if (response.data) {
         const cardsWithColors = response.data.cards.map((card, index) => ({
           ...card,
-          color: getCardColor(card.name, index),
+          color: getCardColor(card.id, card.name, index),
         }));
         setCards(cardsWithColors);
         if (cardsWithColors.length > 0 && !selectedCard) {
@@ -368,7 +368,7 @@ const Contas = () => {
                     className={cn(
                       "flex-shrink-0 w-64 h-36 rounded-2xl p-4 cursor-pointer",
                       "bg-gradient-to-br text-white",
-                      card.color || getCardColor(card.name, index),
+                      card.color || getCardColor(card.id, card.name, index),
                       "transition-all duration-300",
                       selectedCard?.id === card.id 
                         ? 'ring-2 ring-accent ring-offset-2 ring-offset-background scale-105' 

@@ -862,11 +862,12 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <SummaryCard 
             title="Saldo disponível" 
-            value={hideValue(formatCurrency(periodBalance))} 
+            value={hideValue(`${periodBalance < 0 ? '-' : ''}${formatCurrency(periodBalance)}`)} 
             subtitle="Saldo até o período"
             icon={Wallet}
             showValues={showValues}
             isLoading={summaryLoading}
+            valueClassName={periodBalance < 0 ? 'text-destructive' : undefined}
           />
           <SummaryCard 
             title="Receitas" 
@@ -1456,6 +1457,7 @@ const SummaryCard = ({
   icon: Icon,
   showValues,
   isLoading,
+  valueClassName,
 }: {
   title: string;
   value: string;
@@ -1466,6 +1468,7 @@ const SummaryCard = ({
   icon: React.ComponentType<{ className?: string }>;
   showValues: boolean;
   isLoading?: boolean;
+  valueClassName?: string;
 }) => (
   <div className="bg-card rounded-xl border border-border p-4 hover:shadow-card-hover transition-shadow">
     <div className="flex items-center justify-between">
@@ -1478,7 +1481,7 @@ const SummaryCard = ({
           </div>
         ) : (
           <>
-            <p className="text-xl font-semibold tabular-nums">{value}</p>
+            <p className={cn("text-xl font-semibold tabular-nums", valueClassName)}>{value}</p>
             {subtitle ? (
               <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>
             ) : (

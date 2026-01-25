@@ -130,11 +130,66 @@ export const BankCardColors = [
   { name: 'Prata', color: 'from-slate-500 to-slate-700', hex: '#64748B' },
 ];
 
-// Get card color by name or index
-export const getCardColor = (name: string, index: number = 0): string => {
+// LocalStorage key for card colors
+const CARD_COLORS_STORAGE_KEY = 'tmoney_card_colors';
+
+// Get saved card colors from localStorage
+export const getSavedCardColors = (): Record<string, number> => {
+  try {
+    const saved = localStorage.getItem(CARD_COLORS_STORAGE_KEY);
+    return saved ? JSON.parse(saved) : {};
+  } catch {
+    return {};
+  }
+};
+
+// Save card color to localStorage
+export const saveCardColor = (cardId: string, colorIndex: number): void => {
+  try {
+    const colors = getSavedCardColors();
+    colors[cardId] = colorIndex;
+    localStorage.setItem(CARD_COLORS_STORAGE_KEY, JSON.stringify(colors));
+  } catch {
+    // Silently fail if localStorage is not available
+  }
+};
+
+// Get card color by ID (from localStorage) or fallback to name/index
+export const getCardColor = (cardId: string, name: string, index: number = 0): string => {
+  // First check localStorage for saved color
+  const savedColors = getSavedCardColors();
+  if (savedColors[cardId] !== undefined) {
+    const colorIndex = savedColors[cardId];
+    if (colorIndex >= 0 && colorIndex < BankCardColors.length) {
+      return BankCardColors[colorIndex].color;
+    }
+  }
+  
+  // Fallback: try to match by name
   const found = BankCardColors.find(c => 
     name.toLowerCase().includes(c.name.toLowerCase())
   );
   if (found) return found.color;
-  return BankCardColors[index % BankCardColors.length].color;
+  
+  // Final fallback: use stable hash of cardId for consistent color
+  const hash = cardId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return BankCardColors[hash % BankCardColors.length].color;
+};
+
+// Get color index for a card (for editing)
+export const getCardColorIndex = (cardId: string, name: string): number => {
+  const savedColors = getSavedCardColors();
+  if (savedColors[cardId] !== undefined) {
+    return savedColors[cardId];
+  }
+  
+  // Try to match by name
+  const foundIndex = BankCardColors.findIndex(c => 
+    name.toLowerCase().includes(c.name.toLowerCase())
+  );
+  if (foundIndex >= 0) return foundIndex;
+  
+  // Use stable hash of cardId
+  const hash = cardId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return hash % BankCardColors.length;
 };
