@@ -199,8 +199,17 @@ const Transacoes = () => {
   };
 
   const fetchSummary = async () => {
+    // Requires a card to be selected
+    if (!filterCardId) {
+      setSummary(null);
+      return;
+    }
+    
     try {
-      const response = await transactionService.getFinancialSummary();
+      const startDate = filterStartDate ? format(filterStartDate, 'yyyy-MM-dd') : undefined;
+      const endDate = filterEndDate ? format(filterEndDate, 'yyyy-MM-dd') : undefined;
+      
+      const response = await transactionService.getFinancialSummary(filterCardId, startDate, endDate);
       if (response.data) {
         setSummary(response.data);
       }
@@ -290,8 +299,11 @@ const Transacoes = () => {
   useEffect(() => {
     fetchCategories();
     fetchCards();
-    fetchSummary();
   }, []);
+
+  useEffect(() => {
+    fetchSummary();
+  }, [filterCardId, filterStartDate, filterEndDate]);
 
   useEffect(() => {
     fetchTransactions();

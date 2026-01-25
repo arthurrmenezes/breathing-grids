@@ -69,9 +69,9 @@ export const transactionService = {
   },
 
   /**
-   * Get financial summary for a date range
+   * Get financial summary for a card and date range
    */
-  async getFinancialSummary(startDate?: string, endDate?: string): Promise<ApiResponse<FinancialSummary>> {
+  async getFinancialSummary(cardId: string, startDate?: string, endDate?: string): Promise<ApiResponse<FinancialSummary & { cardId: string }>> {
     const queryParams = new URLSearchParams();
     
     if (startDate) queryParams.append('startDate', startDate);
@@ -79,10 +79,10 @@ export const transactionService = {
     
     const queryString = queryParams.toString();
     const endpoint = queryString 
-      ? `${BASE_ENDPOINT}/financial-summary?${queryString}` 
-      : `${BASE_ENDPOINT}/financial-summary`;
+      ? `${BASE_ENDPOINT}/financial-summary/${cardId}?${queryString}` 
+      : `${BASE_ENDPOINT}/financial-summary/${cardId}`;
     
-    return api.get<FinancialSummary>(endpoint);
+    return api.get<FinancialSummary & { cardId: string }>(endpoint);
   },
 
   /**
