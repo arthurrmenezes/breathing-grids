@@ -10,7 +10,7 @@ import { ViewTransactionModal } from '@/components/app/ViewTransactionModal';
 import { transactionService } from '@/services/transactionService';
 import { categoryService } from '@/services/categoryService';
 import { cardService } from '@/services/cardService';
-import { useFinancialSummary } from '@/hooks/useFinancialSummary';
+import { useFinancialSummary, useInvalidateFinancialSummary } from '@/hooks/useFinancialSummary';
 import { Calendar } from '@/components/ui/calendar';
 import { 
   Transaction, 
@@ -141,6 +141,9 @@ const Transacoes = () => {
     startDate: filterStartDate ? format(filterStartDate, 'yyyy-MM-dd') : undefined,
     endDate: filterEndDate ? format(filterEndDate, 'yyyy-MM-dd') : undefined,
   });
+
+  // Cache invalidation hook for global updates
+  const { invalidateAll: invalidateSummaryCache } = useInvalidateFinancialSummary();
 
   // Initialize filters from URL params
   useEffect(() => {
@@ -361,8 +364,8 @@ const Transacoes = () => {
         toast.error(response.error);
       } else {
         toast.success('Transação excluída com sucesso');
+        invalidateSummaryCache(); // Invalidate all financial summary cache
         fetchTransactions();
-        refetchSummary();
       }
     } catch (error) {
       toast.error('Erro ao excluir transação');
