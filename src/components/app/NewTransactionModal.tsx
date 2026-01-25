@@ -96,11 +96,13 @@ export const NewTransactionModal = ({
     }
   }, [selectedCard]);
 
-  // Reset payment method when card changes
+  // Reset payment method and transaction type when card changes
   useEffect(() => {
     if (selectedCard) {
       if (selectedCard.type === 'CreditCard') {
         setPayment(PaymentMethodEnum.Credit.toString());
+        // Credit cards can only have expense transactions
+        setType('Despesa');
       } else if (payment === PaymentMethodEnum.Credit.toString()) {
         // If debit card and credit payment was selected, reset
         setPayment('');
@@ -358,15 +360,25 @@ export const NewTransactionModal = ({
 
             <div className="space-y-1.5">
               <Label>Tipo <span className="text-destructive">*</span></Label>
-              <Select value={type} onValueChange={setType} required disabled={loading}>
+              <Select 
+                value={type} 
+                onValueChange={setType} 
+                required 
+                disabled={loading || selectedCard?.type === 'CreditCard'}
+              >
                 <SelectTrigger className="text-sm">
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Receita">Receita</SelectItem>
+                  {selectedCard?.type !== 'CreditCard' && (
+                    <SelectItem value="Receita">Receita</SelectItem>
+                  )}
                   <SelectItem value="Despesa">Despesa</SelectItem>
                 </SelectContent>
               </Select>
+              {selectedCard?.type === 'CreditCard' && (
+                <p className="text-xs text-muted-foreground">Cartão de crédito aceita apenas transações do tipo Despesa</p>
+              )}
             </div>
           </div>
 
