@@ -285,7 +285,7 @@ const Dashboard = () => {
     if (!selectedCardId) return;
     try {
       const { start, end } = getMainDateRange();
-      const response = await cardService.getFinancialSummary(selectedCardId, start, end);
+      const response = await transactionService.getFinancialSummary(selectedCardId, start, end);
       if (response.data) {
         // Calculate balance as income - expenses for the period
         const periodBalanceCalc = response.data.periodIncome - response.data.periodExpense;
@@ -441,7 +441,7 @@ const Dashboard = () => {
 
     try {
       // Fetch current period summary
-      const currentResponse = await cardService.getFinancialSummary(selectedCardId, monthStart, monthEnd);
+      const currentResponse = await transactionService.getFinancialSummary(selectedCardId, monthStart, monthEnd);
       
       if (currentResponse.data) {
         setCurrentSummary({
@@ -452,7 +452,7 @@ const Dashboard = () => {
       }
 
       // Fetch previous period for comparison
-      const previousResponse = await cardService.getFinancialSummary(selectedCardId, previousMonthStart, previousMonthEnd);
+      const previousResponse = await transactionService.getFinancialSummary(selectedCardId, previousMonthStart, previousMonthEnd);
       
       if (previousResponse.data) {
         setPreviousSummary({

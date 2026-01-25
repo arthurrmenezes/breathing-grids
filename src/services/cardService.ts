@@ -60,22 +60,6 @@ export const cardService = {
     return api.delete<void>(`${BASE_ENDPOINT}/${id}`);
   },
 
-  /**
-   * Get financial summary for a card
-   */
-  async getFinancialSummary(cardId: string, startDate?: string, endDate?: string): Promise<ApiResponse<FinancialSummary & { cardId: string }>> {
-    const queryParams = new URLSearchParams();
-    
-    if (startDate) queryParams.append('startDate', startDate);
-    if (endDate) queryParams.append('endDate', endDate);
-    
-    const queryString = queryParams.toString();
-    const endpoint = queryString 
-      ? `${BASE_ENDPOINT}/financial-summary/${cardId}?${queryString}` 
-      : `${BASE_ENDPOINT}/financial-summary/${cardId}`;
-    
-    return api.get<FinancialSummary & { cardId: string }>(endpoint);
-  },
 
   /**
    * Get all invoices for a credit card

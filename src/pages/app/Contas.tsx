@@ -226,7 +226,7 @@ const Contas = () => {
     if (!selectedCard) return;
 
     try {
-      const response = await cardService.getFinancialSummary(selectedCard.id);
+      const response = await transactionService.getFinancialSummary(selectedCard.id);
       if (response.data) {
         setFinancialSummary({
           periodIncome: response.data.periodIncome,
