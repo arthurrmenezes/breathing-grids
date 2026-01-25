@@ -1,0 +1,82 @@
+import { useQuery } from '@tanstack/react-query';
+import { transactionService } from '@/services/transactionService';
+import type { FinancialSummary } from '@/types/transaction';
+
+interface UseFinancialSummaryParams {
+  cardId: string | undefined;
+  startDate?: string;
+  endDate?: string;
+  enabled?: boolean;
+}
+
+interface FinancialSummaryWithCardId extends FinancialSummary {
+  cardId: string;
+}
+
+export const useFinancialSummary = ({ 
+  cardId, 
+  startDate, 
+  endDate, 
+  enabled = true 
+}: UseFinancialSummaryParams) => {
+  return useQuery<FinancialSummaryWithCardId | null>({
+    queryKey: ['financial-summary', cardId, startDate, endDate],
+    queryFn: async () => {
+      if (!cardId) return null;
+      
+      const response = await transactionService.getFinancialSummary(cardId, startDate, endDate);
+      
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      
+      return response.data ?? null;
+    },
+    enabled: enabled && !!cardId,
+    staleTime: 30 * 1000, // 30 seconds - data considered fresh
+    gcTime: 5 * 60 * 1000, // 5 minutes - cache retention
+    refetchOnWindowFocus: false,
+  });
+};
+
+// Hook for comparing current vs previous period
+export const useFinancialSummaryComparison = ({
+  cardId,
+  currentStart,
+  currentEnd,
+  previousStart,
+  previousEnd,
+  enabled = true,
+}: {
+  cardId: string | undefined;
+  currentStart?: string;
+  currentEnd?: string;
+  previousStart?: string;
+  previousEnd?: string;
+  enabled?: boolean;
+}) => {
+  const currentQuery = useFinancialSummary({
+    cardId,
+    startDate: currentStart,
+    endDate: currentEnd,
+    enabled,
+  });
+
+  const previousQuery = useFinancialSummary({
+    cardId,
+    startDate: previousStart,
+    endDate: previousEnd,
+    enabled,
+  });
+
+  return {
+    current: currentQuery.data,
+    previous: previousQuery.data,
+    isLoading: currentQuery.isLoading || previousQuery.isLoading,
+    isError: currentQuery.isError || previousQuery.isError,
+    refetch: () => {
+      currentQuery.refetch();
+      previousQuery.refetch();
+    },
+  };
+};
