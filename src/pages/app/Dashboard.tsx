@@ -866,6 +866,7 @@ const Dashboard = () => {
             subtitle="Saldo até o período"
             icon={Wallet}
             showValues={showValues}
+            isLoading={summaryLoading}
           />
           <SummaryCard 
             title="Receitas" 
@@ -875,6 +876,7 @@ const Dashboard = () => {
             trend={incomeChange.percentage >= 0 ? "up" : "down"} 
             icon={TrendingUp}
             showValues={showValues}
+            isLoading={summaryLoading}
           />
           <SummaryCard 
             title="Despesas" 
@@ -884,6 +886,7 @@ const Dashboard = () => {
             trend={expenseChange.percentage <= 0 ? "up" : "down"} 
             icon={TrendingDown}
             showValues={showValues}
+            isLoading={summaryLoading}
           />
         </div>
 
@@ -1452,6 +1455,7 @@ const SummaryCard = ({
   subtitle,
   icon: Icon,
   showValues,
+  isLoading,
 }: {
   title: string;
   value: string;
@@ -1461,29 +1465,39 @@ const SummaryCard = ({
   subtitle?: string;
   icon: React.ComponentType<{ className?: string }>;
   showValues: boolean;
+  isLoading?: boolean;
 }) => (
   <div className="bg-card rounded-xl border border-border p-4 hover:shadow-card-hover transition-shadow">
     <div className="flex items-center justify-between">
       <div className="flex-1">
         <p className="text-sm text-muted-foreground mb-1">{title}</p>
-        <p className="text-xl font-semibold tabular-nums">{value}</p>
-        {subtitle ? (
-          <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>
-        ) : (
-          <div className="flex items-center gap-2 mt-1">
-            <span className={`text-sm ${trend === "up" ? "text-success" : "text-destructive"}`}>
-              {showValues ? `${changeValue} vs período anterior` : "•••••••"}
-            </span>
-            {showValues && change && (
-              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                trend === "up" 
-                  ? "bg-success/10 text-success" 
-                  : "bg-destructive/10 text-destructive"
-              }`}>
-                {change}
-              </span>
-            )}
+        {isLoading ? (
+          <div className="space-y-2">
+            <div className="h-7 w-28 bg-muted/50 rounded animate-pulse" />
+            <div className="h-4 w-36 bg-muted/30 rounded animate-pulse" />
           </div>
+        ) : (
+          <>
+            <p className="text-xl font-semibold tabular-nums">{value}</p>
+            {subtitle ? (
+              <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>
+            ) : (
+              <div className="flex items-center gap-2 mt-1">
+                <span className={`text-sm ${trend === "up" ? "text-success" : "text-destructive"}`}>
+                  {showValues ? `${changeValue} vs período anterior` : "•••••••"}
+                </span>
+                {showValues && change && (
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                    trend === "up" 
+                      ? "bg-success/10 text-success" 
+                      : "bg-destructive/10 text-destructive"
+                  }`}>
+                    {change}
+                  </span>
+                )}
+              </div>
+            )}
+          </>
         )}
       </div>
       <div className="p-2 rounded-xl bg-accent/10">
