@@ -136,7 +136,7 @@ const Transacoes = () => {
   const [sortState, setSortState] = useState<SortState>('date');
 
   // Financial summary with React Query cache
-  const { data: summary, refetch: refetchSummary } = useFinancialSummary({
+  const { data: summary, refetch: refetchSummary, isLoading: summaryLoading } = useFinancialSummary({
     cardId: filterCardId || undefined,
     startDate: filterStartDate ? format(filterStartDate, 'yyyy-MM-dd') : undefined,
     endDate: filterEndDate ? format(filterEndDate, 'yyyy-MM-dd') : undefined,
@@ -851,21 +851,33 @@ const Transacoes = () => {
           </div>
           <div className="text-center">
             <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Receitas</p>
-            <p className="text-xl sm:text-2xl font-bold text-success">
-              {showValues ? formatCurrency(summary?.periodIncome || 0) : '••••••'}
-            </p>
+            {summaryLoading ? (
+              <div className="h-7 w-24 mx-auto bg-muted/50 rounded animate-pulse" />
+            ) : (
+              <p className="text-xl sm:text-2xl font-bold text-success">
+                {showValues ? formatCurrency(summary?.periodIncome || 0) : '••••••'}
+              </p>
+            )}
           </div>
           <div className="text-center">
             <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Despesas</p>
-            <p className="text-xl sm:text-2xl font-bold text-destructive">
-              {showValues ? formatCurrency(summary?.periodExpense || 0) : '••••••'}
-            </p>
+            {summaryLoading ? (
+              <div className="h-7 w-24 mx-auto bg-muted/50 rounded animate-pulse" />
+            ) : (
+              <p className="text-xl sm:text-2xl font-bold text-destructive">
+                {showValues ? formatCurrency(summary?.periodExpense || 0) : '••••••'}
+              </p>
+            )}
           </div>
           <div className="text-center">
             <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Saldo</p>
-            <p className={cn("text-xl sm:text-2xl font-bold", (summary?.balance || 0) >= 0 ? 'text-success' : 'text-destructive')}>
-              {showValues ? formatCurrency(summary?.balance || 0) : '••••••'}
-            </p>
+            {summaryLoading ? (
+              <div className="h-7 w-24 mx-auto bg-muted/50 rounded animate-pulse" />
+            ) : (
+              <p className={cn("text-xl sm:text-2xl font-bold", (summary?.balance || 0) >= 0 ? 'text-success' : 'text-destructive')}>
+                {showValues ? formatCurrency(summary?.balance || 0) : '••••••'}
+              </p>
+            )}
           </div>
         </div>
 
