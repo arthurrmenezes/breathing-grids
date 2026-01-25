@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cardService } from '@/services/cardService';
-import { Card, BankCardColors } from '@/types/card';
+import { Card, BankCardColors, saveCardColor, getCardColorIndex } from '@/types/card';
 import { 
   validateCard, 
   validateCreditCard,
@@ -47,11 +47,8 @@ export const EditCardModal = ({ open, onOpenChange, onSuccess, card }: EditCardM
         setCloseDay(card.creditCard.closeDay.toString());
         setDueDay(card.creditCard.dueDay.toString());
       }
-      // Find color index based on card name
-      const colorIndex = BankCardColors.findIndex(c => 
-        card.name.toLowerCase().includes(c.name.toLowerCase())
-      );
-      setSelectedColor(colorIndex >= 0 ? colorIndex : 0);
+      // Get saved color index for this card
+      setSelectedColor(getCardColorIndex(card.id, card.name));
     }
   }, [card, open]);
 
@@ -120,6 +117,8 @@ export const EditCardModal = ({ open, onOpenChange, onSuccess, card }: EditCardM
       if (response.error) {
         toast.error(response.error);
       } else {
+        // Save the selected color for this card
+        saveCardColor(card.id, selectedColor);
         toast.success('Cartão atualizado com sucesso');
         onOpenChange(false);
         onSuccess?.();

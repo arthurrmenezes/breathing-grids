@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cardService } from '@/services/cardService';
-import { CardTypeEnum, CardTypeOptions, BankCardColors } from '@/types/card';
+import { CardTypeEnum, CardTypeOptions, BankCardColors, saveCardColor } from '@/types/card';
 import {
   Select,
   SelectContent,
@@ -118,7 +118,9 @@ export const NewCardModal = ({ open, onOpenChange, onSuccess }: NewCardModalProp
 
       if (response.error) {
         toast.error(response.error);
-      } else {
+      } else if (response.data) {
+        // Save the selected color for this card
+        saveCardColor(response.data.id, selectedColor);
         toast.success('Cartão criado com sucesso');
         resetForm();
         onOpenChange(false);

@@ -61,9 +61,7 @@ export function GoogleIdentityButton({
         if (cancelled) return;
 
         if (!GOOGLE_CLIENT_ID) {
-          onError?.(
-            'Google Client ID não configurado. Preencha a constante GOOGLE_CLIENT_ID em src/services/googleAuthService.ts',
-          );
+          onError?.('Login com Google não está disponível no momento. Tente novamente mais tarde.');
           return;
         }
 

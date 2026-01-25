@@ -36,7 +36,7 @@ export const initializeGoogleAuth = (): Promise<void> => {
     }
 
     if (!GOOGLE_CLIENT_ID) {
-      reject(new Error('Google Client ID não configurado. Adicione seu Client ID em src/services/googleAuthService.ts'));
+      reject(new Error('Login com Google não está disponível no momento. Tente novamente mais tarde.'));
       return;
     }
 
@@ -104,7 +104,7 @@ export const signInWithGoogle = async (): Promise<{ success: boolean; data?: Goo
     await initializeGoogleAuth();
 
     if (!GOOGLE_CLIENT_ID) {
-      return { success: false, error: 'Google Client ID não configurado' };
+      return { success: false, error: 'Login com Google não está disponível no momento' };
     }
 
     return new Promise((resolve) => {
