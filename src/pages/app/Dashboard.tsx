@@ -5,6 +5,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { transactionService } from "@/services/transactionService";
 import { categoryService } from "@/services/categoryService";
 import { cardService } from "@/services/cardService";
+import { useFinancialSummaryComparison } from "@/hooks/useFinancialSummary";
 import { useAuth } from "@/contexts/AuthContext";
 import { Transaction, PaymentStatusEnum } from "@/types/transaction";
 import { Category } from "@/types/category";
@@ -156,8 +157,6 @@ const Dashboard = () => {
   
   // Data states
   const [periodBalance, setPeriodBalance] = useState<number>(0);
-  const [currentSummary, setCurrentSummary] = useState<FinancialData | null>(null);
-  const [previousSummary, setPreviousSummary] = useState<FinancialData | null>(null);
   const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
   const [overdueTransactions, setOverdueTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -175,26 +174,9 @@ const Dashboard = () => {
 
   // Accumulated balance data
   const [accumulatedBalanceData, setAccumulatedBalanceData] = useState<SimpleTimeSeriesPoint[]>([]);
-  
-  // Fetch cards
-  const fetchCards = async () => {
-    try {
-      const response = await cardService.getAll({ pageSize: 50 });
-      if (response.data) {
-        setCards(response.data.cards);
-        // Auto-select first card if none selected
-        if (response.data.cards.length > 0 && !selectedCardId) {
-          setSelectedCardId(response.data.cards[0].id);
-        }
-        setCardsLoaded(true);
-      }
-    } catch (error) {
-      console.error("Error fetching cards:", error);
-    }
-  };
 
-  // Calculate date ranges based on main period
-  const getMainDateRange = () => {
+  // Calculate date ranges based on main period (memoized for React Query)
+  const dateRanges = useMemo(() => {
     const now = new Date();
     let startDate: Date;
     let endDate = endOfMonth(now);
@@ -227,26 +209,51 @@ const Dashboard = () => {
       default:
         startDate = startOfMonth(now);
     }
-    
-    return {
-      start: format(startDate, "yyyy-MM-dd"),
-      end: format(endDate, "yyyy-MM-dd"),
-      startDate,
-      endDate,
-    };
-  };
 
-  // Calculate previous period for comparison
-  const getPreviousDateRange = () => {
-    const { startDate, endDate } = getMainDateRange();
     const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
     const previousStart = subDays(startDate, daysDiff);
     const previousEnd = subDays(startDate, 1);
-    
+
     return {
-      start: format(previousStart, "yyyy-MM-dd"),
-      end: format(previousEnd, "yyyy-MM-dd"),
+      currentStart: format(startDate, "yyyy-MM-dd"),
+      currentEnd: format(endDate, "yyyy-MM-dd"),
+      previousStart: format(previousStart, "yyyy-MM-dd"),
+      previousEnd: format(previousEnd, "yyyy-MM-dd"),
+      startDate,
+      endDate,
     };
+  }, [mainPeriod]);
+
+  // Financial summary with React Query cache
+  const { 
+    current: currentSummary, 
+    previous: previousSummary, 
+    isLoading: summaryLoading,
+    refetch: refetchSummary 
+  } = useFinancialSummaryComparison({
+    cardId: selectedCardId || undefined,
+    currentStart: dateRanges.currentStart,
+    currentEnd: dateRanges.currentEnd,
+    previousStart: dateRanges.previousStart,
+    previousEnd: dateRanges.previousEnd,
+    enabled: cardsLoaded && !!selectedCardId,
+  });
+  
+  // Fetch cards
+  const fetchCards = async () => {
+    try {
+      const response = await cardService.getAll({ pageSize: 50 });
+      if (response.data) {
+        setCards(response.data.cards);
+        // Auto-select first card if none selected
+        if (response.data.cards.length > 0 && !selectedCardId) {
+          setSelectedCardId(response.data.cards[0].id);
+        }
+        setCardsLoaded(true);
+      }
+    } catch (error) {
+      console.error("Error fetching cards:", error);
+    }
   };
 
   // Calculate date ranges for cash flow chart
@@ -284,8 +291,7 @@ const Dashboard = () => {
   const fetchPeriodBalance = async () => {
     if (!selectedCardId) return;
     try {
-      const { start, end } = getMainDateRange();
-      const response = await transactionService.getFinancialSummary(selectedCardId, start, end);
+      const response = await transactionService.getFinancialSummary(selectedCardId, dateRanges.currentStart, dateRanges.currentEnd);
       if (response.data) {
         // Calculate balance as income - expenses for the period
         const periodBalanceCalc = response.data.periodIncome - response.data.periodExpense;
@@ -300,13 +306,11 @@ const Dashboard = () => {
   const fetchSpendingPaceData = async () => {
     if (!selectedCardId) return;
     try {
-      const { start, end, startDate, endDate } = getMainDateRange();
-
       const response = await transactionService.getAll({
         pageNumber: 1,
         pageSize: 5000,
-        startDate: start,
-        endDate: end,
+        startDate: dateRanges.currentStart,
+        endDate: dateRanges.currentEnd,
         cardId: selectedCardId || undefined,
       });
 
@@ -319,7 +323,7 @@ const Dashboard = () => {
         });
       }
 
-      const days = eachDayOfInterval({ start: startDate, end: endDate });
+      const days = eachDayOfInterval({ start: dateRanges.startDate, end: dateRanges.endDate });
       let cumulative = 0;
       const points: SimpleTimeSeriesPoint[] = days.map((d) => {
         const key = format(d, "yyyy-MM-dd");
@@ -341,13 +345,11 @@ const Dashboard = () => {
   const fetchPatrimonioData = async () => {
     if (!selectedCardId) return;
     try {
-      const { start, end, startDate, endDate } = getMainDateRange();
-
       const response = await transactionService.getAll({
         pageNumber: 1,
         pageSize: 5000,
-        startDate: start,
-        endDate: end,
+        startDate: dateRanges.currentStart,
+        endDate: dateRanges.currentEnd,
         cardId: selectedCardId || undefined,
       });
       
@@ -359,7 +361,7 @@ const Dashboard = () => {
           incomesByDate.set(dateKey, (incomesByDate.get(dateKey) || 0) + tx.amount);
         });
 
-        const days = eachDayOfInterval({ start: startDate, end: endDate });
+        const days = eachDayOfInterval({ start: dateRanges.startDate, end: dateRanges.endDate });
         let cumulative = 0;
         const points: SimpleTimeSeriesPoint[] = days.map((d) => {
           const key = format(d, "yyyy-MM-dd");
@@ -433,35 +435,12 @@ const Dashboard = () => {
     }
   };
 
-  // Fetch summary data based on selected period
-  const fetchSummaryData = async () => {
+  // Fetch category spending data (summary now handled by React Query)
+  const fetchCategorySpendingData = async () => {
     if (!selectedCardId) return;
-    const { start: monthStart, end: monthEnd } = getMainDateRange();
-    const { start: previousMonthStart, end: previousMonthEnd } = getPreviousDateRange();
+    const { currentStart, currentEnd, previousStart, previousEnd } = dateRanges;
 
     try {
-      // Fetch current period summary
-      const currentResponse = await transactionService.getFinancialSummary(selectedCardId, monthStart, monthEnd);
-      
-      if (currentResponse.data) {
-        setCurrentSummary({
-          periodIncome: currentResponse.data.periodIncome,
-          periodExpense: currentResponse.data.periodExpense,
-          balance: currentResponse.data.balance,
-        });
-      }
-
-      // Fetch previous period for comparison
-      const previousResponse = await transactionService.getFinancialSummary(selectedCardId, previousMonthStart, previousMonthEnd);
-      
-      if (previousResponse.data) {
-        setPreviousSummary({
-          periodIncome: previousResponse.data.periodIncome,
-          periodExpense: previousResponse.data.periodExpense,
-          balance: previousResponse.data.balance,
-        });
-      }
-
       // Fetch categories
       const categoriesResponse = await categoryService.getAll({ pageSize: 50 });
       
@@ -473,8 +452,8 @@ const Dashboard = () => {
       const transactionsForPeriod = await transactionService.getAll({
         pageNumber: 1,
         pageSize: 1000,
-        startDate: monthStart,
-        endDate: monthEnd,
+        startDate: currentStart,
+        endDate: currentEnd,
         cardId: selectedCardId || undefined,
       });
 
@@ -482,8 +461,8 @@ const Dashboard = () => {
       const transactionsForPrevious = await transactionService.getAll({
         pageNumber: 1,
         pageSize: 1000,
-        startDate: previousMonthStart,
-        endDate: previousMonthEnd,
+        startDate: previousStart,
+        endDate: previousEnd,
         cardId: selectedCardId || undefined,
       });
 
@@ -530,7 +509,7 @@ const Dashboard = () => {
         setCategorySpending(spendingData);
       }
     } catch (error) {
-      console.error("Error fetching summary data:", error);
+      console.error("Error fetching category spending data:", error);
     }
   };
 
@@ -642,12 +621,11 @@ const Dashboard = () => {
   // Fetch recent transactions (ordered by date, most recent first)
   const fetchRecentTransactions = async () => {
     try {
-      const { start, end } = getMainDateRange();
       const transactionsResponse = await transactionService.getAll({
         pageNumber: 1,
         pageSize: 5,
-        startDate: start,
-        endDate: end,
+        startDate: dateRanges.currentStart,
+        endDate: dateRanges.currentEnd,
         cardId: selectedCardId || undefined,
       });
       
@@ -688,7 +666,7 @@ const Dashboard = () => {
       await fetchCards();
       await Promise.all([
         fetchPeriodBalance(),
-        fetchSummaryData(),
+        fetchCategorySpendingData(),
         fetchChartData(),
         fetchRecentTransactions(),
         fetchOverdueTransactions(),
@@ -705,7 +683,7 @@ const Dashboard = () => {
   useEffect(() => {
     if (!selectedCardId) return;
     fetchPeriodBalance();
-    fetchSummaryData();
+    fetchCategorySpendingData();
     fetchChartData();
     fetchRecentTransactions();
     fetchOverdueTransactions();
@@ -714,10 +692,10 @@ const Dashboard = () => {
     fetchAccumulatedBalanceData();
   }, [selectedCardId]);
 
-  // Update summary, category spending and balance when period changes
+  // Update category spending and balance when period changes
   useEffect(() => {
     fetchPeriodBalance();
-    fetchSummaryData();
+    fetchCategorySpendingData();
     fetchSpendingPaceData();
     fetchPatrimonioData();
     fetchRecentTransactions();
@@ -807,13 +785,11 @@ const Dashboard = () => {
   };
 
   const handleViewExpenses = () => {
-    const { start, end } = getMainDateRange();
-    navigate(`/app/transacoes?type=expense&startDate=${start}&endDate=${end}`);
+    navigate(`/app/transacoes?type=expense&startDate=${dateRanges.currentStart}&endDate=${dateRanges.currentEnd}`);
   };
 
   const handleViewIncomes = () => {
-    const { start, end } = getMainDateRange();
-    navigate(`/app/transacoes?type=income&startDate=${start}&endDate=${end}`);
+    navigate(`/app/transacoes?type=income&startDate=${dateRanges.currentStart}&endDate=${dateRanges.currentEnd}`);
   };
 
   if (loading) {
@@ -1447,9 +1423,10 @@ const Dashboard = () => {
           // Reload all data
           const fetchAll = async () => {
             setLoading(true);
+            refetchSummary();
             await Promise.all([
               fetchPeriodBalance(),
-              fetchSummaryData(),
+              fetchCategorySpendingData(),
               fetchChartData(),
               fetchRecentTransactions(),
               fetchOverdueTransactions(),

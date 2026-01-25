@@ -24,6 +24,7 @@ import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { cardService } from '@/services/cardService';
 import { transactionService } from '@/services/transactionService';
+import { useFinancialSummary } from '@/hooks/useFinancialSummary';
 import { Card as CardType, CardTypeLabels, getCardColor, Invoice } from '@/types/card';
 import { Transaction } from '@/types/transaction';
 import { NewCardModal } from '@/components/app/NewCardModal';
@@ -82,11 +83,11 @@ const Contas = () => {
   const [invoiceTransactions, setInvoiceTransactions] = useState<Transaction[]>([]);
   const [invoiceTransactionsLoading, setInvoiceTransactionsLoading] = useState(false);
 
-  // Financial summary
-  const [financialSummary, setFinancialSummary] = useState<{
-    periodIncome: number;
-    periodExpense: number;
-  } | null>(null);
+  // Financial summary with React Query cache
+  const { data: financialSummary } = useFinancialSummary({
+    cardId: selectedCard?.id,
+    enabled: !!selectedCard,
+  });
 
   // Fetch cards
   const fetchCards = async () => {
@@ -221,23 +222,6 @@ const Contas = () => {
     }
   }, [selectedInvoice?.id]);
 
-  // Fetch financial summary for selected card
-  const fetchFinancialSummary = async () => {
-    if (!selectedCard) return;
-
-    try {
-      const response = await transactionService.getFinancialSummary(selectedCard.id);
-      if (response.data) {
-        setFinancialSummary({
-          periodIncome: response.data.periodIncome,
-          periodExpense: response.data.periodExpense,
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching financial summary:', error);
-    }
-  };
-
   useEffect(() => {
     fetchCards();
   }, []);
@@ -245,7 +229,6 @@ const Contas = () => {
   useEffect(() => {
     if (selectedCard) {
       fetchCardTransactions();
-      fetchFinancialSummary();
       fetchInvoices();
     }
   }, [selectedCard]);

@@ -10,6 +10,7 @@ import { ViewTransactionModal } from '@/components/app/ViewTransactionModal';
 import { transactionService } from '@/services/transactionService';
 import { categoryService } from '@/services/categoryService';
 import { cardService } from '@/services/cardService';
+import { useFinancialSummary } from '@/hooks/useFinancialSummary';
 import { Calendar } from '@/components/ui/calendar';
 import { 
   Transaction, 
@@ -113,7 +114,6 @@ const Transacoes = () => {
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
-  const [summary, setSummary] = useState<FinancialSummary | null>(null);
   
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -134,6 +134,13 @@ const Transacoes = () => {
 
   // Sort - 3 states: date (default), amount-desc, amount-asc
   const [sortState, setSortState] = useState<SortState>('date');
+
+  // Financial summary with React Query cache
+  const { data: summary, refetch: refetchSummary } = useFinancialSummary({
+    cardId: filterCardId || undefined,
+    startDate: filterStartDate ? format(filterStartDate, 'yyyy-MM-dd') : undefined,
+    endDate: filterEndDate ? format(filterEndDate, 'yyyy-MM-dd') : undefined,
+  });
 
   // Initialize filters from URL params
   useEffect(() => {
@@ -195,26 +202,6 @@ const Transacoes = () => {
       }
     } catch (error) {
       console.error('Error fetching cards:', error);
-    }
-  };
-
-  const fetchSummary = async () => {
-    // Requires a card to be selected
-    if (!filterCardId) {
-      setSummary(null);
-      return;
-    }
-    
-    try {
-      const startDate = filterStartDate ? format(filterStartDate, 'yyyy-MM-dd') : undefined;
-      const endDate = filterEndDate ? format(filterEndDate, 'yyyy-MM-dd') : undefined;
-      
-      const response = await transactionService.getFinancialSummary(filterCardId, startDate, endDate);
-      if (response.data) {
-        setSummary(response.data);
-      }
-    } catch (error) {
-      console.error('Error fetching summary:', error);
     }
   };
 
@@ -302,10 +289,6 @@ const Transacoes = () => {
   }, []);
 
   useEffect(() => {
-    fetchSummary();
-  }, [filterCardId, filterStartDate, filterEndDate]);
-
-  useEffect(() => {
     fetchTransactions();
   }, [currentPage, filterType, filterCategories, filterPayments, filterStatuses, filterStartDate, filterEndDate, filterCardId]);
 
@@ -379,7 +362,7 @@ const Transacoes = () => {
       } else {
         toast.success('Transação excluída com sucesso');
         fetchTransactions();
-        fetchSummary();
+        refetchSummary();
       }
     } catch (error) {
       toast.error('Erro ao excluir transação');
@@ -392,7 +375,7 @@ const Transacoes = () => {
 
   const handleTransactionCreated = () => {
     fetchTransactions();
-    fetchSummary();
+    refetchSummary();
   };
 
   const handleEdit = (transaction: Transaction) => {
@@ -407,7 +390,7 @@ const Transacoes = () => {
 
   const handleEditSuccess = () => {
     fetchTransactions();
-    fetchSummary();
+    refetchSummary();
   };
 
   const getCategoryName = (categoryId: string) => {
