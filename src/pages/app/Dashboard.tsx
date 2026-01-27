@@ -7,6 +7,7 @@ import { categoryService } from "@/services/categoryService";
 import { cardService } from "@/services/cardService";
 import { useFinancialSummaryComparison } from "@/hooks/useFinancialSummary";
 import { useAuth } from "@/contexts/AuthContext";
+import { useOnboarding } from "@/hooks/useOnboarding";
 import { Transaction, PaymentStatusEnum } from "@/types/transaction";
 import { Category } from "@/types/category";
 import { Card } from "@/types/card";
@@ -28,6 +29,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { NewTransactionModal } from "@/components/app/NewTransactionModal";
+import { OnboardingWizard } from "@/components/app/OnboardingWizard";
 
 type PeriodType = "current-month" | "year" | "6months" | "3months";
 type MainPeriodType = "current-month" | "last-month" | "current-quarter" | "current-year" | "last-6-months" | "last-12-months";
@@ -127,6 +129,9 @@ const Dashboard = () => {
   const { showValues } = useValuesVisibility();
   const { user } = useAuth();
   const navigate = useNavigate();
+  
+  // Onboarding for new users
+  const { needsOnboarding, isLoading: onboardingLoading, completeOnboarding, refreshOnboardingStatus } = useOnboarding();
 
   const isIncomeTx = (tx: Transaction) => tx.transactionType === "Income" || tx.transactionType === "Receita";
   const isExpenseTx = (tx: Transaction) => tx.transactionType === "Expense" || tx.transactionType === "Despesa";
@@ -804,6 +809,16 @@ const Dashboard = () => {
 
   return (
     <AppLayout>
+      {/* Onboarding Wizard for new users */}
+      <OnboardingWizard 
+        open={needsOnboarding} 
+        onComplete={() => {
+          completeOnboarding();
+          // Refresh cards after onboarding
+          fetchCards();
+        }} 
+      />
+      
       <div className="space-y-6">
         {/* Period Selector and Card Filter */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
