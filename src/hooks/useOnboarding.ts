@@ -78,6 +78,14 @@ export const useOnboarding = () => {
     }
   }, [user]);
 
+  const resetOnboarding = useCallback(() => {
+    if (user) {
+      const completedKey = `${ONBOARDING_COMPLETED_KEY}_${user.accountId}`;
+      localStorage.removeItem(completedKey);
+      setState(prev => ({ ...prev, needsOnboarding: true }));
+    }
+  }, [user]);
+
   const refreshOnboardingStatus = useCallback(() => {
     setState(prev => ({ ...prev, isLoading: true }));
     checkOnboardingStatus();
@@ -86,6 +94,7 @@ export const useOnboarding = () => {
   return {
     ...state,
     completeOnboarding,
+    resetOnboarding,
     refreshOnboardingStatus,
   };
 };
