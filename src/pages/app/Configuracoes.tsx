@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { useTheme } from 'next-themes';
 import { useAuth } from '@/contexts/AuthContext';
 import { authService } from '@/services/authService';
+import { useOnboarding } from '@/hooks/useOnboarding';
+import { OnboardingWizard } from '@/components/app/OnboardingWizard';
 import { toast } from 'sonner';
 import { 
   User, 
@@ -20,7 +22,8 @@ import {
   Loader2,
   Eye,
   EyeOff,
-  Download
+  Download,
+  RotateCcw
 } from 'lucide-react';
 import {
   Dialog,
@@ -44,6 +47,8 @@ const Configuracoes = () => {
   const [activeSection, setActiveSection] = useState('profile');
   const { theme, setTheme } = useTheme();
   const { user, updateUser } = useAuth();
+  const { needsOnboarding, resetOnboarding, completeOnboarding } = useOnboarding();
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   // Profile state
   const [firstName, setFirstName] = useState(user?.firstName || '');
@@ -59,6 +64,16 @@ const Configuracoes = () => {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const handleResetOnboarding = () => {
+    resetOnboarding();
+    setShowOnboarding(true);
+  };
+
+  const handleOnboardingComplete = () => {
+    completeOnboarding();
+    setShowOnboarding(false);
+  };
 
   const handleSaveProfile = async () => {
     setSavingProfile(true);
@@ -369,6 +384,19 @@ const Configuracoes = () => {
                 </div>
 
                 <div className="space-y-3">
+                  <button 
+                    onClick={handleResetOnboarding}
+                    className="w-full flex items-center justify-between p-4 rounded-xl border border-border hover:border-accent/30 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <RotateCcw className="w-5 h-5 text-accent" />
+                      <div className="text-left">
+                        <span className="font-medium block">Rever Tutorial Inicial</span>
+                        <span className="text-sm text-muted-foreground">Exibir o guia de boas-vindas novamente</span>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                  </button>
                   <a href="#" className="flex items-center justify-between p-4 rounded-xl border border-border hover:border-accent/30 transition-colors">
                     <span className="font-medium">Perguntas Frequentes</span>
                     <ChevronRight className="w-5 h-5 text-muted-foreground" />
@@ -377,11 +405,11 @@ const Configuracoes = () => {
                     <span className="font-medium">Tutoriais em Vídeo</span>
                     <ChevronRight className="w-5 h-5 text-muted-foreground" />
                   </a>
-                  <a href="#" className="flex items-center justify-between p-4 rounded-xl border border-border hover:border-accent/30 transition-colors">
+                  <a href="mailto:contato.tmoney@gmail.com" className="flex items-center justify-between p-4 rounded-xl border border-border hover:border-accent/30 transition-colors">
                     <span className="font-medium">Falar com Suporte</span>
                     <ChevronRight className="w-5 h-5 text-muted-foreground" />
                   </a>
-                  <a href="#" className="flex items-center justify-between p-4 rounded-xl border border-border hover:border-accent/30 transition-colors">
+                  <a href="mailto:contato.tmoney@gmail.com" className="flex items-center justify-between p-4 rounded-xl border border-border hover:border-accent/30 transition-colors">
                     <span className="font-medium">Reportar um Problema</span>
                     <ChevronRight className="w-5 h-5 text-muted-foreground" />
                   </a>
@@ -479,6 +507,12 @@ const Configuracoes = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Onboarding Wizard */}
+      <OnboardingWizard 
+        open={showOnboarding || needsOnboarding} 
+        onComplete={handleOnboardingComplete} 
+      />
     </AppLayout>
   );
 };

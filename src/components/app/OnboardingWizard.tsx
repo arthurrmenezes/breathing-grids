@@ -16,11 +16,35 @@ import {
   Sun,
   Moon,
   Mail,
-  SkipForward
+  SkipForward,
+  Loader2,
+  ShoppingCart,
+  Car,
+  Utensils,
+  Film,
+  Home,
+  Heart,
+  GraduationCap,
+  Briefcase
 } from 'lucide-react';
 import { NewCardModal } from './NewCardModal';
 import { NewCategoryModal } from './NewCategoryModal';
+import { categoryService } from '@/services/categoryService';
+import { CategoryTypeEnum } from '@/types/category';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
+
+// Suggested categories with icons and types
+const suggestedCategories = [
+  { name: 'Mercado', icon: ShoppingCart, type: CategoryTypeEnum.Despesa },
+  { name: 'Transporte', icon: Car, type: CategoryTypeEnum.Despesa },
+  { name: 'Alimentação', icon: Utensils, type: CategoryTypeEnum.Despesa },
+  { name: 'Lazer', icon: Film, type: CategoryTypeEnum.Despesa },
+  { name: 'Moradia', icon: Home, type: CategoryTypeEnum.Despesa },
+  { name: 'Saúde', icon: Heart, type: CategoryTypeEnum.Despesa },
+  { name: 'Educação', icon: GraduationCap, type: CategoryTypeEnum.Ambos },
+  { name: 'Salário', icon: Briefcase, type: CategoryTypeEnum.Receita },
+];
 
 interface OnboardingWizardProps {
   open: boolean;
@@ -41,6 +65,8 @@ export const OnboardingWizard = ({ open, onComplete }: OnboardingWizardProps) =>
   const [cardCreated, setCardCreated] = useState(false);
   const [showCardModal, setShowCardModal] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set());
+  const [creatingCategories, setCreatingCategories] = useState(false);
   const { theme, setTheme } = useTheme();
 
   const currentStepIndex = steps.findIndex(s => s.id === currentStep);
@@ -66,6 +92,53 @@ export const OnboardingWizard = ({ open, onComplete }: OnboardingWizardProps) =>
   const handleFinish = useCallback(() => {
     onComplete();
   }, [onComplete]);
+
+  const toggleCategory = (name: string) => {
+    setSelectedCategories(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(name)) {
+        newSet.delete(name);
+      } else {
+        newSet.add(name);
+      }
+      return newSet;
+    });
+  };
+
+  const handleCreateSelectedCategories = async () => {
+    if (selectedCategories.size === 0) {
+      nextStep();
+      return;
+    }
+
+    setCreatingCategories(true);
+    try {
+      const categoriesToCreate = suggestedCategories.filter(c => selectedCategories.has(c.name));
+      
+      // Create categories in parallel
+      const results = await Promise.all(
+        categoriesToCreate.map(cat => 
+          categoryService.create({ title: cat.name, type: cat.type })
+        )
+      );
+
+      const successCount = results.filter(r => !r.error).length;
+      const failCount = results.filter(r => r.error).length;
+
+      if (successCount > 0) {
+        toast.success(`${successCount} categoria${successCount > 1 ? 's' : ''} criada${successCount > 1 ? 's' : ''} com sucesso!`);
+      }
+      if (failCount > 0) {
+        toast.error(`${failCount} categoria${failCount > 1 ? 's' : ''} não ${failCount > 1 ? 'puderam' : 'pôde'} ser criada${failCount > 1 ? 's' : ''}`);
+      }
+
+      nextStep();
+    } catch (error) {
+      toast.error('Erro ao criar categorias');
+    } finally {
+      setCreatingCategories(false);
+    }
+  };
 
   const slideVariants = {
     enter: (direction: number) => ({
@@ -180,40 +253,76 @@ export const OnboardingWizard = ({ open, onComplete }: OnboardingWizardProps) =>
 
       case 'category':
         return (
-          <div className="text-center space-y-6">
-            <div className="w-20 h-20 mx-auto rounded-full bg-accent/10 flex items-center justify-center">
-              <Tag className="w-10 h-10 text-accent" />
+          <div className="text-center space-y-5">
+            <div className="w-16 h-16 mx-auto rounded-full bg-accent/10 flex items-center justify-center">
+              <Tag className="w-8 h-8 text-accent" />
             </div>
             <div className="space-y-2">
-              <h2 className="text-2xl font-bold">Organize seus gastos</h2>
-              <p className="text-muted-foreground max-w-sm mx-auto">
-                Crie categorias personalizadas para organizar suas transações e entender melhor para onde seu dinheiro está indo.
+              <h2 className="text-xl font-bold">Organize seus gastos</h2>
+              <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+                Selecione categorias sugeridas ou crie as suas próprias.
               </p>
             </div>
 
-            <div className="flex flex-col gap-3">
-              <Button 
-                variant="accent" 
-                onClick={() => setShowCategoryModal(true)} 
-                className="w-full"
-              >
-                <Tag className="w-4 h-4 mr-2" />
-                Criar Categoria
-              </Button>
-
-              <Button 
-                variant="outline" 
-                onClick={nextStep} 
-                className="w-full"
-              >
-                <SkipForward className="w-4 h-4 mr-2" />
-                Pular por enquanto
-              </Button>
+            {/* Suggested Categories Grid */}
+            <div className="grid grid-cols-2 gap-2">
+              {suggestedCategories.map((category) => {
+                const Icon = category.icon;
+                const isSelected = selectedCategories.has(category.name);
+                return (
+                  <button
+                    key={category.name}
+                    onClick={() => toggleCategory(category.name)}
+                    className={cn(
+                      "flex items-center gap-2 p-3 rounded-lg border transition-all text-left",
+                      isSelected 
+                        ? "border-accent bg-accent/10 text-accent" 
+                        : "border-border hover:border-accent/50"
+                    )}
+                  >
+                    <Icon className="w-4 h-4 flex-shrink-0" />
+                    <span className="text-sm font-medium truncate">{category.name}</span>
+                    {isSelected && <Check className="w-4 h-4 ml-auto flex-shrink-0" />}
+                  </button>
+                );
+              })}
             </div>
 
-            <p className="text-xs text-muted-foreground">
-              Você pode criar categorias a qualquer momento no menu Categorias.
-            </p>
+            <div className="flex flex-col gap-2">
+              <Button 
+                variant="accent" 
+                onClick={handleCreateSelectedCategories}
+                disabled={creatingCategories}
+                className="w-full"
+              >
+                {creatingCategories ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Criando...
+                  </>
+                ) : selectedCategories.size > 0 ? (
+                  <>
+                    Criar {selectedCategories.size} categoria{selectedCategories.size > 1 ? 's' : ''}
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </>
+                ) : (
+                  <>
+                    Continuar sem categorias
+                    <SkipForward className="w-4 h-4 ml-2" />
+                  </>
+                )}
+              </Button>
+
+              <Button 
+                variant="ghost" 
+                onClick={() => setShowCategoryModal(true)} 
+                className="w-full text-muted-foreground"
+                size="sm"
+              >
+                <Tag className="w-4 h-4 mr-2" />
+                Criar categoria personalizada
+              </Button>
+            </div>
           </div>
         );
 
