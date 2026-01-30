@@ -116,6 +116,7 @@ interface CategorySpendingItem {
   previousValue: number;
   variation: number;
   color: string;
+  isExpense?: boolean;
 }
 
 // Color palette for categories
@@ -475,37 +476,43 @@ const Dashboard = () => {
         const currentTransactions = transactionsForPeriod.data.transactions;
         const previousTransactions = transactionsForPrevious.data.transactions;
         
-        // Calculate spending by category for current period
-        const currentCategoryMap = new Map<string, number>();
+        // Calculate amounts by category for current period (tracking income vs expense)
+        const currentCategoryMap = new Map<string, { amount: number; isExpense: boolean }>();
         currentTransactions.forEach((tx) => {
-          if (isExpenseTx(tx)) {
-            const current = currentCategoryMap.get(tx.categoryId) || 0;
-            currentCategoryMap.set(tx.categoryId, current + tx.amount);
+          const isExpense = isExpenseTx(tx);
+          const categoryId = tx.categoryId;
+          const existing = currentCategoryMap.get(categoryId);
+          if (existing) {
+            currentCategoryMap.set(categoryId, { 
+              amount: existing.amount + tx.amount, 
+              isExpense: existing.isExpense 
+            });
+          } else {
+            currentCategoryMap.set(categoryId, { amount: tx.amount, isExpense });
           }
         });
 
         // Calculate spending by category for previous period
         const previousCategoryMap = new Map<string, number>();
         previousTransactions.forEach((tx) => {
-          if (isExpenseTx(tx)) {
-            const current = previousCategoryMap.get(tx.categoryId) || 0;
-            previousCategoryMap.set(tx.categoryId, current + tx.amount);
-          }
+          const current = previousCategoryMap.get(tx.categoryId) || 0;
+          previousCategoryMap.set(tx.categoryId, current + tx.amount);
         });
 
         const spendingData: CategorySpendingItem[] = Array.from(currentCategoryMap.entries())
-          .map(([categoryId, currentValue], index) => {
+          .map(([categoryId, data], index) => {
             const category = categoriesResponse.data?.categories.find(c => c.id === categoryId);
             const previousValue = previousCategoryMap.get(categoryId) || 0;
             const variation = previousValue > 0 
-              ? Math.round(((currentValue - previousValue) / previousValue) * 100) 
+              ? Math.round(((data.amount - previousValue) / previousValue) * 100) 
               : 0;
             return {
               category: category?.title || "Outros",
-              currentValue,
+              currentValue: data.amount,
               previousValue,
               variation,
               color: categoryColors[index % categoryColors.length],
+              isExpense: data.isExpense,
             };
           })
           .sort((a, b) => b.currentValue - a.currentValue)
@@ -1284,14 +1291,19 @@ const Dashboard = () => {
                           </div>
                         </td>
                         <td className="py-3 text-right px-3">
-                          <span className="text-sm font-medium">
-                            {showValues ? formatCurrency(cat.currentValue) : "••••••"}
+                          <span className={cn(
+                            "text-sm font-medium",
+                            cat.isExpense ? "text-destructive" : "text-success"
+                          )}>
+                            {showValues 
+                              ? `${cat.isExpense ? "-" : "+"}${formatCurrency(cat.currentValue)}` 
+                              : "••••••"}
                           </span>
                         </td>
                         <td className="py-3 text-right px-3">
                           <span className={`text-xs px-2 py-0.5 rounded ${
                             cat.variation <= 0 
-                              ? "bg-success/10 text-success" 
+                              ? "bg-success/10 text-success"
                               : "bg-destructive/10 text-destructive"
                           }`}>
                             {cat.variation >= 0 ? "+" : ""}{cat.variation}%

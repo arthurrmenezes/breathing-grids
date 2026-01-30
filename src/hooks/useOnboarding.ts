@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { cardService } from '@/services/cardService';
 import { categoryService } from '@/services/categoryService';
+import { transactionService } from '@/services/transactionService';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface OnboardingState {
@@ -42,23 +43,28 @@ export const useOnboarding = () => {
     }
 
     try {
-      // Check cards and categories in parallel
-      const [cardsResponse, categoriesResponse] = await Promise.all([
+      // Check cards, categories, and transactions in parallel
+      const [cardsResponse, categoriesResponse, transactionsResponse] = await Promise.all([
         cardService.getAll({ pageSize: 1 }),
-        categoryService.getAll({ pageSize: 1 }),
+        categoryService.getAll({ pageSize: 100 }), // Get more to filter out default ones
+        transactionService.getAll({ pageSize: 1 }),
       ]);
 
       const hasCards = (cardsResponse.data?.cards?.length ?? 0) > 0;
-      const hasCategories = (categoriesResponse.data?.categories?.length ?? 0) > 0;
+      const hasTransactions = (transactionsResponse.data?.transactions?.length ?? 0) > 0;
+      
+      // Filter out default categories - only count user-created categories
+      const userCategories = categoriesResponse.data?.categories?.filter(cat => !cat.isDefault) ?? [];
+      const hasUserCategories = userCategories.length > 0;
 
-      // User needs onboarding if they have no cards AND no categories
-      const needsOnboarding = !hasCards && !hasCategories;
+      // User needs onboarding if they have no cards, no transactions, AND no user-created categories
+      const needsOnboarding = !hasCards && !hasTransactions && !hasUserCategories;
 
       setState({
         isLoading: false,
         needsOnboarding,
         hasCards,
-        hasCategories,
+        hasCategories: hasUserCategories,
       });
     } catch (error) {
       console.error('Error checking onboarding status:', error);

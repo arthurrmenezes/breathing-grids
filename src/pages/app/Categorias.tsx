@@ -315,7 +315,7 @@ const Categorias = () => {
                             ? "bg-destructive/10 text-destructive" 
                             : typeLabel === 'Receita' 
                             ? "bg-success/10 text-success"
-                            : "bg-accent/10 text-accent"
+                            : "bg-primary/10 text-primary"
                         )}>
                           {typeLabel}
                         </span>
