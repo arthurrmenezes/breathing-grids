@@ -207,9 +207,6 @@ export const OnboardingWizard = ({ open, onComplete }: OnboardingWizardProps) =>
             </div>
             <div className="space-y-2">
               <h2 className="text-2xl font-bold">Cadastre sua primeira conta</h2>
-              <p className="text-muted-foreground max-w-sm mx-auto">
-                Para começar, adicione uma conta bancária ou cartão. Isso permitirá registrar suas transações.
-              </p>
             </div>
 
             {cardCreated ? (
