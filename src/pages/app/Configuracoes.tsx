@@ -397,12 +397,8 @@ const Configuracoes = () => {
                     </div>
                     <ChevronRight className="w-5 h-5 text-muted-foreground" />
                   </button>
-                  <a href="#" className="flex items-center justify-between p-4 rounded-xl border border-border hover:border-accent/30 transition-colors">
+                  <a href="mailto:contato.tmoney@gmail.com" className="flex items-center justify-between p-4 rounded-xl border border-border hover:border-accent/30 transition-colors">
                     <span className="font-medium">Perguntas Frequentes</span>
-                    <ChevronRight className="w-5 h-5 text-muted-foreground" />
-                  </a>
-                  <a href="#" className="flex items-center justify-between p-4 rounded-xl border border-border hover:border-accent/30 transition-colors">
-                    <span className="font-medium">Tutoriais em Vídeo</span>
                     <ChevronRight className="w-5 h-5 text-muted-foreground" />
                   </a>
                   <a href="mailto:contato.tmoney@gmail.com" className="flex items-center justify-between p-4 rounded-xl border border-border hover:border-accent/30 transition-colors">

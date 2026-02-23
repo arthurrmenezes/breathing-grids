@@ -57,8 +57,8 @@ export const useOnboarding = () => {
       const userCategories = categoriesResponse.data?.categories?.filter(cat => !cat.isDefault) ?? [];
       const hasUserCategories = userCategories.length > 0;
 
-      // User needs onboarding if they have no cards, no transactions, AND no user-created categories
-      const needsOnboarding = !hasCards && !hasTransactions && !hasUserCategories;
+      // User needs onboarding if they have no cards OR no transactions OR no user-created categories
+      const needsOnboarding = !hasCards || !hasTransactions || !hasUserCategories;
 
       setState({
         isLoading: false,
