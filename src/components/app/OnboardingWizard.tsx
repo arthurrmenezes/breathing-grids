@@ -234,7 +234,6 @@ export const OnboardingWizard = ({ open, onComplete }: OnboardingWizardProps) =>
               variant={cardCreated ? "accent" : "outline"} 
               onClick={nextStep} 
               className="w-full"
-              disabled={!cardCreated}
             >
               {cardCreated ? (
                 <>
@@ -242,7 +241,10 @@ export const OnboardingWizard = ({ open, onComplete }: OnboardingWizardProps) =>
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </>
               ) : (
-                'Crie uma conta para continuar'
+                <>
+                  Pular
+                  <SkipForward className="w-4 h-4 ml-2" />
+                </>
               )}
             </Button>
           </div>
@@ -424,11 +426,10 @@ export const OnboardingWizard = ({ open, onComplete }: OnboardingWizardProps) =>
 
   return (
     <>
-      <Dialog open={open} onOpenChange={() => {}}>
+      <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) onComplete(); }}>
         <DialogContent 
           className="sm:max-w-[480px] p-0 gap-0 overflow-hidden"
           onPointerDownOutside={(e) => e.preventDefault()}
-          onEscapeKeyDown={(e) => e.preventDefault()}
         >
           {/* Progress Steps */}
           {currentStep !== 'complete' && (
