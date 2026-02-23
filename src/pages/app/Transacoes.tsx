@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { AppLayout, useValuesVisibility } from '@/components/app/AppLayout';
 import { Button } from '@/components/ui/button';
@@ -135,12 +135,60 @@ const Transacoes = () => {
   // Sort - 3 states: date (default), amount-desc, amount-asc
   const [sortState, setSortState] = useState<SortState>('date');
 
-  // Financial summary with React Query cache
-  const { data: summary, refetch: refetchSummary, isLoading: summaryLoading } = useFinancialSummary({
+  // Financial summary - single card uses the hook, "all cards" aggregates
+  const startDateStr = filterStartDate ? format(filterStartDate, 'yyyy-MM-dd') : undefined;
+  const endDateStr = filterEndDate ? format(filterEndDate, 'yyyy-MM-dd') : undefined;
+
+  const { data: singleSummary, refetch: refetchSingleSummary, isLoading: singleSummaryLoading } = useFinancialSummary({
     cardId: filterCardId || undefined,
-    startDate: filterStartDate ? format(filterStartDate, 'yyyy-MM-dd') : undefined,
-    endDate: filterEndDate ? format(filterEndDate, 'yyyy-MM-dd') : undefined,
+    startDate: startDateStr,
+    endDate: endDateStr,
+    enabled: !!filterCardId,
   });
+
+  // Aggregated summary for "all cards"
+  const [aggregatedSummary, setAggregatedSummary] = useState<{ periodIncome: number; periodExpense: number; balance: number } | null>(null);
+  const [aggregatedLoading, setAggregatedLoading] = useState(false);
+
+  const fetchAggregatedSummary = useCallback(async () => {
+    if (filterCardId || cards.length === 0) return;
+    setAggregatedLoading(true);
+    try {
+      const results = await Promise.all(
+        cards.map(card => transactionService.getFinancialSummary(card.id, startDateStr, endDateStr))
+      );
+      let totalIncome = 0, totalExpense = 0, totalBalance = 0;
+      for (const res of results) {
+        if (res.data) {
+          totalIncome += res.data.periodIncome;
+          totalExpense += res.data.periodExpense;
+          totalBalance += res.data.balance;
+        }
+      }
+      setAggregatedSummary({ periodIncome: totalIncome, periodExpense: totalExpense, balance: totalBalance });
+    } catch {
+      setAggregatedSummary(null);
+    } finally {
+      setAggregatedLoading(false);
+    }
+  }, [filterCardId, cards, startDateStr, endDateStr]);
+
+  useEffect(() => {
+    if (!filterCardId && cards.length > 0) {
+      fetchAggregatedSummary();
+    }
+  }, [fetchAggregatedSummary]);
+
+  const summary = filterCardId ? singleSummary : aggregatedSummary;
+  const summaryLoading = filterCardId ? singleSummaryLoading : aggregatedLoading;
+
+  const refetchSummary = useCallback(() => {
+    if (filterCardId) {
+      refetchSingleSummary();
+    } else {
+      fetchAggregatedSummary();
+    }
+  }, [filterCardId, refetchSingleSummary, fetchAggregatedSummary]);
 
   // Cache invalidation hook for global updates
   const { invalidateAll: invalidateSummaryCache } = useInvalidateFinancialSummary();
@@ -875,7 +923,7 @@ const Transacoes = () => {
               <div className="h-7 w-24 mx-auto bg-muted/50 rounded animate-pulse" />
             ) : (
               <p className={cn("text-xl sm:text-2xl font-bold", (summary?.balance || 0) >= 0 ? 'text-success' : 'text-destructive')}>
-                {showValues ? formatCurrency(summary?.balance || 0) : '••••••'}
+                {showValues ? `${(summary?.balance || 0) < 0 ? '-' : ''}${formatCurrency(summary?.balance || 0)}` : '••••••'}
               </p>
             )}
           </div>
